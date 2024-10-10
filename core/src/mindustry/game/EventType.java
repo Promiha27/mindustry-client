@@ -585,24 +585,6 @@ public class EventType{
         }
     }
 
-    public static class BlockBreakEvent {
-        public final Tile tile;
-        public final Team team;
-        public final @Nullable Unit unit;
-        public final Block oldBlock;
-        public final @Nullable Object oldConfig;
-        public final byte rotation;
-
-        public BlockBreakEvent(Tile tile, Team team, @Nullable Unit unit, Block oldBlock, @Nullable Object oldConfig, byte rotation) {
-            this.tile = tile;
-            this.team = team;
-            this.unit = unit;
-            this.oldBlock = oldBlock;
-            this.oldConfig = oldConfig;
-            this.rotation = rotation;
-        }
-    }
-
     public static class BuildRotateEvent{
         public final Building build;
         public final @Nullable Unit unit;

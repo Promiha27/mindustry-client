@@ -77,11 +77,6 @@ public class DesktopInput extends InputHandler{
 
     private float buildPlanMouseOffsetX, buildPlanMouseOffsetY;
 
-    boolean showHint(){
-        return ui.hudfrag.shown && Core.settings.getBool("hints") && selectPlans.isEmpty() && !player.dead() &&
-            (!isBuilding && !Core.settings.getBool("buildautopause") || player.unit().isBuilding() || !player.dead() && !player.unit().spawnedByCore());
-    }
-
     @Override
     public void buildUI(Group group){
         //various hints
@@ -305,7 +300,7 @@ public class DesktopInput extends InputHandler{
 
     private enum JSBindingOption {
 
-        shift(() -> input.shift(), "keybind1shiftcommand", "No JS configured for Shift+@, go to client settings to add a script to run"),
+        shift(() -> input.shift(), "keybind1shiftcommand", "No JS configured for Shift+@, go to client settings to add a script to run"), // FINISHME: Bundle
         ctrl(() -> input.ctrl(), "keybind1ctrlcommand", "No JS configured for Ctrl+@, go to client settings to add a script to run"),
         alt(() -> input.alt(), "keybind1altcommand", "No JS configured for Alt+@, go to client settings to add a script to run"),
         none(() -> true, "keybind1command", "No JS configured for keybind @, go to client settings to add a script to run"),
@@ -323,7 +318,7 @@ public class DesktopInput extends InputHandler{
     }
 
     @Override
-    public void update(){
+    public void update(){ // FINISHME v8: This has been cleaned up in v8. We should mirror those changes and ideally have an updateClient() or something for handling client keybinds.
         super.update();
 
         if(Core.input.keyTap(Binding.player_list) && (scene.getKeyboardFocus() == null || scene.getKeyboardFocus().isDescendantOf(ui.listfrag.content) || scene.getKeyboardFocus().isDescendantOf(ui.minimapfrag.elem))){
@@ -369,7 +364,7 @@ public class DesktopInput extends InputHandler{
             else showingTurrets = !showingTurrets;
         }
 
-        if(input.keyTap(Binding.show_massdriver_configs)){
+        if(input.keyTap(Binding.show_massdriver_configs) && scene.getKeyboardFocus() == null){
             showingMassDrivers = !showingMassDrivers;
         }
 
@@ -382,7 +377,7 @@ public class DesktopInput extends InputHandler{
             Navigation.stopFollowing();
         }
 
-        if(input.keyTap(Binding.auto_build) && scene.getKeyboardFocus() == null){
+        if(input.keyTap(Binding.auto_build) && scene.getKeyboardFocus() == null && !player.dead()){
             if(input.shift()) {
                 var plans = player.unit().plans;
                 var arr = plans.toArray(BuildPlan.class); // FINISHME: Add an overload that takes an array param to avoid making a new one every time, make it use arraycopy twice instead of running get() in a loop
@@ -390,8 +385,7 @@ public class DesktopInput extends InputHandler{
                 plans.clear();
                 Structs.each(plans::add, arr);
                 new Toast(3).add("@client.sortedplans");
-            }
-            else Navigation.follow(new BuildPath());
+            } else Navigation.follow(new BuildPath());
         }
 
         if(input.keyTap(Binding.auto_repair) && scene.getKeyboardFocus() == null && (input.shift() || (player != null && player.unit() != null && player.unit().type.canHeal))){

@@ -40,7 +40,6 @@ public class BuildPath extends Path { // FINISHME: Dear god, this file does not 
         Blocks.conduit, Blocks.pulseConduit,
         Blocks.mechanicalDrill, Blocks.pneumaticDrill
     );
-    private BuildPlan req;
     private boolean valid;
     private final Pool<BuildPlan> pool = Pools.get(BuildPlan.class, BuildPlan::new, 15_000); // This is cursed but
     private final Seq<BuildPlan> priority = new Seq<>(301);
@@ -129,17 +128,16 @@ public class BuildPath extends Path { // FINISHME: Dear god, this file does not 
         for (var queue : queues) {
             for (var plan : queue) {
                 if (queue == networkAssist && !plan.isDone() || plan.freed) continue;
-                player.unit().plans.remove(plan);
+                if (!player.dead()) player.unit().plans.remove(plan);
                 pool.free(plan);
             }
             if (queue != networkAssist) queue.clear();
         }
-
     }
 
     @Override
     public void follow() {
-        if (player.core() == null) return;
+        if (player.core() == null || player.dead()) return;
 
         var core = player.core();
         if (timer.get(delay) && core != null) {
@@ -276,7 +274,7 @@ public class BuildPath extends Path { // FINISHME: Dear god, this file does not 
 
         // Remove config from the furthest virus blocks until we hit the ratelimit
         if (activeVirus && !virus.isEmpty()) {
-            req = Geometry.findFurthest(player.x, player.y, virus);
+            var req = Geometry.findFurthest(player.x, player.y, virus);
             virus.remove(req);
             player.unit().plans.remove(req);
             if (req.build() instanceof LogicBlock.LogicBuild l) {
@@ -313,7 +311,7 @@ public class BuildPath extends Path { // FINISHME: Dear god, this file does not 
 
     @Override
     public synchronized void draw() {
-        if (valid && player.unit().isBuilding()) waypoints.draw();
+        if (valid && !player.dead() && player.unit().isBuilding()) waypoints.draw();
     }
 
     @Override

@@ -99,10 +99,6 @@ public class ConstructBlock extends Block{
         Seq<Building> prev = tile.build instanceof ConstructBuild co ? co.prevBuild : null;
         Block prevBlock = tile.block();
 
-        if (block == null) {
-            Events.fire(new BlockBreakEvent(tile, team, builder, tile.block(), tile.build == null ? null : tile.build.config(), rotation));
-        }
-
         if(block instanceof OverlayFloor overlay){
             tile.setOverlay(overlay);
         }else if(block instanceof Floor floor){

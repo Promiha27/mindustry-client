@@ -103,7 +103,7 @@ public class CellLiquid extends Liquid{
     public void drawPuddle(Puddle puddle){
         super.drawPuddle(puddle);
 
-        float baseLayer = puddle.tile != null && puddle.tile.block().solid || puddle.tile.build != null ? Layer.blockOver : Layer.debris - 0.5f;
+        float baseLayer = puddle.tile.block().solid || puddle.tile.build != null ? Layer.blockOver : Layer.debris - 0.5f;
 
         int id = puddle.id;
         float amount = puddle.amount, x = puddle.x, y = puddle.y;

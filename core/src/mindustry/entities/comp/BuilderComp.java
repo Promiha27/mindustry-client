@@ -236,10 +236,9 @@ abstract class BuilderComp implements Posc, Statusc, Teamc, Rotc{
             control.input.drawBreaking(plan);
         }else{
             plan.block.drawPlan(plan, control.input.allPlans(),
-                    (Build.validPlace(plan.block, team, plan.x, plan.y, plan.rotation) &&
-                            Build.validPlaceCoreRange(plan.block, team, plan.x, plan.y) &&
-                            Build.validPlaceUnit(plan.block, plan.x, plan.y)) || control.input.planMatches(plan),
-            alpha);
+                (Build.validPlace(plan.block, team, plan.x, plan.y, plan.rotation) && Build.validPlaceCoreRange(plan.block, team, plan.x, plan.y) && Build.validPlaceUnit(plan.block, plan.x, plan.y)) || control.input.planMatches(plan),
+                alpha
+            );
         }
     }
 

@@ -384,6 +384,7 @@ public class EntityProcess extends BaseProcessor{
 
                     //get all methods from components
                     for(Smethod elem : comp.methods()){
+                        if (comp.name().equals("PlayerComp") && elem.toString().equals("unit()")) Log.info(elem.annotations());
                         methods.get(elem.toString(), Seq::new).add(elem);
                     }
                 }
@@ -447,6 +448,7 @@ public class EntityProcess extends BaseProcessor{
                     MethodSpec.Builder mbuilder = MethodSpec.methodBuilder(first.name()).addModifiers(first.is(Modifier.PRIVATE) ? Modifier.PRIVATE : Modifier.PUBLIC);
                     //if(isFinal || entry.value.contains(s -> s.has(Final.class))) mbuilder.addModifiers(Modifier.FINAL);
                     if(entry.value.contains(s -> s.has(CallSuper.class))) mbuilder.addAnnotation(CallSuper.class); //add callSuper here if necessary
+                    if(first.has(Nullable.class)) mbuilder.addAnnotation(Nullable.class); //add Nullable here if necessary
                     if(first.is(Modifier.STATIC)) mbuilder.addModifiers(Modifier.STATIC);
                     mbuilder.addTypeVariables(first.typeVariables().map(TypeVariableName::get));
                     mbuilder.returns(first.retn());
