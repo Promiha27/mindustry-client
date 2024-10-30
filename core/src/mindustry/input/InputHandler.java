@@ -130,6 +130,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
     public final BlockInventoryFragment inv;
     public final BlockConfigFragment config;
+    public final PlanConfigFragment planConfig;
 
     private WidgetGroup group = new WidgetGroup();
 
@@ -165,6 +166,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         group.touchable = Touchable.childrenOnly;
         inv = new BlockInventoryFragment();
         config = new BlockConfigFragment();
+        planConfig = new PlanConfigFragment();
 
         Events.on(UnitDestroyEvent.class, e -> {
             if(e.unit != null && e.unit.isPlayer() && e.unit.getPlayer().isLocal() && e.unit.type.weapons.contains(w -> w.bullet.killShooter)){
@@ -1912,6 +1914,8 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
     /** Handles tile tap events that are not platform specific. */
     boolean tileTapped(@Nullable Building build){
+        // Should hide plan config regardless of what was tapped
+        planConfig.hide();
         if(build == null){
             inv.hide();
             config.hideConfig();
@@ -2221,6 +2225,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
             inv.build(group);
             config.build(group);
+            planConfig.build(group);
         }
     }
 

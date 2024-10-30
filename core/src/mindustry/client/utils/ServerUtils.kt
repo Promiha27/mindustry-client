@@ -3,23 +3,21 @@
 package mindustry.client.utils
 
 import arc.*
-import arc.graphics.*
-import arc.struct.*
+import arc.files.*
 import arc.util.*
 import mindustry.Vars.*
 import mindustry.client.*
+import mindustry.client.ui.*
+import mindustry.client.utils.CustomMode.*
+import mindustry.client.utils.Server.*
 import mindustry.content.*
-import mindustry.content.Blocks.*
 import mindustry.content.UnitTypes.*
 import mindustry.entities.*
-import mindustry.entities.abilities.*
-import mindustry.entities.bullet.*
 import mindustry.game.EventType.*
 import mindustry.gen.*
-import mindustry.graphics.*
+import mindustry.mod.*
 import mindustry.net.Packets.*
 import mindustry.ui.fragments.ChatFragment.*
-import mindustry.world.blocks.defense.turrets.*
 import java.lang.reflect.*
 import kotlin.properties.*
 
@@ -55,6 +53,13 @@ enum class Server( // FINISHME: This is horrible. Why have I done this?
         }
 
         override fun adminui() = player.admin || ClientVars.rank >= 5
+        override fun handleVoteButtons(msg: ChatMessage) {
+            super.handleVoteButtons(msg)
+            if (msg.sender == null && defense() && "Type [green]/agree[] to vote!" in msg.message) { // td upgrade voting
+                val agree = Cmd("/agree", 0)
+                msg.addButton(agree.str, agree::invoke)
+            }
+        }
     },
     phoenix("Phoenix Network", null, Cmd("/w"), Cmd("/rtv"), Cmd("/freeze", 9), votekickString = "Type [cyan]/vote y"),
     korea("Korea", ghost = true),
@@ -126,7 +131,7 @@ enum class Server( // FINISHME: This is horrible. Why have I done this?
         init {
             Events.on(MenuReturnEvent::class.java) {
                 current = other
-                Log.debug("Returning to menu, server override cleared")
+                Log.debug("Returning to menu, server, mode override cleared")
             }
         }
 
@@ -170,115 +175,73 @@ enum class Server( // FINISHME: This is horrible. Why have I done this?
     open fun blockEffect(fx: Effect, rot: Float): Boolean = false
 }
 
-enum class CustomMode {
+enum class CustomMode(
+    val modeName: String? = null // Override the name of the mode
+) {
     none,
     flood {
-        private var foreshadowBulletVanilla: BulletType? = null // Flood changes the bullet type so we need to keep it here to restore it later
+        val ioFloodCompatRepo = "mindustry-antigrief/FloodCompat"
+        var hasLoaded = false
 
         override fun enable() {
             super.enable()
-            Time.mark()
+            if (io() && net.client()) {
+                var floodMod: Mods.LoadedMod? = mods.getMod("floodcompat")
 
-            if(!Server.current.ghost) Call.serverPacketReliable("flood", "999") // Imagine supporting multiple versions
+                fun enable() { // Just enables the mod
+                    if (hasLoaded) return // Only attempt to enable the mod once
+                    hasLoaded = true
 
-            overwrites( // This system is awful but it (mostly) works and it wasn't hard to implement.
-                // Units
-                pulsar, "abilities", Seq<Ability>(0), // Pulsar shield regen field removed
-                crawler, "health", 100f,
-                crawler, "speed", 1.5f,
-                crawler, "accel", 0.08f,
-                crawler, "drag", 0.016f,
-                crawler, "hitSize", 6f,
-                crawler, "targetAir", false,
-                atrax, "speed", 0.5f,
-                spiroct, "speed", 0.4f,
-                spiroct, "targetAir", false,
-                arkyid, "speed", 0.5f,
-                arkyid, "hitSize", 21f,
-                arkyid, "targetAir", false,
-                toxopid, "hitSize", 21f,
-                flare, "health", 275,
-                flare, "range", 140,
-                horizon, "itemCapacity", 20, // Horizons can pick up items in flood, this just allows the items to draw correctly
-                horizon, "health", 440,
-                horizon, "speed", 1.7f,
-                zenith, "health", 1400,
-                zenith, "speed", 1.8f,
-                oct, "abilities", Seq.with(ForceFieldAbility(140f, 16f, 15000f, 60f * 8, 8, 0f)), // Oct heal removed, force field buff
-                bryde, "abilities", Seq<Ability>(0), // Bryde shield regen field removed
+                    Log.warn("FloodCompat installed but disabled. Foo's will load it at runtime.")
 
-                // Blocks
-                scrapWall, "solid", false,
-                titaniumWall, "solid", false,
-                thoriumWall, "solid", false,
-                phaseWall, "chanceDeflect", -1,
-                surgeWall, "lightningChance", 0f,
-                reinforcedSurgeWall, "lightningChance", 0f,
-                berylliumWall, "absorbLasers", true,
-                berylliumWall, "insulated", true,
-                tungstenWall, "absorbLasers", true,
-                tungstenWall, "insulated", true,
-                carbideWall, "absorbLasers", true,
-                carbideWall, "insulated", true,
-                mender, "reload", 800f,
-                mendProjector, "reload", 500f,
-                forceProjector, "shieldHealth", 2500f,
-                radar, "health", 500,
-                massDriver, "health", 1250,
-                shockwaveTower, "health", 2000,
-                thoriumReactor, "health", 1400,
-                impactReactor, "rebuildable", false,
-                lancer, "shootType.damage", 10,
-                arc, "shootType.damage", 4,
-                arc, "shootType.lightningLength", 15,
-                parallax, "force", 8f,
-                parallax, "scaledForce", 7f,
-                parallax, "range", 230f,
-                parallax, "damage", 6f,
-                (fuse as ItemTurret).ammoTypes.get(Items.titanium), "pierce", false,
-                (fuse as ItemTurret).ammoTypes.get(Items.titanium), "damage", 10f,
-                (fuse as ItemTurret).ammoTypes.get(Items.thorium), "pierce", false,
-                (fuse as ItemTurret).ammoTypes.get(Items.thorium), "damage", 20f,
-                (scathe as ItemTurret).ammoTypes.get(Items.carbide), "damage", 700f,
-                (scathe as ItemTurret).ammoTypes.get(Items.carbide), "buildingDamageMultiplier", 0.3f,
-                (scathe as ItemTurret).ammoTypes.get(Items.carbide), "splashDamage", 80f,
-            )
+                    mods.mods.remove(floodMod)
+                    floodMod!!.dispose()
+                    Core.settings.put("mod-floodcompat-enabled", true) // Has to be enabled for the mod to load
+                    val mod = Reflect.invoke<Mods.LoadedMod>(mods, "loadMod", arrayOf(floodMod!!.file), Fi::class.java) // Load the mod and call the init() function
+                    mod.main.init()
+                    // Next 5 lines sort the new mod as if it were enabled without actually keeping it enabled after a restart
+                    mod.state = Mods.ModState.enabled
+                    mods.mods.add(mod)
+                    Reflect.invoke<Void>(mods, "sortMods")
+                    Reflect.set(mods, "lastOrderedMods", null) // Reset orderedMods cache
+                    Core.settings.put("mod-floodcompat-enabled", false) // May as well disable it as it was before
+                }
 
-            arrayOf(alpha, beta, gamma).flatMap { it.weapons }.forEach { overwrite(it, "bullet.buildingDamageMultiplier", 1) }
-            quad.weapons.each { overwrites(
-                it, "bullet.pierceBuilding", true,
-                it, "bullet.pierceCap", 9
-            ) }
-            merui.weapons.each { overwrite(it, "bullet.collides", true) }
-            vela.weapons.each { overwrite(it, "bullet.damage", 20f) }
-            minke.weapons.each { if (it.bullet is FlakBulletType) overwrite(it, "bullet.collidesGround", true) }
-            arkyid.weapons.each {
-                when (val b = it.bullet) {
-                    is SapBulletType -> overwrite(b, "sapStrength", 0)
-                    is ArtilleryBulletType -> overwrites(b, "pierceBuilding", true, b, "pierceCap", 5)
+                fun download(update: Boolean = false) { // Downloads and enables the mod
+                    Toast(3f).add(if (update) "Updating" else "Installing" + " FloodCompat")
+                    Log.debug(if (update) "Updating" else "Installing" + " FloodCompat")
+                    ui.mods.githubImportMod(ioFloodCompatRepo, true, null, floodMod?.meta?.version) {
+                        val new = mods.mods.last { it.name == "floodcompat"} // newly downloaded flood compat if any
+                        if (update && new != floodMod) { // Delete old flood mod for update. If new == old, there was no update.
+                            floodMod!!.file.deleteDirectory()
+                            floodMod!!.dispose()
+                            mods.mods.remove(floodMod)
+                        }
+                        val reload = Reflect.get<Boolean>(mods, "requiresReload")
+                        Reflect.set(mods, "requiresReload", reload)
+                        Toast(3f).add("FloodCompat " + if (update) "updated" else "installed" + " successfully!")
+                        Core.settings.put("mod-floodcompat-enabled", false) // Set as disabled as there's no reason to load it outside of flood gamemode
+                        floodMod = mods.getMod("floodcompat") // floodMod is still null from before, set it to the mod we just downloaded
+                        enable()
+                    }
+                }
+
+                if (floodMod === null) {
+                    ui.showConfirm("[scarlet]FloodCompat mod not found!", "Installing the [accent]${ioFloodCompatRepo}[] mod is recommended for a better game experience. Would you like to install it?\nThis will not require a restart.") {
+                        Toast(3f).add("Downloading mod")
+                        download()
+                    }
+                } else if (!floodMod.enabled()) {
+                    if (!hasLoaded && Time.timeSinceMillis(Core.settings.getLong("lastfloodcompatupdate", Time.millis())) > 1000 * 60 * 30L) { // Update floodCompat every 30m
+                        Core.settings.put("lastfloodcompatupdate", Time.millis())
+                        (floodMod.root as? ZipFi)?.delete() // Close the current flood zip just in case its open somehow (it should not be)
+                        download(true)
+                    } else enable() // Enable the mod as normal otherwise
                 }
             }
-            spiroct.weapons.each {
-                val b = it.bullet
-                overwrite(b, "sapStrength", 0) // All arkyid bullets have 0 sapStrength in flood
-                when (name) {
-                    "spiroct-weapon" -> overwrite(b, "damage", 25)
-                    "mount-purple-weapon" -> overwrite(b, "damage", 20)
-                }
-            }
-
-            foreshadowBulletVanilla = (foreshadow as ItemTurret).ammoTypes.put(Items.surgeAlloy, foreshadowBulletFlood)
-            Log.debug("Applied flood in ${Time.elapsed()}ms")
-        }
-
-        override fun disable() {
-            super.disable()
-
-            (foreshadow as ItemTurret).ammoTypes.put(Items.surgeAlloy, foreshadowBulletVanilla)
         }
     },
-    defense
-    ;
+    defense(modeName = "tower defense");
 
     companion object {
         @JvmStatic var current by Delegates.observable(none) { _, oldValue, newValue ->
@@ -291,11 +254,10 @@ enum class CustomMode {
         init {
             Events.on(WorldLoadEvent::class.java) {
                 val modeName = if (!net.client() || ui.join.lastHost?.modeName?.isBlank() != false) state.rules.modeName?.lowercase() else ui.join.lastHost.modeName.lowercase()
-                current = entries.find { it.name == modeName } ?: none
+                current = entries.find { (it.modeName ?: it.name) == modeName } ?: none // If modeName (or just the enum name if modeName is unspecified) matches, setup this mode
             }
 
             Events.on(MenuReturnEvent::class.java) {
-                Log.debug("Returning to menu")
                 current = none
             }
         }
@@ -331,27 +293,6 @@ enum class CustomMode {
     /** Called when switching to a different gamemode */
     protected open fun disable() = // Don't have to worry about clearing defaults as it is replaced with a blank mutable list when the new gamemode is applied
         defaults.indices.step(3).forEach { (defaults[it + 1] as Field).set(defaults[it], defaults[it + 2]) } // (obj, field, value) -> field.set(obj, value)
-}
-
-private val foreshadowBulletFlood = LaserBulletType().apply {
-    length = 460f
-    damage = 560f
-    width = 75f
-    lifetime = 65f
-    lightningSpacing = 35f
-    lightningLength = 5
-    lightningDelay = 1.1f
-    lightningLengthRand = 15
-    lightningDamage = 50f
-    lightningAngleRand = 40f
-    largeHit = true
-    lightningColor = Pal.heal
-    lightColor = lightningColor
-    shootEffect = Fx.greenLaserCharge
-    sideAngle = 15f
-    sideWidth = 0f
-    sideLength = 0f
-    colors = arrayOf(Color.clear, Color.clear, Color.clear) // FINISHME: Make this properly invisible
 }
 
 fun handleKick(reason: String) {

@@ -177,3 +177,4 @@ jdks/
 
 # Kotlin
 .kotlin/
+fooKotlinScriptSupport.jar

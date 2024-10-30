@@ -8,7 +8,6 @@ import arc.util.*
 import mindustry.Vars.*
 import mindustry.client.ClientVars.*
 import mindustry.client.antigrief.*
-import mindustry.client.communication.*
 import mindustry.client.navigation.*
 import mindustry.client.navigation.Navigation.stopFollowing
 import mindustry.client.ui.*
@@ -129,7 +128,7 @@ class ClientLogic {
             }
 
             if (settings.getBool("discordrpc")) platform.startDiscord()
-            if (settings.getBool("mobileui")) mobile = !mobile
+            if (settings.getBool("mobileui") && !OS.hasProp("nomobileui")) mobile = !mobile
             if (settings.getBool("viruswarnings")) LExecutor.virusWarnings = true
             UnitType.drawAllItems = settings.getBool("drawallitems")
             UnitType.formationAlpha = settings.getInt("formationopacity") / 100f
@@ -141,14 +140,6 @@ class ClientLogic {
             Navigation.navigator.init()
 
             Migrations().runMigrations()
-
-            if (isDeveloper()) {
-                register("update <name/id...>") { args, _ ->
-                    val name = args.joinToString(" ")
-                    val player = Groups.player.find { it.id == Strings.parseInt(name) } ?: Groups.player.minByOrNull { biasedLevenshtein(Strings.stripColors(it.name), name) }!!
-                    Main.send(CommandTransmission(CommandTransmission.Commands.UPDATE, Main.keyStorage.cert() ?: return@register, player))
-                }
-            }
         }
 
         Events.on(PlayerJoin::class.java) { e -> // Run when a player joins the server
@@ -172,7 +163,7 @@ class ClientLogic {
         Events.on(GameOverEventClient::class.java) {
             if (net.client()) {
                 // Afk players will start mining at the end of a game (kind of annoying but worth it)
-                if ((Navigation.currentlyFollowing as? BuildPath)?.mineItems == null) Navigation.follow(MinePath(args = "copper lead beryllium graphite", newGame = true))
+                if ((Navigation.currentlyFollowing as? BuildPath)?.mineItems == null && !CustomMode.defense()) Navigation.follow(MinePath(args = "copper lead beryllium graphite", newGame = true))
 
                 // Save maps on game over if the setting is enabled
                 if (settings.getBool("savemaponend")) control.saves.addSave(state.map.name())
@@ -196,7 +187,7 @@ class ClientLogic {
         // Warn about turrets that are built with an enemy void in range
         Events.on(BlockBuildBeginEventBefore::class.java) { event ->
             val block = event.newBlock
-            if (block !is Turret) return@on
+            if (!((block as? Turret)?.targetGround ?: false)) return@on
             if (event.unit?.player == null) return@on
             if (state.rules.infiniteResources) return@on
 
