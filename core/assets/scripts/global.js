@@ -185,7 +185,6 @@ const GeneratorPressureExplodeEvent = Packages.mindustry.game.EventType.Generato
 const BlockDestroyEvent = Packages.mindustry.game.EventType.BlockDestroyEvent
 const BuildSelectEvent = Packages.mindustry.game.EventType.BuildSelectEvent
 const BuildRotateEvent = Packages.mindustry.game.EventType.BuildRotateEvent
-const BlockBreakEvent = Packages.mindustry.game.EventType.BlockBreakEvent
 const BuildPayloadDrop = Packages.mindustry.game.EventType.BuildPayloadDrop
 const BuildPayloadPickup = Packages.mindustry.game.EventType.BuildPayloadPickup
 const BlockBuildEventTile = Packages.mindustry.game.EventType.BlockBuildEventTile

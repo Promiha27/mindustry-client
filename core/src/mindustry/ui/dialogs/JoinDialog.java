@@ -47,7 +47,7 @@ public class JoinDialog extends BaseDialog{
     @Nullable public Host lastHost;
     int lastPort, lastColumns = -1;
     Task ping;
-    private boolean beList = Version.type.equals("bleeding-edge"), fetchingCommunityServersErrored;
+    private boolean beList = Version.type.equals("bleeding-edge") || Vars.forceBeServers, fetchingCommunityServersErrored;
     public boolean hasFetchedCommunity;
     public Runnable onCommunityFetch; // This is jank, I know.
 
@@ -77,7 +77,7 @@ public class JoinDialog extends BaseDialog{
         buttons.button("", () -> {
             beList ^= true;
             defaultServers.clear();
-            loadCommunityServers(beList ? serverJsonBeURL : serverJsonURL, 8, true);
+            fetchServers(beList ? serverJsonBeURLs : serverJsonURLs, 0, true);
         }).update(b -> b.setText("Use " + (beList ? "v7" : "BE") + " server list")).wrapLabel(false).height(64);
 
         addCloseButton(mobile ? 190f : 210f);
@@ -681,17 +681,27 @@ public class JoinDialog extends BaseDialog{
             Core.settings.remove("server-list");
         }
 
-        loadCommunityServers(beList || Vars.forceBeServers ? serverJsonBeURL : serverJsonURL, 5, false);
+        var urls = beList ? serverJsonBeURLs : serverJsonURLs;
+
+        fetchServers(urls, 0, false);
     }
 
-    private void loadCommunityServers(String url, int attempts, boolean refreshCommunity) {
-        Log.info("Fetching community servers at @", url);
-        Http.get(url)
+    private void fetchServers(String[] urls, int index, boolean refreshCommunity){
+        if(index >= urls.length) return;
+        Log.debug("Fetching community servers at @", urls[index]);
+
+        //get servers
+        Http.get(urls[index])
         .error(t -> {
-            Log.debug("Failed to fetch community servers, retrying");
-            Log.err(t.toString());
-            if(attempts > 1) Timer.schedule(() -> loadCommunityServers(url, attempts - 1, refreshCommunity), 0.5f); // Sometimes this just randomly times out the first time
-            else fetchingCommunityServersErrored = true;
+            if(index < urls.length - 1){
+                Log.debug("Failed to fetch community servers from @, trying next url.", urls[index]);
+                //attempt fetching from the next URL upon failure
+                Timer.schedule(() -> fetchServers(urls, index + 1, refreshCommunity), 0.5f);
+            }else{
+                Log.err("Failed to fetch community servers", t);
+                fetchingCommunityServersErrored = true;
+                Core.app.post(this::refreshCommunity); // Refresh community list to show error
+            }
         })
         .submit(result -> {
             Jval val = Jval.read(result.getResultAsString());

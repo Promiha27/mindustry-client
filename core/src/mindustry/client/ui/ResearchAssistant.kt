@@ -3,8 +3,10 @@ package mindustry.client.ui
 import arc.*
 import arc.scene.ui.layout.*
 import arc.struct.*
+import arc.util.*
 import mindustry.Vars.*
 import mindustry.content.TechTree.*
+import mindustry.ctype.*
 import mindustry.game.*
 import mindustry.type.*
 import mindustry.ui.dialogs.ResearchDialog.*
@@ -12,45 +14,62 @@ import mindustry.ui.dialogs.ResearchDialog.*
 /** Handles various client behavior related to research in campaign */
 object ResearchAssistant : Table() {
     private val queue = Seq<TechTreeNode>()
-    private var sectors = content.planets().sum { it.sectors.count(Sector::hasBase) } // Owned sector count
+    private var sectors = content.planets().sum { it.sectors.count(Sector::hasBase) } // Captured sector count FINISHME: Have a number for the current planet too
     private var autoResearch = Core.settings.getBool("autoresearch")
 
     init {
-        drawQueue()
+        Events.on(EventType.ClientLoadEvent::class.java) { // FINISHME: Do on the unimportant work thread.
+            ui.research.checkNodes(ui.research.root)
+            switchTree() // Setup initial tree
+        }
+
         Events.on(EventType.TurnEvent::class.java) {
-            if (state.isCampaign && !net.client()) {
-                sectors = content.planets().sum { it.sectors.count(Sector::hasBase) } // FINISHME: Change to or add per planet sector capture count. Also add uncaptured sectors and total sectors?
+            if (!state.isCampaign || net.client()) return@on
 
-                queue.each<TechTreeNode>(ui.research.nodes::contains) { spend(it.node) } // Terrible way to handle multiple planets I know.
+            sectors = content.planets().sum { it.sectors.count(Sector::hasBase) } // FINISHME: Change to or add per planet sector capture count. Also add uncaptured sectors and total sectors?
 
-                // Run until no new nodes are unlocked
-                var any = autoResearch
-                if (any) ui.research.checkNodes(ui.research.root) // Set visibility for each node (needed in case the research dialog hasn't been opened yet)
-                while (any) {
-                    any = ui.research.nodes.any { it.visible && it.node.content.locked() && ui.research.view.canSpend(it.node) && spend(it.node) }
-                }
+            queue.copy().each<TechTreeNode>(ui.research.nodes::contains) { spend(it.node) } // Terrible way to handle multiple planets I know.
+
+            // Run until no new nodes are unlocked
+            var any = autoResearch
+            if (any) ui.research.checkNodes(ui.research.root) // Set visibility for each node (needed in case the research dialog hasn't been opened yet)
+            while (any) {
+                any = ui.research.nodes.any { it.visible && it.node.content.locked() && ui.research.view.canSpend(it.node) && spend(it.node) }
             }
         }
     }
 
-    fun queue(node: TechTreeNode) {
+    fun queue(node: TechTreeNode, tail: Boolean = true) {
         if (queue.contains(node)) dequeue(node) // Requeue the node
         if (node.node.objectives.contains { !it.complete() }) return // Requirements not met
 
-        queue.add(node)
-        drawQueue()
+        if (tail) queue.add(node) else queue.insert(0, node)
+        updateQueue()
     }
 
     fun dequeue(node: TechTreeNode) {
         queue.remove(node)
-        drawQueue()
+        updateQueue()
     }
 
     fun dequeue(node: TechNode) { // This is super hacky
         dequeue(queue.find { it.node == node } ?: return)
     }
 
-    fun drawQueue() {
+    /** Called when the tech tree switches */
+    fun switchTree() {
+        Time.mark()
+        queue.clear()
+        @Suppress("UNCHECKED_CAST")
+        (Core.settings.getJson("autoresearchqueue-${ui.research.root.node.name}", Seq::class.java, UnlockableContent::class.java) { null } as? Seq<UnlockableContent>)?.each { queue.add(ui.research.nodes.find { n -> n.node == (it.techNode ?: return@each) } ?: return@each) }
+        updateQueue(true)
+        Log.debug("Research queue loaded in ${Time.elapsed()}")
+    }
+
+    /** Called when adding or removing queued research */
+    fun updateQueue(switched: Boolean = false) {
+        if (!switched) Core.settings.putJson("autoresearchqueue-${ui.research.root.node.name}", queue.map { it.node.content })
+
         top().right().clearChildren()
         defaults().right().top()
 
@@ -60,7 +79,7 @@ object ResearchAssistant : Table() {
         table {
             it.add(if (queue.isEmpty) "@client.research.queue" else "@client.research.queued")
 
-            for (node in queue) it.button(node.node.content.emoji()) { dequeue(node) }.pad(5F).disabled { !ui.research.nodes.contains(node) }
+            for (node in queue) it.button(node.node.icon()) { if (Core.input.shift()) queue(node, tail = false) else dequeue(node) }.size(48F).pad(5F)
         }
 
         row()

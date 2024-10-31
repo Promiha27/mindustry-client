@@ -11,8 +11,8 @@ import arc.math.geom.*;
 import arc.scene.*;
 import arc.scene.event.*;
 import arc.scene.ui.layout.*;
-import arc.struct.Queue;
 import arc.struct.*;
+import arc.struct.Queue;
 import arc.util.*;
 import kotlin.Pair;
 import mindustry.*;
@@ -108,6 +108,11 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     public BuildPlan bplan = new BuildPlan();
     public Seq<BuildPlan> linePlans = new Seq<>();
     public Seq<BuildPlan> selectPlans = new Seq<>(BuildPlan.class);
+    public Queue<BuildPlan> lastPlans = new Queue<>();
+    public @Nullable Unit lastUnit;
+    public @Nullable Unit spectating;
+
+    // Client stuff
     public boolean conveyorPlaceNormal = false;
     /** Last logic virus warning block FINISHME: All the client stuff here is awful */
     @Nullable public LogicBlock.LogicBuild lastVirusWarning, virusBuild;
@@ -152,9 +157,9 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     // These 3 vars and init block are used for retrying configs that the server has denied due to exceeding the ratelimit
     private static boolean fromServer;
     private static Queue<Pair<Building, Object>> prevs = new Queue<>(32); // This is by no means the best way to do this, but I'm too lazy to write a proper LRU cache
-    private static IntIntMap queued = new IntIntMap();
+    private static IntIntMap queued = new IntIntMap(); // Stores the last "config id" for a tile, used to prevent multiple attempts to retry configs.
 
-    static {
+    static { // Intercept TileConfigCallPacket and set fromServer to true before handling it normally.
         net.handleClient(TileConfigCallPacket.class, packet -> {
             fromServer = true;
             packet.handleClient();
@@ -182,6 +187,9 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
             logicCutscene = false;
             itemDepositCooldown = 0f;
             Arrays.fill(controlGroups, null);
+            lastUnit = null;
+            lastPlans.clear();
+            queued.clear(51);
         });
     }
 
@@ -866,7 +874,16 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         return !selectPlans.isEmpty();
     }
 
+    public void spectate(Unit unit){
+        spectating = unit;
+        camera.position.set(unit);
+    }
+
     public void update(){
+        if(spectating != null && (!spectating.isValid() || spectating.team != player.team())){
+            spectating = null;
+        }
+
         if(logicCutscene && !renderer.isCutscene() && Core.settings.getBool("showcutscenes", true)){
             Core.camera.position.lerpDelta(logicCamPan, logicCamSpeed);
         }else{
@@ -880,6 +897,21 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         if(!commandMode){
             commandRect = false;
         }
+
+        if(player.isBuilder()){
+            if(player.unit() != lastUnit && player.unit().plans.size <= 1){
+                player.unit().plans.ensureCapacity(lastPlans.size);
+                for(var plan : lastPlans){
+                    player.unit().plans.addLast(plan);
+                }
+            }
+            lastPlans.clear();
+            for(var plan : player.unit().plans){
+                lastPlans.addLast(plan);
+            }
+        }
+
+        lastUnit = player.unit();
 
         playerPlanTree.clear();
         if(!player.dead()){
@@ -1914,7 +1946,6 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
     /** Handles tile tap events that are not platform specific. */
     boolean tileTapped(@Nullable Building build){
-        // Should hide plan config regardless of what was tapped
         planConfig.hide();
         if(build == null){
             inv.hide();
@@ -2028,7 +2059,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     }
 
     boolean canRepairDerelict(Tile tile){
-        return tile != null && tile.build != null && !state.rules.editor && player.team() != Team.derelict && tile.build.team == Team.derelict && tile.build.block.unlockedNow() &&
+        return tile != null && tile.build != null && !state.rules.editor && player.team() != Team.derelict && tile.build.team == Team.derelict && tile.build.block.unlockedNowHost() &&
             Build.validPlace(tile.block(), player.team(), tile.build.tileX(), tile.build.tileY(), tile.build.rotation);
     }
 

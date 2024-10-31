@@ -12,6 +12,8 @@ public class Version{
     public static String type = "unknown";
     /** Build modifier, e.g. 'alpha' or 'release' */
     public static String modifier = "unknown";
+    /** Git commit hash (short) */
+    public static String commitHash = "unknown";
     /** Number specifying the major version, e.g. '4' */
     public static int number;
     /** Build number, e.g. '43'. set to '-1' for custom builds. */
@@ -29,10 +31,6 @@ public class Version{
     /** Allows for mods to detect the presence of the client */
     @SuppressWarnings("unused") private static boolean foos;
 
-    public static String path(){
-        return Version.class.getProtectionDomain().getCodeSource().getLocation().getPath().replace('\\', '/');
-    }
-
     public static void init(){
         if(!enabled) return;
 
@@ -48,7 +46,9 @@ public class Version{
         type = map.get("type");
         number = Integer.parseInt(map.get("number", "4"));
         modifier = map.get("modifier");
-        if(path().contains("/steamapps/common/Mindustry/")) modifier += " steam";
+        var path = Version.class.getProtectionDomain().getCodeSource().getLocation().getPath().replace('\\', '/');
+        if(path.contains("/steamapps/common/Mindustry/")) modifier += " steam";
+        commitHash = map.get("commitHash");
         if(map.get("build").contains(".")){
             String[] split = map.get("build").split("\\.");
             try{
@@ -90,6 +90,6 @@ public class Version{
         if(build == -1){
             return "custom build";
         }
-        return (type.equals("official") ? modifier : type) + " build " + build + (revision == 0 ? "" : "." + revision) + "\n(Foo's Client Version: " + (clientVersion.equals("v0.0.0") ? "Dev" : clientVersion) + ")";
+        return (type.equals("official") ? modifier : type) + " build " + build + (revision == 0 ? "" : "." + revision) + "\n(Foo's Client Version: " + (clientVersion.equals("v0.0.0") ? "Dev" : clientVersion) + ")" + (commitHash.equals("unknown") ? "" : " (" + commitHash + ")");
     }
 }

@@ -8,7 +8,7 @@ import mindustry.client.ClientVars.*
 import mindustry.gen.*
 import mindustry.input.*
 
-object Spectate {
+object Spectate { // FINISHME v8: Remove this as vanilla now has a spectate feature that we should use instead.
     var pos: Position? = null
     var cursor = false
 

@@ -236,7 +236,7 @@ public class SerpuloTechTree{
 
                         node(steamGenerator, Seq.with(new SectorComplete(craters)), () -> {
                             node(thermalGenerator, () -> {
-                                node(differentialGenerator, Seq.with(new SectorComplete(testingGrounds)), () -> {
+                                node(differentialGenerator, () -> {
                                     node(thoriumReactor, Seq.with(new Research(Liquids.cryofluid)), () -> {
                                         node(impactReactor, () -> {
 
@@ -262,12 +262,21 @@ public class SerpuloTechTree{
             node(duo, () -> {
                 node(copperWall, () -> {
                     node(copperWallLarge, () -> {
+                        node(scrapWall, () -> {
+                            node(scrapWallLarge, () -> {
+                                node(scrapWallHuge, () -> {
+                                    node(scrapWallGigantic);
+                                });
+                            });
+                        });
+
                         node(titaniumWall, () -> {
                             node(titaniumWallLarge);
 
                             node(door, () -> {
                                 node(doorLarge);
                             });
+
                             node(plastaniumWall, () -> {
                                 node(plastaniumWallLarge, () -> {
 
@@ -365,7 +374,7 @@ public class SerpuloTechTree{
                         node(atrax, () -> {
                             node(spiroct, () -> {
                                 node(arkyid, () -> {
-                                    node(toxopid, () -> {
+                                    node(toxopid, Seq.with(new SectorComplete(mycelialBastion)), () -> {
 
                                     });
                                 });
@@ -511,12 +520,15 @@ public class SerpuloTechTree{
                                             new Research(risso),
                                             new Research(minke),
                                             new Research(bryde),
+                                            new Research(sei),
+                                            new Research(omura),
                                             new Research(spectre),
                                             new Research(launchPad),
                                             new Research(massDriver),
                                             new Research(impactReactor),
                                             new Research(additiveReconstructor),
-                                            new Research(exponentialReconstructor)
+                                            new Research(exponentialReconstructor),
+                                            new Research(tetrativeReconstructor)
                                             ), () -> {
 
                                             });
@@ -615,7 +627,8 @@ public class SerpuloTechTree{
                             node(mycelialBastion, Seq.with(
                             new Research(atrax),
                             new Research(spiroct),
-                            new Research(multiplicativeReconstructor)
+                            new Research(multiplicativeReconstructor),
+                            new Research(exponentialReconstructor)
                             ), () -> {
 
                             });

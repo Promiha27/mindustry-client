@@ -384,7 +384,6 @@ public class EntityProcess extends BaseProcessor{
 
                     //get all methods from components
                     for(Smethod elem : comp.methods()){
-                        if (comp.name().equals("PlayerComp") && elem.toString().equals("unit()")) Log.info(elem.annotations());
                         methods.get(elem.toString(), Seq::new).add(elem);
                     }
                 }
@@ -417,17 +416,17 @@ public class EntityProcess extends BaseProcessor{
 
                 //add all methods from components
                 for(ObjectMap.Entry<String, Seq<Smethod>> entry : methods){
-                    Smethod replacement = null;
+                    Smethod base = null;
                     for(Smethod method : entry.value){
                         if(method.has(Replace.class)){
-                            if(replacement == null) replacement = method;
+                            if(base == null) base = method;
                             else{ //multiple replacements for one method
                                 err("Type " + type + " has multiple components replacing method " + entry.key + ".");
                                 break;
                             }
                         }
                     }
-                    if(replacement != null) entry.value.clear().add(replacement);
+                    if(base != null) entry.value.clear().add(base);
 
                     //check multi return
                     if(entry.value.count(m -> !m.isAny(Modifier.NATIVE, Modifier.ABSTRACT) && !m.isVoid()) > 1){
@@ -448,7 +447,7 @@ public class EntityProcess extends BaseProcessor{
                     MethodSpec.Builder mbuilder = MethodSpec.methodBuilder(first.name()).addModifiers(first.is(Modifier.PRIVATE) ? Modifier.PRIVATE : Modifier.PUBLIC);
                     //if(isFinal || entry.value.contains(s -> s.has(Final.class))) mbuilder.addModifiers(Modifier.FINAL);
                     if(entry.value.contains(s -> s.has(CallSuper.class))) mbuilder.addAnnotation(CallSuper.class); //add callSuper here if necessary
-                    if(first.has(Nullable.class)) mbuilder.addAnnotation(Nullable.class); //add Nullable here if necessary
+                    if(first.has(Nullable.class)) mbuilder.addAnnotation(Nullable.class);
                     if(first.is(Modifier.STATIC)) mbuilder.addModifiers(Modifier.STATIC);
                     mbuilder.addTypeVariables(first.typeVariables().map(TypeVariableName::get));
                     mbuilder.returns(first.retn());
@@ -779,6 +778,7 @@ public class EntityProcess extends BaseProcessor{
 
             //implement each definition
             for(EntityDefinition def : definitions){
+
                 ObjectSet<String> methodNames = def.components.flatMap(type -> type.methods().map(Smethod::simpleString)).<String>as().asSet();
 
                 //add base class extension if it exists

@@ -192,6 +192,17 @@ public class BuildPlan implements Position, Pool.Poolable, QuadTreeObject{
         return y*tilesize + (block == null ? 0 : block.offset);
     }
 
+    public boolean isDone(){
+        Tile tile = world.tile(x, y);
+        if(tile == null) return true;
+        Block tblock = tile.block();
+        if(breaking){
+            return tblock == Blocks.air || tblock == tile.floor();
+        }else{
+            return tblock == block && (tile.build == null || tile.build.rotation == rotation);
+        }
+    }
+
     public @Nullable Tile tile(){
         return world.tile(x, y);
     }
@@ -200,22 +211,11 @@ public class BuildPlan implements Position, Pool.Poolable, QuadTreeObject{
         return world.build(x, y);
     }
 
-    public boolean isDone(){ // FINISHME: Surely most of this is redundant for no reason...
-        Tile tile = world.tile(x, y);
-        if(tile == null) return true;
-        Block tblock = tile.block();
-        if(breaking){
-            return tblock == Blocks.air || tblock == tile.floor();  // covering all the bases
-        }else{
-            return tblock == block && (tile.build == null || tile.build.rotation == rotation);
-        }
-    }
-
     public boolean isVisible(){
         final Rect r1 = Tmp.r1;
         return !worldContext || cameraBounds.overlaps(block.bounds(x, y, r1)) ||
-                (block instanceof ItemBridge b && Tmp.r2.set(cameraBounds).grow(2 * b.range * tilesizeF).overlaps(r1)) ||
-                (block instanceof PowerNode p && Tmp.r2.set(cameraBounds).grow(2 * tilesize * p.laserRange).overlaps(r1));
+            (block instanceof ItemBridge b && Tmp.r2.set(cameraBounds).grow(2 * b.range * tilesizeF).overlaps(r1)) ||
+            (block instanceof PowerNode p && Tmp.r2.set(cameraBounds).grow(2 * tilesize * p.laserRange).overlaps(r1));
     }
 
     public static void getVisiblePlans(Eachable<BuildPlan> plans, Seq<BuildPlan> output){
@@ -232,7 +232,7 @@ public class BuildPlan implements Position, Pool.Poolable, QuadTreeObject{
             out.setCentered(x * tilesize, y * tilesize, tilesize);
         }
     }
-    
+
     public Rect bounds(Rect rect){
         return block.bounds(x, y, rect);
     }

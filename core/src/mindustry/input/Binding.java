@@ -101,7 +101,7 @@ public enum Binding implements KeyBind{
     chat_mode(KeyCode.tab),
     console(KeyCode.f8),
 
-    tile_actions_menu_modifier(KeyCode.altLeft, "client.name"),
+    tile_actions_menu_modifier(KeyCode.altLeft, "client"),
     freecam_modifier(KeyCode.altLeft),
     reset_camera(KeyCode.r),
     place_waypoint(KeyCode.y),

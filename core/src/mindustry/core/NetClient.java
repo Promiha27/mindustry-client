@@ -41,7 +41,7 @@ import java.util.zip.*;
 import static mindustry.Vars.*;
 
 public class NetClient implements ApplicationListener{
-    private static final float dataTimeout = 60 * 30; // Give up after 30s (vanilla is 20s)
+    private static final float dataTimeout = 60 * 30;
     /** ticks between syncs, e.g. 5 means 60/5 = 12 syncs/sec*/
     private static final float playerSyncTime = 4;
     private static final Reads dataReads = new Reads(null);
@@ -69,7 +69,10 @@ public class NetClient implements ApplicationListener{
     private DataInputStream dataStream = new DataInputStream(byteStream);
     /** Packet handlers for custom types of messages. */
     private ObjectMap<String, Seq<Cons<String>>> customPacketHandlers = new ObjectMap<>();
-    /** Foo's thing to make ServerJoinEvent work good */
+    /** Packet handlers for custom types of messages, in binary. */
+    private ObjectMap<String, Seq<Cons<byte[]>>> customBinaryPacketHandlers = new ObjectMap<>();
+
+    /** Foo's addition to make ServerJoinEvent only fire on first join. */
     public static boolean firstLoad = true;
 
     public NetClient(){
@@ -149,11 +152,11 @@ public class NetClient implements ApplicationListener{
 
             Time.runTask(3f, ui.loadfrag::hide);
 
-            String title =
-                packet.reason == null ? "@disconnect" :
-                packet.reason.equals("closed") ? "@disconnect.closed" :
-                packet.reason.equals("timeout") ? "@disconnect.timeout" :
-                "@disconnect.error";
+            String title = packet.reason == null ? "@disconnect" : switch(packet.reason){
+                case "closed" -> "@disconnect.closed";
+                case "timeout" -> "@disconnect.timeout";
+                default -> "@disconnect.error";
+            };
             ui.showCustomConfirm(title, "@disconnect.closed", "@reconnect", "@ok", () -> ui.join.reconnect(), () -> {});
             //FINISHME: duped code, ctrl+f ui.showCustomConfirm
         });
@@ -174,10 +177,34 @@ public class NetClient implements ApplicationListener{
         return customPacketHandlers.get(type, Seq::new);
     }
 
+    public void addBinaryPacketHandler(String type, Cons<byte[]> handler){
+        customBinaryPacketHandlers.get(type, Seq::new).add(handler);
+    }
+
+    public Seq<Cons<byte[]>> getBinaryPacketHandlers(String type){
+        return customBinaryPacketHandlers.get(type, Seq::new);
+    }
+
+    @Remote(targets = Loc.server, variants = Variant.both)
+    public static void clientBinaryPacketReliable(String type, byte[] contents){
+        var arr = netClient.customBinaryPacketHandlers.get(type);
+        if(arr != null){
+            for(var c : arr){
+                c.get(contents);
+            }
+        }
+    }
+
+    @Remote(targets = Loc.server, variants = Variant.both, unreliable = true)
+    public static void clientBinaryPacketUnreliable(String type, byte[] contents){
+        clientBinaryPacketReliable(type, contents);
+    }
+
     @Remote(targets = Loc.server, variants = Variant.both)
     public static void clientPacketReliable(String type, String contents){
-        if(netClient.customPacketHandlers.containsKey(type)){
-            for(Cons<String> c : netClient.customPacketHandlers.get(type)){
+        var arr = netClient.customPacketHandlers.get(type);
+        if(arr != null){
+            for(Cons<String> c : arr){
                 c.get(contents);
             }
         }

@@ -20,6 +20,8 @@ public class BaseShield extends Block{
     //TODO game rule? or field? should vary by base.
     public float radius = 200f;
     public int sides = 24;
+    
+    public @Nullable Color shieldColor;
 
     public static Seq<BaseShield> baseShields = new Seq<>(2);
 
@@ -131,7 +133,7 @@ public class BaseShield extends Block{
 
                 Draw.z(Layer.shields);
 
-                Draw.color(team.color, Color.white, Mathf.clamp(hit));
+                Draw.color(shieldColor == null ? team.color : shieldColor, Color.white, Mathf.clamp(hit));
 
                 if(renderer.animateShields){
                     Fill.poly(x, y, sides, radius);

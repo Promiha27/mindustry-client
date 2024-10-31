@@ -297,9 +297,6 @@ enum class CustomMode(
 
 fun handleKick(reason: String) {
     Log.debug("Kicked from server '${ui.join.lastHost?.name ?: "unknown"}' for: '$reason'.")
-    if (reason == "Custom client detected.") {
-
-    }
 }
 
 // FINISHME: The jank is growing worse. The servers really need their own classes
