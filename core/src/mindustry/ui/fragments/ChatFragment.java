@@ -157,7 +157,7 @@ public class ChatFragment extends Table{
         chatfield.setProgrammaticChangeEvents(true);
         chatfield.setFilter((f, c) -> c != '\t'); // Using .changed(...) and allowing tabs causes problems for tab completion and cursor position, .typed(...) doesn't do what I need
         chatfield.changed(() -> {
-            chatfield.setMaxLength(chatfield.getText().startsWith("!js ") || chatfield.getText().startsWith("!kt ") ? 0 : maxTextLength - 2); // Scuffed way to allow long js
+            updateMaxLength();
 
             // FINISHME: Implement proper replacement & string interpolation system
             var replacement = switch (chatfield.getText().replaceFirst("^" + mode.normalizedPrefix(), "")) {
@@ -213,6 +213,16 @@ public class ChatFragment extends Table{
                 }
             }
         }
+    }
+
+    /** Updates the max length of the message based on command and server status */
+    private void updateMaxLength() {
+        int max = maxTextLength;
+        if (Server.io.b()) max = 256; // io allows longer messages FINISHME: Add this to fooplugin as an optional feature with a length specified by packet? Would require server to run a custom jar or provide their own mixin
+        max -= 2; // Account for 2 char message id
+        if (chatfield.getText().matches("^!(js|kt) ")) max = 0; // If running js or kt, allow infinite length
+        if (chatfield.getText().startsWith("!c ")) max = 503; // Max foo's chat length is 1000
+        chatfield.setMaxLength(max);
     }
 
     protected void rect(float x, float y, float w, float h){
@@ -526,7 +536,7 @@ public class ChatFragment extends Table{
     }
 
     public void updateChat(){
-        chatfield.setMaxLength(history.get(historyPos).startsWith("!js ") || history.get(historyPos).startsWith("!kt ") ? 0 : maxTextLength - 2);
+        updateMaxLength();
         chatfield.setText(mode.normalizedPrefix() + history.get(historyPos));
         updateCursor();
     }
@@ -640,6 +650,9 @@ public class ChatFragment extends Table{
         public float start, height;
         @Nullable public Seq<ClickableArea> buttons = new Seq<>(0); // This seq is deleted after 100 new messages to save ram
 
+        /** The real time at which the message was received */
+        public long receivedAt = Time.millis();
+
         /**
          * Creates a new ChatMessage.
          * @param message     The message as formatted by the server
@@ -658,6 +671,10 @@ public class ChatFragment extends Table{
         }
 
         public ChatMessage addButton(int start, int end, Runnable lambda) {
+            if (start < 0 || end > formattedMessage.length() || start > end) {
+                Log.warn("Trying to add button to @ at indices @ to @; this is invalid!", formattedMessage, start, end);
+                return this;
+            }
             if (buttons != null) {
                 buttons.add(new ClickableArea(start, end, lambda));
                 buttons.shrink();
@@ -667,7 +684,7 @@ public class ChatFragment extends Table{
 
         public ChatMessage addButton(String text, Runnable lambda) {
             int i = formattedMessage.indexOf(text);
-            return addButton(i, i + text.length(), lambda);
+            return i < 0 ? this : addButton(i, i + text.length(), lambda);
         }
 
         public ChatMessage clearButtons() {
@@ -700,7 +717,7 @@ public class ChatFragment extends Table{
     private enum ChatMode{
         normal(""),
         team("/t"),
-        admin("/a", player::admin),
+        admin("/a", () -> player.admin || Server.io.b() && ClientVars.rank >= 4),
         staff("/s", () -> Server.fish.b() && settings.getBool("fish-staff", false)),
         client("!c");
 

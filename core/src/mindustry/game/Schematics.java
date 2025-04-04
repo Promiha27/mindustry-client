@@ -25,6 +25,7 @@ import mindustry.gen.*;
 import mindustry.input.*;
 import mindustry.input.Placement.*;
 import mindustry.io.*;
+import mindustry.type.*;
 import mindustry.world.*;
 import mindustry.world.blocks.ConstructBlock.*;
 import mindustry.world.blocks.distribution.*;
@@ -77,6 +78,7 @@ public class Schematics implements Loadable{
 
     /** Load all schematics in the folder immediately.*/
     public void load(){
+        Time.mark();
         all.clear();
 
         var await = Seq.<Future<?>>with();
@@ -94,8 +96,11 @@ public class Schematics implements Loadable{
         })));
 
         loadLoadouts();
+        Time.mark();
         await.each(Threads::await);
+        Log.debug("Awaited schematics for @ms", Time.elapsed());
         all.sort();
+        Log.debug("Loaded @ schematics in @ms", all.size, Time.elapsed());
 
         if(shadowBuffer == null){
             Core.app.post(() -> shadowBuffer = new FrameBuffer(maxSchematicSize + padding + 8, maxSchematicSize + padding + 8));
@@ -112,6 +117,7 @@ public class Schematics implements Loadable{
             previews.remove(target);
         }
 
+        Pools.freeAll(target.tiles, true);
         target.tiles.clear();
         target.tiles.addAll(newSchematic.tiles);
         target.width = newSchematic.width;
@@ -140,7 +146,7 @@ public class Schematics implements Loadable{
             synchronized(all){
                 all.add(s);
             }
-                checkLoadout(s, true);
+            checkLoadout(s, true);
 
             //external file from workshop
             if(!s.file.parent().equals(schematicDirectory)){
@@ -209,8 +215,7 @@ public class Schematics implements Loadable{
             Seq<Schematic> keys = previews.orderedKeys().copy();
             for(int i = 0; i < previews.size - max; i++){
                 //dispose and remove unneeded previews
-                previews.get(keys.get(i)).dispose();
-                previews.remove(keys.get(i));
+                previews.remove(keys.get(i)).dispose();
             }
             //update last clear time
             lastClearTime = Time.millis();
@@ -285,7 +290,9 @@ public class Schematics implements Loadable{
     /** Creates an array of build plans from a schematic's data, centered on the provided x+y coordinates. */
     public Seq<BuildPlan> toPlans(Schematic schem, int x, int y){
         return schem.tiles.map(t -> new BuildPlan(t.x + x - schem.width/2, t.y + y - schem.height/2, t.rotation, t.block, t.config).original(t.x, t.y, schem.width, schem.height))
-            .removeAll(s -> (!s.block.isVisible() && !(s.block instanceof CoreBlock)) || !s.block.unlockedNow()).sort(Structs.comparingInt(s -> -s.block.schematicPriority));
+            .removeAll(s -> (!s.block.isVisible() && !(
+                s.block instanceof CoreBlock || (s.block.buildVisibility == BuildVisibility.sandboxOnly && s.block.category != Category.defense /*Exclude walls*/)
+            )) || !s.block.unlockedNow()).sort(Structs.comparingInt(s -> -s.block.schematicPriority));
     }
 
     /** @return all the valid loadouts for a specific core type. */
@@ -552,7 +559,6 @@ public class Schematics implements Loadable{
         return s;
     }
 
-    private static ThreadLocal<Reads> readsLocal = Threads.local(() -> new Reads(null));
     public static Schematic read(InputStream input) throws IOException{
         for(byte b : header){
             if(input.read() != b){
@@ -591,8 +597,7 @@ public class Schematics implements Loadable{
             int total = stream.readInt();
 
             Seq<Stile> tiles = new Seq<>(total);
-            var reads = readsLocal.get();
-            reads.input = stream;
+            var reads = new Reads(stream);
             for(int i = 0; i < total; i++){
                 Block block = blocks.get(stream.readByte());
                 int position = stream.readInt();

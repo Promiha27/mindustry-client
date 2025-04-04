@@ -37,6 +37,7 @@ import static mindustry.Vars.*;
 abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Drawc{
     static final float deathDelay = 60f;
     static final Queue<BuildPlan> persistPlans = new Queue<>(1);
+    static @Nullable Unit persistPlansFrom = null;
 
     @Import float x, y;
 
@@ -64,6 +65,7 @@ abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Dra
     transient boolean assisting;
     transient @Nullable TraceInfo trace;
     transient @Nullable String serverID;
+    transient boolean hasLoadedMap;
 
     public boolean isBuilder(){
         return unit != null && unit.canBuild();
@@ -80,7 +82,14 @@ abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Dra
     /** @return largest/closest core, with largest cores getting priority */
     @Nullable
     public CoreBuild bestCore(){
-        return team.cores().min(Structs.comps(Structs.comparingInt(c -> -c.block.size), Structs.comparingFloat(c -> c.dst(x, y))));
+        if(self() != Vars.player){
+            return team.cores().min(Structs.comps(Structs.comparingInt(c -> -c.block.size), Structs.comparingFloat(c -> c.dst(x, y))));
+        } else {
+            return team.cores().min(Structs.comps(
+                Structs.comparingBool(c -> (CoreBlock)c.block != ((CoreBlock)c.block).preferredCoreType),
+                Structs.comps(Structs.comparingInt(c -> -c.block.size), Structs.comparingFloat(c -> c.dst(x, y)))
+            ));
+        }
     }
 
     public TextureRegion icon(){
@@ -241,11 +250,12 @@ abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Dra
         if(this.unit != null){
             //un-control the old unit
             this.unit.resetController();
-            if(!headless && isLocal()) { // Plan persistence is client side only FINISHME: Move this to some other class
+            if(!headless && isLocal() && persistPlansFrom != this.unit) { // Plan persistence is client side only FINISHME: Move this to some other class
                 if(Navigation.currentlyFollowing instanceof BuildPath bp) bp.clearQueues();
                 persistPlans.clear(); // Don't want to stack multiple sets of plans...
                 persistPlans.ensureCapacity(this.unit.plans.size);
                 this.unit.plans.each(persistPlans::add);
+                persistPlansFrom = this.unit;
             }
             //restore last command issued before it was controlled
             if(lastCommand != null && this.unit.controller() instanceof CommandAI ai){
@@ -264,6 +274,8 @@ abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Dra
 
             if(!headless && isLocal() && !persistPlans.isEmpty()){ // Persist plans through unit swaps
                 if(!ClientVars.syncing && Time.timeSinceMillis(ClientVars.lastJoinTime) < 3000) persistPlans.clear(); // I can't find a more reliable way to not persist through map changes
+                control.input.playerPlanTree.clear();
+                player.unit().plans.each(control.input.playerPlanTree::insert);
                 persistPlans.each(unit::addBuild);
                 persistPlans.clear();
                 persistPlans.shrink(); // Don't want an array hanging around in memory, replace it with a 0 element array
@@ -272,6 +284,7 @@ abstract class PlayerComp implements UnitController, Entityc, Syncc, Timerc, Dra
 
         Events.fire(new UnitChangeEvent(self(), unit)); // Kept for vanilla compatibility
         Events.fire(new UnitChangeEventClient(self(), unit, oldUnit)); // Client needs the old unit.
+        if(!hasLoadedMap && unit != null && oldUnit == null) hasLoadedMap = true;
     }
 
     boolean dead(){

@@ -7,6 +7,9 @@ import arc.graphics.Texture.*;
 import arc.graphics.g2d.*;
 import arc.input.*;
 import arc.math.*;
+import arc.math.geom.*;
+import arc.scene.*;
+import arc.scene.event.*;
 import arc.scene.style.*;
 import arc.scene.ui.*;
 import arc.scene.ui.ImageButton.*;
@@ -43,6 +46,7 @@ public class SchematicsDialog extends BaseDialog{
     private Seq<String> tags, selectedTags = new Seq<>();
     private boolean checkedTags;
     private final ItemSeq reusableItemSeq = new ItemSeq();
+    private ScrollPane pane;
 
     public SchematicsDialog(){
         super("@schematics");
@@ -65,7 +69,7 @@ public class SchematicsDialog extends BaseDialog{
             checkedTags = true;
         }
 
-        search = "";
+        if(!Core.settings.getBool("schematicuicarryover")) search = "";
 
         cont.top();
         cont.clear();
@@ -81,6 +85,7 @@ public class SchematicsDialog extends BaseDialog{
                     rebuildPane.run();
                 }).growX().get();
                 searchField.setMessageText("@schematic.search");
+                searchField.setSelection(0, search.length());
                 searchField.clicked(KeyCode.mouseRight, () -> {
                     if(!search.isEmpty()){
                         search = "";
@@ -139,7 +144,7 @@ public class SchematicsDialog extends BaseDialog{
 
         cont.row();
 
-        cont.pane(t -> {
+        var pane = cont.pane(new Table(t -> {
             t.top();
 
             t.update(() -> {
@@ -258,7 +263,40 @@ public class SchematicsDialog extends BaseDialog{
             };
 
             rebuildPane.run();
-        }).grow().scrollX(false);
+        }){
+            @Override
+            public Element hit(float x, float y, boolean touchable){
+                if(cullingArea == null) return super.hit(x, y, touchable); // Fallback to vanilla behavior if cullingArea is null. Only happens for a few frames on open
+
+                float cullLeft = cullingArea.x;
+                float cullRight = cullLeft + cullingArea.width;
+                float cullBottom = cullingArea.y;
+                float cullTop = cullBottom + cullingArea.height;
+                if(x > cullRight || y > cullTop || x + getWidth() < cullLeft || y + getHeight() < cullBottom) return null; // Whole table is outside of culling bounds.
+
+                Vec2 point = Tmp.v5;
+                Element[] childrenArray = children.items;
+                for(int i = children.size - 1; i >= 0; i--){
+                    Element child = childrenArray[i];
+                    if(!child.visible || (child.x > cullRight || child.y > cullTop || child.x + child.getWidth() < cullLeft || child.y + child.getHeight() < cullBottom) && child.cullable) continue;
+                    child.parentToLocalCoordinates(point.set(x, y));
+                    Element hit = child.hit(point.x, point.y, touchable);
+                    if(hit != null) return hit;
+                }
+
+                // Element.hit pasted (to check if the table was the thing hit)
+                if(touchable && this.touchable != Touchable.enabled) return null;
+                Element e = this;
+                return x >= e.translation.x && x < width + e.translation.x && y >= e.translation.y && y < height + e.translation.y ? this : null;
+            }
+        }).grow().scrollX(false).get();
+        if(Core.settings.getBool("schematicuicarryover") && this.pane != null){
+            float scroll = this.pane.getVisualScrollY();
+            pane.invalidate();
+            pane.setScrollYForce(scroll);
+            pane.updateVisualScroll();
+        }
+        this.pane = pane;
     }
 
     public void showInfo(Schematic schematic){

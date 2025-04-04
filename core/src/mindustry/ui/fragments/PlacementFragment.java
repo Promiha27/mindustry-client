@@ -29,9 +29,7 @@ import mindustry.world.*;
 import mindustry.world.blocks.ConstructBlock.*;
 import mindustry.world.meta.*;
 
-import static arc.Core.*;
 import static mindustry.Vars.*;
-import static mindustry.client.ClientVars.*;
 
 public class PlacementFragment{
     final int rowWidth = 4;
@@ -132,14 +130,11 @@ public class PlacementFragment{
         if(Core.input.keyTap(Binding.pick) && !Core.scene.hasDialog() /*&& player.isBuilder()*/){ //mouse eyedropper select
             var build = world.buildWorld(Core.input.mouseWorld().x, Core.input.mouseWorld().y);
 
-            // Middle clicking enemy blocks is cool, Anuke. Why would you disable it smh.
-
-	    /*
-              //can't middle click buildings in fog
-	      if(build != null && build.inFogTo(player.team())){
-                   build = null;
-              }
-	    */
+            // FOO: allow middle clicking them anyways
+//            //can't middle click buildings in fog
+//            if(build != null && build.inFogTo(player.team())){
+//                build = null;
+//            }
 
             Block tryRecipe = build == null ? null : build instanceof ConstructBuild c ? c.current : build.block;
             Object tryConfig = build == null || !build.block.copyConfig ? null : build.config();
@@ -149,9 +144,9 @@ public class PlacementFragment{
                 Blocks.coreFoundation.isVisible() && Blocks.coreFoundation.unlockedNow() ? Blocks.coreFoundation :
                 null;
 
-            // TODO: Perhaps better overlap checking?
+            // FINISHME: Perhaps better overlap checking?
             boolean found = false;
-            for(BuildPlan req : frozenPlans){
+            for(BuildPlan req : ClientVars.frozenPlans){
                 if(!req.breaking && req.block.bounds(req.x, req.y, Tmp.r1).contains(Core.input.mouseWorld())){
                     tryRecipe = req.block;
                     tryConfig = req.config;
@@ -173,17 +168,17 @@ public class PlacementFragment{
                 var tile = world.tileWorld(Core.input.mouseWorldX(), Core.input.mouseWorldY());
                 if(tile != null){
                     tryRecipe =
-                    tile.block() != Blocks.air ? tile.block() :
-                    tile.overlay() != Blocks.air ? tile.overlay() :
-                    tile.floor() != Blocks.air ? tile.floor() : null;
+                        tile.block() != Blocks.air ? tile.block() :
+                            tile.overlay() != Blocks.air ? tile.overlay() :
+                                tile.floor() != Blocks.air ? tile.floor() : null;
                 }
             }
 
-            if(wasShard || tryRecipe != null && ((tryRecipe.isVisible() && unlocked(tryRecipe)) || state.rules.editor)){
+            if(tryRecipe != null && ((tryRecipe.isVisible() && unlocked(tryRecipe)) || state.rules.editor)){
                 input.block = tryRecipe;
-                if(tryRecipe != null) tryRecipe.lastConfig = tryConfig;
-                if(wasShard || tryRecipe.isVisible()){
-                    currentCategory = input.block == null ? Blocks.coreShard.category : input.block.category;
+                tryRecipe.lastConfig = tryConfig;
+                if(tryRecipe.isVisible()){
+                    currentCategory = input.block.category;
                 }
                 return true;
             }
@@ -275,8 +270,8 @@ public class PlacementFragment{
         }
 
         if(Core.input.keyTap(Binding.block_info)){
-            Unit hoveredUnit = null;
-            if((hoveredUnit = input.selectedUnit(true, true, false)) != null && !Core.input.alt()){ //i miss `if let Some(hoveredUnit) = input.selectedUnit(true) {` from Rust
+            Unit hoveredUnit;
+            if((hoveredUnit = input.selectedUnit(true, true, false)) != null && !Core.input.alt()){
                 //Show info for the unit
                 if(hoveredUnit.type.unlockedNow()){
                     ui.content.show(hoveredUnit.type);
@@ -299,14 +294,7 @@ public class PlacementFragment{
     public void build(Group parent){
         parent.fill(full -> {
             toggler = full;
-            full.bottom().right().visible(() -> {
-                if(state.rules.editor){
-                    //force update the mouse picking, since it otherwise would not happen
-                    updatePick(control.input);
-                }
-
-                return ui.hudfrag.shown && !state.rules.editor;
-            });
+            full.bottom().right().visible(() -> ui.hudfrag.shown);
 
             full.table(frame -> {
 
@@ -320,7 +308,7 @@ public class PlacementFragment{
                     ButtonGroup<ImageButton> group = new ButtonGroup<>();
                     group.setMinCheckCount(0);
 
-                    for(Block block : (search == null || getUnlockedBySearch(search.getText()).isEmpty() || search.getText().isEmpty()) ? getUnlockedByCategory(currentCategory) : getUnlockedBySearch(search.getText())){
+                    for(Block block : (search == null || search.getText().isEmpty() || getUnlockedBySearch(search.getText()).isEmpty()) ? getUnlockedByCategory(currentCategory) : getUnlockedBySearch(search.getText())){
                         if(!unlocked(block)) continue;
                         if(index++ % rowWidth == 0){
                             blockTable.row();
@@ -328,7 +316,7 @@ public class PlacementFragment{
 
                         ImageButton button = blockTable.button(new TextureRegionDrawable(block.uiIcon), Styles.selecti, () -> {
                             if(unlocked(block)){
-                                if(Core.input.keyDown(KeyCode.shiftLeft) && Fonts.getUnicode(block.name) != 0){
+                                if((Core.input.keyDown(KeyCode.shiftLeft) || Core.input.keyDown(KeyCode.controlLeft)) && Fonts.getUnicode(block.name) != 0){
                                     Core.app.setClipboardText((char)Fonts.getUnicode(block.name) + "");
                                     ui.showInfoFade("@copied");
                                 }else{
@@ -404,9 +392,9 @@ public class PlacementFragment{
                                     Seq<Block> blocks = getByCategory(currentCategory);
                                     for(int i = 0; i < blocks.size; i++){
                                         if(blocks.get(i) == displayBlock && (i + 1) / 10 - 1 < blockSelect.length){
-                                            keyCombo = bundle.format("placement.blockselectkeys", keybinds.get(blockSelect[currentCategory.ordinal()]).key.toString())
-                                                + (i < 10 ? "" : keybinds.get(blockSelect[(i + 1) / 10 - 1]).key.toString() + ",")
-                                                + keybinds.get(blockSelect[i % 10]).key.toString() + "]";
+                                            keyCombo = Core.bundle.format("placement.blockselectkeys", Core.keybinds.get(blockSelect[currentCategory.ordinal()]).key.toString())
+                                                + (i < 10 ? "" : Core.keybinds.get(blockSelect[(i + 1) / 10 - 1]).key.toString() + ",")
+                                                + Core.keybinds.get(blockSelect[i % 10]).key.toString() + "]";
                                             break;
                                         }
                                     }
@@ -414,8 +402,8 @@ public class PlacementFragment{
                                 final String keyComboFinal = keyCombo;
                                 header.left();
                                 header.add(new Image(displayBlock.uiIcon)).size(8 * 4);
-                                header.labelWrap(() -> !unlocked(displayBlock) ? bundle.get("block.unknown") : displayBlock.localizedName + keyComboFinal)
-                                .left().width(190f).padLeft(5);
+                                header.labelWrap(() -> !unlocked(displayBlock) ? Core.bundle.get("block.unknown") : displayBlock.localizedName + keyComboFinal)
+                                    .left().width(190f).padLeft(5);
                                 header.add().growX();
                                 if(unlocked(displayBlock)){
                                     header.button("?", Styles.flatBordert, () -> {
@@ -798,16 +786,14 @@ public class PlacementFragment{
 
     /** @return the thing being hovered over. */
     public @Nullable Displayable hovered(){
-        if(!state.rules.editor){
-            Vec2 v = topTable.stageToLocalCoordinates(Core.input.mouse());
+        Vec2 v = topTable.stageToLocalCoordinates(Core.input.mouse());
 
-            //if the mouse intersects the table or the UI has the mouse, no hovering can occur
-            if(Core.scene.hasMouse() || topTable.hit(v.x, v.y, false) != null) return hover;
-        }
+        //if the mouse intersects the table or the UI has the mouse, no hovering can occur
+        if(Core.scene.hasMouse(Core.input.mouseX(), Core.input.mouseY()) || topTable.hit(v.x, v.y, false) != null) return null;
 
         if (!ClientVars.hidingUnits) {
             //check for a unit
-            Unit unit = Units.closestOverlap(Core.input.mouseWorldX(), Core.input.mouseWorldY(), input.shift() ? tilesize * 6 : 5f, u -> !u.isLocal() && u.displayable());
+            Unit unit = Units.closestOverlap(Core.input.mouseWorldX(), Core.input.mouseWorldY(), Core.input.shift() ? tilesize * 6 : 5f, u -> !u.isLocal() && u.displayable());
             //if cursor has a unit, display it
             if (unit != null) return unit;
         }
@@ -816,7 +802,7 @@ public class PlacementFragment{
         Tile hoverTile = world.tileWorld(Core.input.mouseWorld().x, Core.input.mouseWorld().y);
         if(hoverTile != null){
             //if the tile has a building, display it
-            if(hoverTile.build != null && hoverTile.build.displayable()){
+            if(hoverTile.build != null && hoverTile.build.displayable() /*&& !hoverTile.build.inFogTo(player.team())*/){
                 return nextFlowBuild = hoverTile.build;
             }
 

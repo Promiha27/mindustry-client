@@ -350,7 +350,7 @@ fun setupCommands() {
         }
     }
 
-    register("clearghosts [c]", Core.bundle.get("client.command.clearghosts.description")) { args, player -> 
+    register("clearghosts [c]", Core.bundle.get("client.command.clearghosts.description")) { args, player ->
         val confirmed = args.any() && args[0].startsWith("c") // Don't clear by default
         val all = confirmed && isDeveloper() && args[0] == "clear"
         val plans = mutableListOf<Int>()
@@ -394,11 +394,11 @@ fun setupCommands() {
         // FINISHME: success message
     }
 
-    register("c <message...>", Core.bundle.get("client.command.c.description")) { args, _ -> 
+    register("c <message...>", Core.bundle.get("client.command.c.description")) { args, _ ->
         Main.send(ClientMessageTransmission(args[0]).apply { addToChatfrag() })
     }
 
-    register("mapinfo [team]", Core.bundle.get("client.command.mapinfo.description")) { args, player -> 
+    register("mapinfo [team]", Core.bundle.get("client.command.mapinfo.description")) { args, player ->
         val team = if (args.isEmpty()) player.team() else findTeam(args[0])
         player.sendMessage(with(state) {
             """
@@ -432,7 +432,7 @@ fun setupCommands() {
             }
     }
 
-    register("unloaders <item> [enabledOnly] [setOnly]", Core.bundle.get("client.command.unloaders.description")) { args, player -> 
+    register("unloaders <item> [enabledOnly] [setOnly]", Core.bundle.get("client.command.unloaders.description")) { args, player ->
         val item = findItem(args[0])
         val enabledOnly = args.size < 2 || parseBool(args[1])
         val setOnly = args.size < 3 || parseBool(args[2])
@@ -483,21 +483,21 @@ fun setupCommands() {
         replaceMsg(args[0], args.size > 3 && args[3] == "t", args[1], args.size > 4 && args[4] == "t", args[2])
     }
 
-//    register("phasei <interval>", Core.bundle.get("client.command.phasei.description")) { args, player -> FINISHME: Needs to be reimplemented
-//        try{
-//            val interval = Integer.parseInt(args[0])
-//            val maxInterval = (Blocks.phaseConveyor as ItemBridge).range
-//            if(interval < 1 || interval > maxInterval){
-//                player.sendMessage("[scarlet]Interval must be within 1 and $maxInterval!")
-//                return@register
-//            }
-//            ItemBridge.phaseWeaveInterval = interval
-//            Core.settings.put("weaveEndInterval", interval)
-//            player.sendMessage("[accent]Successfully set interval to $interval.")
-//        } catch (e : Exception){
-//            player.sendMessage("[scarlet]Failed to parse integer!")
-//        }
-//    }
+    register("phasei <interval>", Core.bundle.get("client.command.phasei.description")) { args, player ->
+        try{
+            val interval = Integer.parseInt(args[0])
+            val maxInterval = (Blocks.phaseConveyor as ItemBridge).range
+            if(interval < 1 || interval > maxInterval){
+                player.sendMessage(Core.bundle.format("client.command.phasei.invalidargs", maxInterval))
+                return@register
+            }
+            Core.settings.put("phaseweaveinterval", interval)
+            Core.settings.remove("weaveEndInterval")
+            player.sendMessage(Core.bundle.format("client.command.phasei.success", interval))
+        } catch (e : Exception){
+            player.sendMessage(Core.bundle.format("client.command.phasei.err"))
+        }
+   }
 
     register("pathing", Core.bundle.get("client.command.pathing.description")) { _, player ->
         if (navigator is AStarNavigator) {
@@ -511,13 +511,13 @@ fun setupCommands() {
 
     register("pic [quality]", Core.bundle.get("client.command.pic.description")) { args, player ->
         if (args.isEmpty()) {
-            player.sendMessage(Core.bundle.format("client.command.pic.invalidargs", jpegQuality, if (jpegQuality == 0f) "png" else ""))
+            player.sendMessage(Core.bundle.format("client.command.pic.invalidargs", jpegQuality, if (jpegQuality == 0f) " (png)" else ""))
             return@register
         }
         try {
             val quality = args[0].toFloat()
             if (quality !in 0f .. 1f) {
-                player.sendMessage(Core.bundle.format("client.command.pic.invalidargs", jpegQuality, if (jpegQuality == 0f) "png" else ""))
+                player.sendMessage(Core.bundle.format("client.command.pic.invalidargs", jpegQuality, if (jpegQuality == 0f) " (png)" else ""))
                 return@register
             }
             jpegQuality = quality
@@ -525,7 +525,8 @@ fun setupCommands() {
             player.sendMessage(Core.bundle.format("client.command.pic.success", if (quality == 0f) "png" else quality))
         } catch (e: Exception) {
             Log.err(e)
-            if (e is NumberFormatException) player.sendMessage(Core.bundle.format("client.command.pic.invalidargs", jpegQuality, if (jpegQuality == 0f) "png" else ""))
+            if (e is NumberFormatException)
+                player.sendMessage(Core.bundle.format("client.command.pic.invalidargs", jpegQuality, if (jpegQuality == 0f) " (png)" else ""))
             else player.sendMessage(Core.bundle.get("client.command.pic.error"))
         }
     }
@@ -712,7 +713,7 @@ fun setupCommands() {
         Server.ohnoTask?.cancel()
         Server.ohnoTask = Server.ohno()
     }
-    
+
     // Special commands
 
     register("seer", "client.command.seer.description".bundle()) { _, player ->

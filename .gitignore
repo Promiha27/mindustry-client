@@ -46,7 +46,6 @@ config/
 buildSrc/
 *.gif
 /tests/out
-/buildSrc/build
 
 /core/assets/basepartnames
 version.properties

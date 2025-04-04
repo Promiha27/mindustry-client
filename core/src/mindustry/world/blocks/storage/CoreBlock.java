@@ -33,6 +33,8 @@ import mindustry.world.modules.*;
 import static mindustry.Vars.*;
 import static mindustry.client.ClientVars.coreItemsDisplay;
 
+import org.jetbrains.annotations.Nullable;
+
 public class CoreBlock extends StorageBlock{
     protected static final float cloudScaling = 1700f, cfinScl = -2f, cfinOffset = 0.3f, calphaFinOffset = 0.25f, cloudAlpha = 0.81f;
     protected static final float[] cloudAlphas = {0, 0.5f, 1f, 0.1f, 0, 0f};
@@ -59,6 +61,8 @@ public class CoreBlock extends StorageBlock{
     public float landZoomFrom = 0.02f, landZoomTo = 4f;
 
     public float captureInvicibility = 60f * 15f;
+
+    public static @Nullable CoreBlock preferredCoreType = null;
 
     public CoreBlock(String name){
         super(name);
@@ -801,12 +805,21 @@ public class CoreBlock extends StorageBlock{
         }
 
         @Override
-        public void buildConfiguration(Table table){
-            if(!state.isCampaign() || net.client()){
-                deselect();
-                return;
-            }
+        public boolean onConfigureBuildTapped(Building other){
+            deselect();
+            return other != this;
+        }
 
+        @Override
+        public void buildConfiguration(Table table){
+            // Client: Always have configuration to set preferred core
+            table.button(Icon.commandRally, Styles.clearTogglei, () -> {
+                preferredCoreType = preferredCoreType == this.block ? null : (CoreBlock)this.block;
+            }).size(40f)
+            .checked(b -> this.block == preferredCoreType)
+            .tooltip(Core.bundle.format("client.preferredcore", this.block.localizedName));
+
+            if(state.isCampaign() && !net.client()){
             table.button(Icon.downOpen, Styles.cleari, () -> {
                 ui.planet.showSelect(state.rules.sector, other -> {
                     if(state.isCampaign()){
@@ -815,6 +828,7 @@ public class CoreBlock extends StorageBlock{
                 });
                 deselect();
             }).size(40f);
+            } // Else deselect
         }
     }
 }

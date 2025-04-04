@@ -177,7 +177,9 @@ public class Reconstructor extends UnitBlock{
 
         public boolean canSetCommand(){
             var output = unit();
-            return output != null && output.commands.size > 1 && output.allowChangeCommands;
+            return output == null || output.allowChangeCommands;
+            // Foos: Allow configuring even without unit
+            // return output != null && output.commands.length > 1;
         }
 
         @Override
@@ -194,10 +196,10 @@ public class Reconstructor extends UnitBlock{
         public void buildConfiguration(Table table){
             var unit = unit();
 
-            if(unit == null){
-                deselect();
-                return;
-            }
+            // if(unit == null){
+            //     deselect();
+            //     return;
+            // }
 
             var group = new ButtonGroup<ImageButton>();
             group.setMinCheckCount(0);
@@ -205,7 +207,7 @@ public class Reconstructor extends UnitBlock{
 
             table.background(Styles.black6);
 
-            var list = unit().commands;
+            var list = unit == null ? Vars.content.unitCommands().copy() : unit().commands;
             for(var item : list){
                 ImageButton button = table.button(item.getIcon(), Styles.clearNoneTogglei, 44f, () -> {
                     configure(item);
@@ -213,7 +215,7 @@ public class Reconstructor extends UnitBlock{
                 }).tooltip(item.localized()).group(group).get();
                 // button.getImage().setSize(20f); //this doesn't work, FINISHME: TODO: fix
 
-                button.update(() -> button.setChecked(command == item || (command == null && unit.defaultCommand == item)));
+                button.update(() -> button.setChecked(command == item || (command == null && unit != null && unit.defaultCommand == item)));
 
                 if(++i % columns == 0){
                     table.row();

@@ -197,6 +197,7 @@ public class ItemModule extends BlockModule{
     }
 
     public @Nullable Item take(){
+        if(total == 0) return null;
         for(int i = 0; i < items.length; i++){
             int index = (i + takeRotation);
             if(index >= items.length) index -= items.length;
