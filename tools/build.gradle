@@ -7,6 +7,7 @@ buildscript {
 sourceSets.main.java.srcDirs = ["src/"]
 sourceSets.main.kotlin.srcDirs = ["src/"]
 
+
 import arc.files.Fi
 import arc.files.ZipFi
 import arc.func.Func2
@@ -14,6 +15,7 @@ import arc.graphics.Color
 import arc.graphics.Pixmap
 import arc.graphics.Pixmaps
 import arc.packer.TexturePacker
+import arc.struct.IntMap
 import arc.struct.ObjectMap
 import arc.struct.OrderedMap
 import arc.struct.Seq
@@ -251,9 +253,9 @@ task fontgen(dependsOn: classes, type: JavaExec){
         //TODO this is broken
 
         Log.info(OS.exec("fontforge", "-script",
-            Fi.get("core/assets-raw/fontgen/merge.pe").absolutePath(),
-            Fi.get("core/assets/fonts/font.woff").absolutePath(),
-            Fi.get("core/assets-raw/fontgen/out/font.woff").absolutePath())
+                Fi.get("core/assets-raw/fontgen/merge.pe").absolutePath(),
+                Fi.get("core/assets/fonts/font.woff").absolutePath(),
+                Fi.get("core/assets-raw/fontgen/out/font.woff").absolutePath())
         )
 
         Log.info("Done.")
@@ -305,6 +307,15 @@ task updateBundles{
         PropertiesUtils.load(base, Fi.get("core/assets/bundles/bundle.properties").reader())
         Seq<String> removals = new Seq<>()
 
+        IntMap<String> commentAndBlankLines = new IntMap<>()
+        var lines = Fi.get("core/assets/bundles/bundle.properties").reader().readLines()
+        int offset = 0
+        for (int i = 0; i < lines.size(); i++) {
+            var line = lines.get(i)
+            if (i > 0 && lines.get(i - 1).endsWith("\\")) offset++
+            else if (line.isEmpty() || line.startsWith("#")) commentAndBlankLines.put(i - offset, line)
+        }
+
         Log.info("Updating bundles...")
 
         Fi.get("core/assets/bundles").walk(child -> {
@@ -319,17 +330,18 @@ task updateBundles{
             ObjectMap<String, String> comments = new ObjectMap<>()
             StringBuilder curComment = new StringBuilder()
 
-            for(String line : Seq.with(child.readString().split("\n", -1))){
-                if(line.startsWith("#") || line.isEmpty()){
-                    curComment.append(line).append("\n")
-                }else if(line.contains("=")){
-                    String lastKey = line.substring(0, line.indexOf("=")).trim()
-                    if(curComment.length() != 0){
-                        comments.put(lastKey, curComment.toString())
-                        curComment.setLength(0)
-                    }
-                }
-            }
+            // FOO: This is disgusting. We have a different impl that copies comments and newlines from the main bundle instead
+//            for(String line : Seq.with(child.readString().split("\n", -1))){
+//                if(line.startsWith("#")){
+//                    curComment.append(line).append("\n")
+//                }else if(line.contains("=")){
+//                    String lastKey = line.substring(0, line.indexOf("=")).trim()
+//                    if(curComment.length() != 0){
+//                        comments.put(lastKey, curComment.toString())
+//                        curComment.setLength(0)
+//                    }
+//                }
+//            }
 
             ObjectMap<String, String> extras = new OrderedMap<>()
             PropertiesUtils.load(other, child.reader())
@@ -367,8 +379,10 @@ task updateBundles{
             if(removals.size + added > 0) Log.info("Writing bundle to @", output)
             StringBuilder result = new StringBuilder()
 
+            int i = 0
             //add everything ordered
             for(String key : base.orderedKeys().copy().add(extras.keys().toSeq())){
+                while(commentAndBlankLines.containsKey(i++)) result.append(commentAndBlankLines.get(i - 1) + "\n")
                 if(other.get(key) == null) continue
 
                 result.append(processor.get(key, other.get(key)))
