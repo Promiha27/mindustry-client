@@ -16,6 +16,7 @@ import arc.util.serialization.*;
 import arc.util.serialization.Jval.*;
 import kotlin.*;
 import mindustry.*;
+import mindustry.client.utils.*;
 import mindustry.core.*;
 import mindustry.ctype.*;
 import mindustry.game.EventType.*;
@@ -32,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static mindustry.Vars.*;
+import static arc.Core.*;
 
 public class Mods implements Loadable{
     public static final String[] metaFiles = {"mod.json", "mod.hjson", "plugin.json", "plugin.hjson"};

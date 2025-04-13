@@ -89,7 +89,7 @@ public class UnAssistPath extends Path {
                 if (plan != null) {
                     if (plan.initialized) {
                         if (plan.tile().build instanceof ConstructBlock.ConstructBuild build) {
-                            if (build.current.buildCost > 10) {
+                            if (build.current.buildTime > 10) {
                                 if (plan.breaking) {
                                     toUndo.add(pool.obtain().set(plan.x, plan.y, build.rotation, build.current, build.lastConfig));
                                 } else {

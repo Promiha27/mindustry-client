@@ -1868,15 +1868,16 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
                     }
                 }
             }
-        }
 
-        if (isFreezeQueueing) {
-            it = frozenPlans.iterator();
-            while (it.hasNext()) {
-                BuildPlan plan = it.next();
-                if (!plan.breaking && plan.bounds(Tmp.r2).overlaps(Tmp.r1)) it.remove();
+            if (isFreezeQueueing) {
+                it = frozenPlans.iterator();
+                while (it.hasNext()) {
+                    BuildPlan plan = it.next();
+                    if (!plan.breaking && plan.bounds(Tmp.r2).overlaps(Tmp.r1)) it.remove();
+                }
             }
         }
+
 
         removed.clear();
 

@@ -423,6 +423,10 @@ public class BlockIndexer{
         return findEnemyTile(team, x, y, range, priority, false, pred);
     }
 
+    public Building findEnemyTile(Team team, float x, float y, float range, boolean allowUntargetable, Boolf<Building> pred){
+        return findEnemyTile(team, x, y, range, UnitSorts.buildingDefault, allowUntargetable, pred);
+    }
+
     public Building findEnemyTile(Team team, float x, float y, float range, BuildingPriorityf priority, boolean allowUntargetable, Boolf<Building> pred){
         Building target = null;
         float targetDist = 0;

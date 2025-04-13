@@ -50,7 +50,7 @@ public class BlockInventoryFragment{
 
     public void showFor(Building t){
         if(this.build == t){
-            if(t.getPayload() instanceof BuildPayload pay && pay.build.block().hasItems && pay.build.items.total() > 0){
+            if(t.getPayload() instanceof BuildPayload pay && pay.build.block.hasItems && pay.build.items.total() > 0){
                 t = pay.build;
             }else{
                 hide();

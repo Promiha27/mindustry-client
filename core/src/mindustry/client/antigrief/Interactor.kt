@@ -23,7 +23,7 @@ open class UnitInteractor(unit: Unit?) : Interactor {
             "to ${(unit.controller() as CommandAI).currentCommand()?.name ?: "unknown"}"
         unit?.controller() is LogicAI -> {
             val lcontrol = (unit.controller() as? LogicAI)?.controller
-            "${unit.type.localizedName} logic-controlled by ${lcontrol?.block()?.localizedName} (${lcontrol?.tileX()}, ${lcontrol?.tileY()}) accessed by ${lcontrol?.lastAccessed}"
+            "${unit.type.localizedName} logic-controlled by ${lcontrol?.block?.localizedName} (${lcontrol?.tileX()}, ${lcontrol?.tileY()}) accessed by ${lcontrol?.lastAccessed}"
         }
         unit?.controller() is AIController -> {
             val controllerName = when (unit.controller()) {
