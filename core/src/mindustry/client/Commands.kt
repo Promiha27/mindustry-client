@@ -356,8 +356,7 @@ fun setupCommands() {
         val plans = mutableListOf<Int>()
 
         for (plan in player.team().data().plans) {
-            val block = content.block(plan.block.toInt())
-            if (!(all || Navigation.getTree().use { any(plan.x * tilesizeF, plan.y * tilesizeF, block.size * tilesizeF, block.size * tilesizeF) })) continue
+            if (!(all || Navigation.getTree().use { any(plan.x * tilesizeF, plan.y * tilesizeF, plan.block.size * tilesizeF, plan.block.size * tilesizeF) })) continue
 
             plans.add(Point2.pack(plan.x.toInt(), plan.y.toInt()))
         }

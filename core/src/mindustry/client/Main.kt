@@ -324,7 +324,7 @@ object Main : ApplicationListener {
                 break
             }
         }
-        data.plans.addFirst(BlockPlan(plan.x, plan.y, plan.rotation.toShort(), plan.block.id, plan.config))
+        data.plans.addFirst(BlockPlan(plan.x, plan.y, plan.rotation.toShort(), plan.block, plan.config))
     }
 
     private fun registerTlsListeners(commsClient: Packets.CommunicationClient, system: TlsCommunicationSystem) {
