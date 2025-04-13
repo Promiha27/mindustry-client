@@ -1173,6 +1173,12 @@ public class Mods implements Loadable{
         return files.length == 1 && files[0].isDirectory() ? files[0] : fi;
     }
 
+    /** Loads a mod file+meta, but does not add it to the list.
+     * Note that directories can be loaded as mods. */
+    private LoadedMod loadMod(Fi sourceFile) throws Exception{
+        return loadMod(sourceFile, false, true);
+    }
+
     private final ObjectMap<String, Runnable> autoUpdatedMods = new ObjectMap<>();
     { // This is jank. I do not mind.
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
