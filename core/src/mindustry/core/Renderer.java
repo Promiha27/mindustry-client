@@ -47,6 +47,8 @@ public class Renderer implements ApplicationListener{
     public float weatherAlpha;
     /** minZoom = zooming out, maxZoom = zooming in */
     public float minZoom = 1.5f, maxZoom = 6f; // Note: These aren't used for client min/max zoom, don't change or vanilla compat breaks
+    /** minZoom = zooming out, maxZoom = zooming in, used by actual gameplay zoom and regulated by settings **/
+    public float minZoomInGame = 0.5f, maxZoomInGame = 6f; // Note: These aren't used for client min/max zoom, don't change or vanilla compat breaks
     public Seq<EnvRenderer> envRenderers = new Seq<>();
     public ObjectMap<String, Runnable> customBackgrounds = new ObjectMap<>();
     public TextureRegion[] bubbles = new TextureRegion[16], splashes = new TextureRegion[12];
@@ -150,6 +152,7 @@ public class Renderer implements ApplicationListener{
 
     @Override
     public void update(){
+        PerfCounter.render.begin();
         Color.white.set(1f, 1f, 1f, 1f);
 
         float baseTarget = targetscale;
@@ -168,6 +171,8 @@ public class Renderer implements ApplicationListener{
         drawStatus = settings.getBool("blockstatus");
         enableEffects = settings.getBool("effects");
         drawDisplays = !settings.getBool("hidedisplays");
+        maxZoomInGame = settings.getFloat("maxzoomingamemultiplier", 1) * maxZoom;
+        minZoomInGame = minZoom / settings.getFloat("minzoomingamemultiplier", 1);
         drawLight = settings.getBool("drawlight", true);
         pixelate = settings.getBool("pixelate");
 
@@ -218,6 +223,8 @@ public class Renderer implements ApplicationListener{
 
             camera.position.sub(camShakeOffset);
         }
+
+        PerfCounter.render.end();
     }
 
     public void updateAllDarkness(){
@@ -311,7 +318,6 @@ public class Renderer implements ApplicationListener{
         Draw.draw(Layer.block - 0.09f, () -> {
             blocks.floor.beginDraw();
             blocks.floor.drawLayer(CacheLayer.walls);
-            blocks.floor.endDraw();
         });
 
         Draw.drawRange(Layer.blockBuilding, () -> Draw.shader(Shaders.blockbuild, true), Draw::shader);

@@ -31,8 +31,8 @@ buildscript{
 }
 
 plugins{
-    id "org.jetbrains.kotlin.jvm" version "2.0.10" apply false
-    id "org.jetbrains.kotlin.kapt" version "2.0.10" apply false
+    id "org.jetbrains.kotlin.jvm" version "2.1.10" apply false
+    id "org.jetbrains.kotlin.kapt" version "2.1.10" apply false
 }
 
 allprojects{
@@ -40,11 +40,11 @@ allprojects{
     group = 'com.github.mindustry-antigrief'
 
     ext{
-        versionNumber = '7'
+        versionNumber = '8'
         if(!project.hasProperty("updateUrl")) updateUrl = ''
         if(!project.hasProperty("assetUrl")) assetUrl = 'mindustry-antigrief/mindustry-client'
         if(!project.hasProperty("assetRef")) assetRef = 'v8'
-        if(!project.hasProperty("versionModifier")) versionModifier = 'bleeding-edge'
+        if(!project.hasProperty("versionModifier")) versionModifier = 'beta'
         if(!project.hasProperty("buildversion")) buildversion = '25411'
         if(!project.hasProperty("clientVersion")) clientVersion = 'v1.0.0, Jan. 1, 1970'
         if(!project.hasProperty("versionType")) versionType = 'official'

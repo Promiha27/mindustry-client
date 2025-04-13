@@ -23,6 +23,7 @@ ios/libs/
 /tools/build/
 /tests/build/
 /server/build/
+ios/libs/
 changelog
 saves/
 /core/assets-raw/fontgen/out/
@@ -177,3 +178,5 @@ jdks/
 # Kotlin
 .kotlin/
 fooKotlinScriptSupport.jar
+# project files for the sectors
+core/assets-raw/sprites/ui/sectors/*.json

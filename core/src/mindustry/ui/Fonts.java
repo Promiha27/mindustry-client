@@ -153,11 +153,30 @@ public class Fonts{
 
         stringIcons.put("alphachan", stringIcons.get("alphaaaa"));
 
+        //TODO: mod emojis  can't work because most mod icons are not on the UI page!
+        /*
+        if(Vars.mods.list().contains(m -> m.shouldBeEnabled())){
+            ContentType[] types = {ContentType.liquid, ContentType.item, ContentType.block, ContentType.status, ContentType.unit};
+            int startChar = 0xE000 + 1;
+
+            for(var type : types){
+                for(var cont : Vars.content.getBy(type)){
+                    if(!cont.isVanilla() && cont instanceof UnlockableContent u && u.uiIcon.found()){
+                        int id = startChar;
+
+                        registerIcon(u.name, u.uiIcon instanceof AtlasRegion atlas ? atlas.name : u.name, id, u.uiIcon);
+
+                        startChar ++;
+                    }
+                }
+            }
+        }*/
+
         for(Team team : Team.baseTeams){
             team.emoji = stringIcons.get(team.name, "");
         }
     }
-    
+
     public static void loadContentIconsHeadless(){
         try(var reader = Core.files.internal("icons/icons.properties").reader(Vars.bufferSize)){
             String line;

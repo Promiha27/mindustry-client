@@ -22,9 +22,6 @@ import static arc.Core.*;
 import static mindustry.Vars.*;
 
 public class OverdriveProjector extends Block{
-    @Deprecated
-    public final int timerUse = timers++;
-
     public @Load("@-top") TextureRegion topRegion;
     public float reload = 60f;
     public float range = 80f;

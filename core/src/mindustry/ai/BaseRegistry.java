@@ -90,7 +90,7 @@ public class BaseRegistry{
                     return false;
             });
 
-                part.tier = schem.tiles.sumf(s -> Mathf.pow(s.block.buildCost / s.block.buildCostMultiplier, 1.4f));
+                part.tier = schem.tiles.sumf(s -> Mathf.pow(s.block.buildTime / s.block.buildCostMultiplier, 1.4f));
 
                 if(part.core != null){
                     cores.add(part);

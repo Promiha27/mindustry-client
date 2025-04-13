@@ -11,6 +11,7 @@ import arc.struct.*;
 import arc.util.*;
 import arc.util.noise.*;
 import mindustry.ctype.*;
+import mindustry.entities.part.*;
 import mindustry.game.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
@@ -509,7 +510,7 @@ public class Generators{
         });
 
         generate("unit-icons", () -> content.units().each(type -> {
-            if(type.internal) return; //internal hidden units don't generate
+            if(type.internal && !type.internalGenerateSprites) return; //internal hidden units don't generate
 
             ObjectSet<String> outlined = new ObjectSet<>();
 
@@ -528,6 +529,28 @@ public class Generators{
 
                 for(TextureRegion region : toOutline){
                     save(get(region, false).outline(type.outlineColor, type.outlineRadius), ((GenRegion)region).name + "-outline", true);
+                }
+
+                Seq<DrawPart> allParts = new Seq<>();
+
+                //this code is complete trash
+                Cons<Seq<DrawPart>>[] allDrawIter = new Cons[]{null};
+                allDrawIter[0] = seq -> {
+                    for(DrawPart part : seq){
+                        allParts.add(part);
+                        if(part instanceof RegionPart){
+                            allDrawIter[0].get(((RegionPart)part).children);
+                        }
+                    }
+                };
+                allDrawIter[0].get(type.parts);
+
+                for(DrawPart part : allParts){
+                    if(part instanceof RegionPart && ((RegionPart)part).replaceOutline){
+                        for(TextureRegion r : ((RegionPart)part).regions){
+                            outliner.get(r);
+                        }
+                    }
                 }
 
                 Seq<Weapon> weapons = type.weapons;
@@ -581,7 +604,8 @@ public class Generators{
                 if(sample instanceof Legsc) outliner.get(type.legRegion);
                 if(sample instanceof Tankc) outliner.get(type.treadRegion);
 
-                Pixmap image = type.segments > 0 ? get(type.segmentRegions[0]) : outline.get(get(type.previewRegion));
+                //TODO: for drawBody false, an empty pixmap is used; this is a hack
+                Pixmap image = type.segments > 0 ? get(type.segmentRegions[0]) : type.drawBody ? outline.get(get(type.previewRegion)) : new Pixmap(1, 1);
 
                 Func<Weapon, Pixmap> weaponRegion = weapon -> Core.atlas.has(weapon.name + "-preview") ? get(weapon.name + "-preview") : get(weapon.region);
                 Cons2<Weapon, Pixmap> drawWeapon = (weapon, pixmap) ->
@@ -609,7 +633,7 @@ public class Generators{
                 //outline is currently never needed, although it could theoretically be necessary
                 if(type.needsBodyOutline()){
                     save(image, type.name + "-outline");
-                }else if(type.segments == 0){
+                }else if(type.segments == 0 && type.drawBody){
                     replace(type.name, outline.get(get(type.region, false)), true);
                 }
 
@@ -677,7 +701,9 @@ public class Generators{
                 }
 
                 //TODO I can save a LOT of space by not creating a full icon.
-                save(image, "unit-" + type.name + "-full");
+                if(type.generateFullIcon){
+                    save(image, "unit-" + type.name + "-full");
+                }
 
                 Rand rand = new Rand();
                 rand.setSeed(type.name.hashCode());

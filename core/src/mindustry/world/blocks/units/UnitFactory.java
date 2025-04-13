@@ -56,7 +56,7 @@ public class UnitFactory extends UnitBlock{
             if(build.currentPlan == i) return;
             build.currentPlan = i < 0 || i >= plans.size ? -1 : i;
             build.progress = 0;
-            if(build.command != null && !build.unit().commands.contains(build.command)){
+            if(build.command != null && (build.unit() == null || !build.unit().commands.contains(build.command))){
                 build.command = null;
             }
         });
@@ -242,11 +242,6 @@ public class UnitFactory extends UnitBlock{
         public Object senseObject(LAccess sensor){
             if(sensor == LAccess.config) return currentPlan == -1 ? null : plans.get(currentPlan).unit;
             return super.senseObject(sensor);
-        }
-
-        @Override
-        public boolean shouldActiveSound(){
-            return shouldConsume();
         }
 
         @Override

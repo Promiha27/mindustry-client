@@ -404,7 +404,6 @@ public class Control implements ApplicationListener, Loadable{
                 control.saves.resetSave();
             }
 
-            //for planet launches, mostly
             if(sector.preset != null){
                 sector.preset.quietUnlock();
             }
