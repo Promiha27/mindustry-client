@@ -54,7 +54,7 @@ public class MemoryBlock extends Block{
 
         @Override
         public boolean displayable(){
-            return accessible();
+            return true;
         }
 
         @Override
