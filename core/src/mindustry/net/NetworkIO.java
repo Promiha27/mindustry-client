@@ -133,7 +133,7 @@ public class NetworkIO{
         String description = readString(buffer);
         String modeName = readString(buffer);
         int hostPort = buffer.getInt();
-        hostPort = hostPort != 0 ? hostPort : Vars.port;
+        hostPort = hostPort != 0 ? hostPort > 65535 ? (hostPort >> 8) : hostPort : Vars.port;
 
         return new Host(ping, host, hostAddress, hostPort, map, wave, players, version, vertype, gamemode, limit, description, modeName.isEmpty() ? null : modeName);
     }
