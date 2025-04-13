@@ -97,6 +97,8 @@ public class Vars implements Loadable{
     public static final float finalWorldBounds = 250;
     /** default range for building */
     public static final float buildingRange = 220f;
+    /** scaling for unit circle collider radius, based on hitbox size */
+    public static final float unitCollisionRadiusScale = 0.6f;
     /** range for moving items */
     public static final float itemTransferRange = 220f;
     /** range for moving items for logic units */
@@ -502,7 +504,11 @@ public class Vars implements Loadable{
 
             //router
             if(locale.toString().equals("router")){
-                bundle.debug("router");
+                I18NBundle defBundle = I18NBundle.createBundle(Core.files.internal("bundles/bundle"));
+                String router = Character.toString(Iconc.blockRouter);
+                for(String s : bundle.getKeys()){
+                    bundle.getProperties().put(s, Strings.stripColors(defBundle.get(s)).replaceAll("\\S", router));
+                }
             }
 
             if(OS.hasProp("debugtext")){ // When -Ddebugtext is passed, wraps bundle strings in @, untranslated strings wrapped with [accent]@

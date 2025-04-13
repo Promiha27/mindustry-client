@@ -63,6 +63,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
     /** Used for dropping items. */
     final static float playerSelectRange = mobile ? 17f : 11f;
+    final static float unitSelectRadScl = 1f;
     final static IntSeq removed = new IntSeq();
     final static IntSet intSet = new IntSet();
     /** Maximum line length. */
@@ -902,15 +903,18 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         }
 
         if(player.isBuilder()){
-            if(player.unit() != lastUnit && player.unit().plans.size <= 1){
-                player.unit().plans.ensureCapacity(lastPlans.size);
+            var playerPlans = player.unit().plans;
+            if(player.unit() != lastUnit && playerPlans.size <= 1){
+                playerPlans.ensureCapacity(lastPlans.size);
                 for(var plan : lastPlans){
-                    player.unit().plans.addLast(plan);
+                    playerPlans.addLast(plan);
                 }
             }
-            lastPlans.clear();
-            for(var plan : player.unit().plans){
-                lastPlans.addLast(plan);
+            if(lastPlans.size != playerPlans.size || (lastPlans.size > 0 && playerPlans.size > 0 && lastPlans.first() != playerPlans.first())){
+                lastPlans.clear();
+                for(var plan : playerPlans){
+                    lastPlans.addLast(plan);
+                }
             }
         }
 
@@ -1148,41 +1152,77 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     }
 
     public void drawCommand(Unit sel){
-        Drawf.square(sel.x, sel.y, sel.hitSize / 1.4f + Mathf.absin(4f, 1f), selectedUnits.contains(sel) ? Pal.remove : Pal.accent);
+        Drawf.poly(sel.x, sel.y, 6, sel.hitSize / unitSelectRadScl + Mathf.absin(4f, 1f), 0f, selectedUnits.contains(sel) ? Pal.remove : Pal.accent);
     }
 
     public void drawCommanded(){
+        Draw.draw(Layer.plans, () -> {
+            drawCommanded(true);
+        });
+
+        Draw.draw(Layer.groundUnit - 1, () -> {
+            drawCommanded(false);
+        });
+    }
+
+    public void drawCommanded(boolean flying){
+        float lineLimit = 6.5f;
+        Color color = Pal.accent;
+        int sides = 6;
+        float alpha = 0.5f;
+
         if(commandMode){
             //happens sometimes
             selectedUnits.removeAll(u -> !u.isCommandable());
 
             //draw command overlay UI
             for(Unit unit : selectedUnits){
+
                 CommandAI ai = unit.command();
                 Position lastPos = ai.attackTarget != null ? ai.attackTarget : ai.targetPos;
+
+                if(flying && ai.attackTarget != null && ai.currentCommand().drawTarget){
+                    Drawf.target(ai.attackTarget.getX(), ai.attackTarget.getY(), 6f, Pal.remove);
+                }
+
+                if(unit.isFlying() != flying) continue;
 
                 //draw target line
                 if(ai.targetPos != null && ai.currentCommand().drawTarget){
                     Position lineDest = ai.attackTarget != null ? ai.attackTarget : ai.targetPos;
-                    Drawf.limitLine(unit, lineDest, unit.hitSize / 2f, 3.5f);
+                    Drawf.limitLine(unit, lineDest, unit.hitSize / unitSelectRadScl + 1f, lineLimit, color.write(Tmp.c1).a(alpha));
 
                     if(ai.attackTarget == null){
-                        Drawf.square(lineDest.getX(), lineDest.getY(), 3.5f);
+                        Drawf.square(lineDest.getX(), lineDest.getY(), 3.5f, color.write(Tmp.c1).a(alpha));
 
                         if(ai.currentCommand() == UnitCommand.enterPayloadCommand){
                             var build = world.buildWorld(lineDest.getX(), lineDest.getY());
                             if(build != null && build.block.acceptsUnitPayloads && build.team == unit.team){
-                                Drawf.selected(build, Pal.accent);
+                                Drawf.selected(build, color);
                             }
                         }
                     }
                 }
 
-                Drawf.square(unit.x, unit.y, unit.hitSize / 1.4f + 1f);
+                float rad = unit.hitSize / unitSelectRadScl + 1f;
 
-                if(ai.attackTarget != null && ai.currentCommand().drawTarget){
-                    Drawf.target(ai.attackTarget.getX(), ai.attackTarget.getY(), 6f, Pal.remove);
-                }
+                Fill.lightInner(unit.x, unit.y, sides,
+                Math.max(0f, rad * 0.8f),
+                rad,
+                0f,
+                Tmp.c3.set(color).a(0f),
+                Tmp.c2.set(color).a(0.7f)
+                );
+
+                Lines.stroke(1f);
+                Draw.color(color);
+                Lines.poly(unit.x, unit.y, sides, rad + 0.5f);
+                //uncomment for a dark border
+                //Draw.color(Pal.gray);
+                //Lines.poly(unit.x, unit.y, sides, rad + 1.5f);
+                Draw.reset();
+
+
 
                 if(lastPos == null){
                     lastPos = unit;
@@ -1191,11 +1231,11 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
                 //draw command queue
                 if(ai.currentCommand().drawTarget && ai.commandQueue.size > 0){
                     for(var next : ai.commandQueue){
-                        Drawf.limitLine(lastPos, next, 3.5f, 3.5f);
+                        Drawf.limitLine(lastPos, next, lineLimit, lineLimit, color.write(Tmp.c1).a(alpha));
                         lastPos = next;
 
                         if(next instanceof Vec2 vec){
-                            Drawf.square(vec.x, vec.y, 3.5f);
+                            Drawf.square(vec.x, vec.y, 3.5f, color.write(Tmp.c1).a(alpha));
                         }else{
                             Drawf.target(next.getX(), next.getY(), 6f, Pal.remove);
                         }
@@ -1203,7 +1243,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
                 }
 
                 if(ai.targetPos != null && ai.currentCommand() == UnitCommand.loopPayloadCommand && unit instanceof Payloadc pay){
-                    Draw.color(Pal.accent, 0.4f + Mathf.absin(5f, 0.5f));
+                    Draw.color(color, 0.4f + Mathf.absin(5f, 0.5f));
                     TextureRegion region = pay.hasPayload() ? Icon.download.getRegion() : Icon.upload.getRegion();
                     float offset = 11f;
                     float size = 8f;
@@ -1217,40 +1257,44 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
                 }
             }
 
-            for(var commandBuild : commandBuildings){
-                if(commandBuild != null){
-                    Drawf.square(commandBuild.x, commandBuild.y, commandBuild.hitSize() / 1.4f + 1f);
-                    var cpos = commandBuild.getCommandPosition();
+            if(flying){
+                for(var commandBuild : commandBuildings){
+                    if(commandBuild != null){
+                        Drawf.square(commandBuild.x, commandBuild.y, commandBuild.hitSize() / 1.4f + 1f);
+                        var cpos = commandBuild.getCommandPosition();
 
-                    if(cpos != null){
-                        Drawf.limitLine(commandBuild, cpos, commandBuild.hitSize() / 2f, 3.5f);
-                        Drawf.square(cpos.x, cpos.y, 3.5f);
+                        if(cpos != null){
+                            Drawf.limitLine(commandBuild, cpos, commandBuild.hitSize() / 2f, lineLimit, color.write(Tmp.c1).a(alpha));
+                            Drawf.square(cpos.x, cpos.y, 3.5f, color.write(Tmp.c1).a(alpha));
+                        }
                     }
                 }
-            }
-
-            if(commandMode && !commandRect){
-                Unit sel = selectedCommandUnit(input.mouseWorldX(), input.mouseWorldY());
-
-                if(sel != null && !(!multiUnitSelect() && selectedUnits.size == 1 && selectedUnits.contains(sel))){
-                    drawCommand(sel);
-                }
-            }
-
-            if(commandRect){
-                float x2 = input.mouseWorldX(), y2 = input.mouseWorldY();
-                var units = selectedCommandUnits(commandRectX, commandRectY, x2 - commandRectX, y2 - commandRectY);
-                for(var unit : units){
-                    drawCommand(unit);
-                }
-
-                Draw.color(Pal.accent, 0.3f);
-                Fill.crect(commandRectX, commandRectY, x2 - commandRectX, y2 - commandRectY);
             }
         }
 
         Draw.reset();
 
+    }
+
+    public void drawUnitSelection(){
+        if(commandRect && commandMode){
+            float x2 = input.mouseWorldX(), y2 = input.mouseWorldY();
+            var units = selectedCommandUnits(commandRectX, commandRectY, x2 - commandRectX, y2 - commandRectY);
+            for(var unit : units){
+                drawCommand(unit);
+            }
+
+            Draw.color(Pal.accent, 0.3f);
+            Fill.crect(commandRectX, commandRectY, x2 - commandRectX, y2 - commandRectY);
+        }
+
+        if(commandMode && !commandRect){
+            Unit sel = selectedCommandUnit(input.mouseWorldX(), input.mouseWorldY());
+
+            if(sel != null && !(!multiUnitSelect() && selectedUnits.size == 1 && selectedUnits.contains(sel))){
+                drawCommand(sel);
+            }
+        }
     }
 
     public void drawBottom(){
@@ -1514,9 +1558,9 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         }
 
         for(BlockPlan plan : player.team().data().plans){
-            Block block = content.block(plan.block);
+            Block block = plan.block;
             if(block.bounds(plan.x, plan.y, Tmp.r2).overlaps(Tmp.r1)){
-                drawSelected(plan.x, plan.y, content.block(plan.block), Pal.remove);
+                drawSelected(plan.x, plan.y, plan.block, Pal.remove);
             }
         }
 
@@ -1531,9 +1575,9 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         Tmp.r1.set(result.x, result.y, result.x2 - result.x, result.y2 - result.y);
 
         for(BlockPlan plan : player.team().data().plans){
-            Block block = content.block(plan.block);
+            Block block = plan.block;
             if(block.bounds(plan.x, plan.y, Tmp.r2).overlaps(Tmp.r1)){
-                drawSelected(plan.x, plan.y, content.block(plan.block), Pal.sapBullet);
+                drawSelected(plan.x, plan.y, plan.block, Pal.sapBullet);
             }
         }
 
@@ -1592,7 +1636,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
     protected void flushSelectPlans(Seq<BuildPlan> plans){
         for(BuildPlan plan : plans){
-            if(plan.block != null && validPlace(plan.x, plan.y, plan.block, plan.rotation)){
+            if(plan.block != null && validPlace(plan.x, plan.y, plan.block, plan.rotation, null, true)){
                 BuildPlan other = getPlan(plan.x, plan.y, plan.block.size, null);
                 if(other == null){
                     selectPlans.add(plan.copy());
@@ -1827,7 +1871,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         Iterator<BlockPlan> broken = player.team().data().plans.iterator();
         while(broken.hasNext()){
             BlockPlan plan = broken.next();
-            Block block = content.block(plan.block);
+            Block block = plan.block;
             if(block.bounds(plan.x, plan.y, Tmp.r2).overlaps(Tmp.r1)){
                 removed.add(Point2.pack(plan.x, plan.y));
                 plan.removed = true;
@@ -2332,9 +2376,9 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         Iterator<BlockPlan> broken = player.team().data().plans.iterator();
         while(broken.hasNext()){
             BlockPlan plan = broken.next();
-            Block block = content.block(plan.block);
+            Block block = plan.block;
             if(block.bounds(plan.x, plan.y, Tmp.r2).overlaps(Tmp.r1)){
-                player.unit().addBuild(new BuildPlan(plan.x, plan.y, plan.rotation, content.block(plan.block), plan.config));
+                player.unit().addBuild(new BuildPlan(plan.x, plan.y, plan.rotation, plan.block, plan.config));
             }
         }
 
@@ -2364,8 +2408,16 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     public boolean validPlace(int x, int y, Block type, int rotation){
         return validPlace(x, y, type, rotation, null);
     }
+    public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore){
+        return validPlace(x, y, type, rotation, ignore, false);
+    }
 
-    public boolean validPlace(int x, int y, Block type, int rotation, BuildPlan ignore){
+    public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore, boolean ignoreUnits){
+        // FINISHME: this build plan ignore units stuff needs to be sorted out properly, this just ignores the flag
+        return validPlace(x, y, type, rotation, ignore);
+    }
+
+    public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore){
         if (!Build.validPlace(type, player.team(), x, y, rotation, true)) return false;
 
         if(player.unit().plans.size > 0){
@@ -2391,6 +2443,8 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     }
 
     public void breakBlock(int x, int y, boolean freeze){
+        if(!player.isBuilder()) return;
+
         Tile tile = world.tile(x, y);
         if(tile != null && tile.build != null) tile = tile.build.tile;
         if (freeze) frozenPlans.add(new BuildPlan(tile.x, tile.y));

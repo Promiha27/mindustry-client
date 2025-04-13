@@ -1,7 +1,6 @@
 package mindustry.entities.comp;
 
 import arc.*;
-import arc.func.*;
 import arc.graphics.*;
 import arc.graphics.g2d.*;
 import arc.math.*;
@@ -66,7 +65,7 @@ abstract class BuilderComp implements Posc, Statusc, Teamc, Rotc{
                 Tile tile = world.tile(plan.x, plan.y);
                 boolean isSameDerelict = (tile != null && tile.build != null && tile.block() == plan.block && tile.build.tileX() == plan.x && tile.build.tileY() == plan.y && tile.team() == Team.derelict);
                 if(tile == null || (plan.breaking && tile.block() == Blocks.air) || (!plan.breaking && ((tile.build != null && tile.build.rotation == plan.rotation && !isSameDerelict) || !plan.block.rotate) &&
-                    //th block must be the same, but not derelict and the same
+                    //the block must be the same, but not derelict and the same
                     ((tile.block() == plan.block && !isSameDerelict) ||
                         //same floor or overlay
                         (plan.block != null && (plan.block.isOverlay() && plan.block == tile.overlay() || (plan.block.isFloor() && plan.block == tile.floor())))))){
@@ -151,7 +150,7 @@ abstract class BuilderComp implements Posc, Statusc, Teamc, Rotc{
                         //derelict repair
                         (tile.team() == Team.derelict && tile.block() == current.block && tile.build != null && tile.block().allowDerelictRepair && state.rules.derelictRepair) ||
                         //make sure there's at least 1 item of each type first
-                        !Structs.contains(current.block.requirements, i -> core != null && !core.items.has(i.item, Math.min(Mathf.round(i.amount * state.rules.buildCostMultiplier), 1)));
+                        !Structs.contains(current.block.requirements, i -> !core.items.has(i.item, Math.min(Mathf.round(i.amount * state.rules.buildCostMultiplier), 1)));
 
                     if(hasAll){
                         Call.beginPlace(self(), current.block, team, current.x, current.y, current.rotation);

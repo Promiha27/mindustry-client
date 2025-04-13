@@ -19,11 +19,12 @@ public class SerpuloTechTree{
 
                 node(junction, () -> {
                     node(router, () -> {
-                        node(launchPad, Seq.with(new SectorComplete(extractionOutpost)), () -> {
-                            //no longer necessary to beat the campaign
-                            //node(interplanetaryAccelerator, Seq.with(new SectorComplete(planetaryTerminal)), () -> {
+                        node(advancedLaunchPad, Seq.with(new SectorComplete(extractionOutpost)), () -> {
+                            node(landingPad, () -> {
+                                node(interplanetaryAccelerator, Seq.with(new SectorComplete(planetaryTerminal)), () -> {
 
-                            //});
+                                });
+                            });
                         });
 
                         node(distributor);
@@ -523,14 +524,36 @@ public class SerpuloTechTree{
                                             new Research(sei),
                                             new Research(omura),
                                             new Research(spectre),
-                                            new Research(launchPad),
+                                            new Research(advancedLaunchPad),
                                             new Research(massDriver),
                                             new Research(impactReactor),
                                             new Research(additiveReconstructor),
                                             new Research(exponentialReconstructor),
                                             new Research(tetrativeReconstructor)
                                             ), () -> {
+                                                node(geothermalStronghold, Seq.with(
+                                                new Research(omura),
+                                                new Research(navanax),
+                                                new Research(eclipse),
+                                                new Research(oct),
+                                                new Research(reign),
+                                                new Research(corvus),
+                                                new Research(toxopid)
+                                                ), () -> {
 
+                                                });
+
+                                                node(cruxscape, Seq.with(
+                                                new Research(omura),
+                                                new Research(navanax),
+                                                new Research(eclipse),
+                                                new Research(oct),
+                                                new Research(reign),
+                                                new Research(corvus),
+                                                new Research(toxopid)
+                                                ), () -> {
+
+                                                });
                                             });
                                         });
                                     });

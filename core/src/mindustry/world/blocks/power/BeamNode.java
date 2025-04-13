@@ -110,7 +110,7 @@ public class BeamNode extends PowerBlock{
     @Override
     public void changePlacementPath(Seq<Point2> points, int rotation, boolean diagonal){
         if(!diagonal){
-            Placement.calculateNodes(points, this, rotation, (point, other) -> Math.max(Math.abs(point.x - other.x), Math.abs(point.y - other.y)) <= range);
+            Placement.calculateNodes(points, this, rotation, (point, other) -> Math.max(Math.abs(point.x - other.x), Math.abs(point.y - other.y)) <= range + size - 1);
         }
     }
 
@@ -210,7 +210,7 @@ public class BeamNode extends PowerBlock{
         public void draw(){
             super.draw();
 
-            if(Mathf.zero(Renderer.laserOpacity)) return;
+            if(Mathf.zero(Renderer.laserOpacity) || team == Team.derelict) return;
 
             Draw.z(Layer.power);
             if (power.graph == PowerInfo.selected) Draw.color(Pal.freeze, Renderer.laserOpacity + .2f);

@@ -244,6 +244,8 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
                     controller instanceof CommandAI command && command.hasCommand() ? ctrlCommand :
                     0;
             case payloadCount -> ((Object)this) instanceof Payloadc pay ? pay.payloads().size : 0;
+            case totalPayload -> ((Object)this) instanceof Payloadc pay ? pay.payloadUsed() : 0;
+            case payloadCapacity -> type.payloadCapacity / tilePayload;
             case size -> hitSize / tilesize;
             case color -> Color.toDoubleBits(team.color.r, team.color.g, team.color.b, 1f);
             default -> Float.NaN;
@@ -268,6 +270,16 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
     @Override
     public double sense(Content content){
         if(content == stack().item) return stack().amount;
+        if(content instanceof UnitType u){
+            return ((Object)this) instanceof Payloadc pay ?
+                    (pay.payloads().isEmpty() ? 0 :
+                    pay.payloads().count(p -> p instanceof UnitPayload up && up.unit.type == u)) : 0;
+        }
+        if(content instanceof Block b){
+            return ((Object)this) instanceof Payloadc pay ?
+                    (pay.payloads().isEmpty() ? 0 :
+                    pay.payloads().count(p -> p instanceof BuildPayload bp && bp.build.block == b)) : 0;
+        }
         return Float.NaN;
     }
 
@@ -450,6 +462,10 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
         }else{
             throw new IllegalArgumentException("Unit cannot be commanded - check isCommandable() first.");
         }
+    }
+
+    public boolean isMissile(){
+        return this instanceof TimedKillc;
     }
 
     public int count(){
@@ -704,7 +720,7 @@ abstract class UnitComp implements Healthc, Physicsc, Hitboxc, Statusc, Teamc, I
             type.deathExplosionEffect.at(x, y, bounds() / 2f / 8f);
         }
 
-        float shake = hitSize / 3f;
+        float shake = type.deathShake < 0 ? hitSize / 3f : type.deathShake;
 
         if(type.createScorch && Core.settings.getBool("drawwrecks")){ // FINISHME: Cache result of getBool in Renderer
             Effect.scorch(x, y, (int)(hitSize / 5));

@@ -513,7 +513,16 @@ public class SettingsMenuDialog extends BaseDialog{
         if(!mobile){
             game.checkPref("crashreport", true);
         }
-        game.checkPref("savecreate", true); // Autosave
+
+        game.checkPref("communityservers", true, val -> {
+            defaultServers.clear();
+            if(val){
+                JoinDialog.fetchServers();
+            }
+        });
+
+        game.checkPref("savecreate", true);
+        game.checkPref("blockreplace", true);
         game.checkPref("conveyorpathfinding", true);
         game.checkPref("hints", true);
         game.checkPref("logichints", true);
@@ -570,6 +579,7 @@ public class SettingsMenuDialog extends BaseDialog{
             }
             return s + "%";
         });
+        graphics.sliderPref("unitlaseropacity", 100, 0, 100, 5, s -> s + "%");
         graphics.sliderPref("bridgeopacity", 100, 0, 100, 5, s -> s + "%");
 
         if(!mobile){
@@ -625,6 +635,7 @@ public class SettingsMenuDialog extends BaseDialog{
         graphics.checkPref("drawlight", true);
         graphics.checkPref("destroyedblocks", true);
         graphics.checkPref("blockstatus", false);
+        graphics.checkPref("displayselection", true);
         graphics.checkPref("playerchat", true);
         graphics.checkPref("coreitems", !mobile);
         graphics.checkPref("minimap", !mobile);

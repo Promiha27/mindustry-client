@@ -131,6 +131,7 @@ public class Logic implements ApplicationListener{
                 //enable building AI on campaign unless the preset disables it
 
                 state.rules.coreIncinerates = true;
+                state.rules.allowEditWorldProcessors = false;
                 state.rules.waveTeam.rules().infiniteResources = true;
                 state.rules.waveTeam.rules().buildSpeedMultiplier *= state.getPlanet().enemyBuildSpeedMultiplier;
 
@@ -209,8 +210,7 @@ public class Logic implements ApplicationListener{
         var bounds = tile.block().bounds(tile.x, tile.y, Tmp.r1);
         while(it.hasNext()){
             BlockPlan b = it.next();
-            Block block = content.block(b.block);
-            if(bounds.overlaps(block.bounds(b.x, b.y, Tmp.r2))){
+            if(bounds.overlaps(b.block.bounds(b.x, b.y, Tmp.r2))){
                 b.removed = true;
                 it.remove();
             }
@@ -407,7 +407,9 @@ public class Logic implements ApplicationListener{
     @Override
     public void dispose(){
         //save the settings before quitting
-        netServer.admins.forceSave();
+        if(netServer != null){
+            netServer.admins.forceSave();
+        }
         Core.settings.manualSave();
     }
 
@@ -429,6 +431,8 @@ public class Logic implements ApplicationListener{
             }
 
             if(!state.isPaused()){
+                Events.fire(Trigger.beforeGameUpdate);
+
                 float delta = Core.graphics.getDeltaTime();
                 state.tick += Float.isNaN(delta) || Float.isInfinite(delta) ? 0f : delta * 60f;
                 state.updateId ++;
@@ -489,6 +493,8 @@ public class Logic implements ApplicationListener{
 
                 Groups.update();
                 Client.INSTANCE.update();
+
+                Events.fire(Trigger.afterGameUpdate);
             }
 
             if(runStateCheck){

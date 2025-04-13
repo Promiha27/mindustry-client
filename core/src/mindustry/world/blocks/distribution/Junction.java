@@ -165,6 +165,11 @@ public class Junction extends Block{
         }
 
         @Override
+        public byte version(){
+            return 1;
+        }
+
+        @Override
         public void write(Writes write){
             super.write(write);
             buffer.write(write);
@@ -173,7 +178,7 @@ public class Junction extends Block{
         @Override
         public void read(Reads read, byte revision){
             super.read(read, revision);
-            buffer.read(read);
+            buffer.read(read, revision == 0);
             // correct the time value since they all somehow get mapped to a high number
             float now = Time.time;
             for(int i = 0; i < 4; i++){

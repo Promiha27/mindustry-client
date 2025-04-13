@@ -500,7 +500,7 @@ public class PowerNode extends PowerBlock{
         public void draw(){
             super.draw();
 
-            if(Mathf.zero(Renderer.laserOpacity) || isPayload()) return;
+            if(Mathf.zero(Renderer.laserOpacity) || isPayload() || team == Team.derelict) return;
 
             Draw.z(Layer.power);
             setupColor(power.graph.getSatisfaction(), power.graph == PowerInfo.selected);

@@ -36,6 +36,8 @@ import static arc.scene.actions.Actions.*;
 import static mindustry.Vars.*;
 
 public class UI implements ApplicationListener, Loadable{
+
+    private static final StringBuilder buffer = new StringBuilder();
     public static String billions, millions, thousands;
 
     public static PixmapPacker packer;
@@ -747,6 +749,41 @@ public class UI implements ApplicationListener, Loadable{
         }
     }
 
+    /**
+     * Finds all :name: in a string and replaces them with the icon, if such exists.
+     * Based on TextFormatter::simpleFormat
+     */
+    public static String formatIcons(String s){
+        if(!s.contains(":")) return s;
+
+        buffer.setLength(0);
+        boolean changed = false;
+
+        boolean checkIcon = false;
+        String[] tokens = s.split(":");
+        for(String token : tokens){
+            if(checkIcon){
+                if(Iconc.codes.containsKey(token)){
+                    buffer.append((char)Iconc.codes.get(token));
+                    changed = true;
+                    checkIcon = false;
+                }else if(Fonts.hasUnicodeStr(token)){
+                    buffer.append(Fonts.getUnicodeStr(token));
+                    changed = true;
+                    checkIcon = false;
+                }else{
+                    buffer.append(":").append(token);
+                }
+            }else{
+                buffer.append(token);
+                checkIcon = true;
+            }
+        }
+
+        return changed ? buffer.toString() : s;
+    }
+
+    /** Formats time with hours:minutes:seconds. */
     public static String formatTime(float ticks){
         int s = (int)(ticks / Time.toSeconds); // Round seconds so they don't display weird
         int m = (int)(ticks / Time.toMinutes);

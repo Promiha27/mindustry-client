@@ -152,7 +152,9 @@ public class JoinDialog extends BaseDialog{
 
         refreshLocal();
         refreshRemote();
-        refreshCommunity();
+        if(Core.settings.getBool("communityservers", true)){
+            refreshCommunity();
+        }
     }
 
     void setupRemote(){
@@ -334,7 +336,9 @@ public class JoinDialog extends BaseDialog{
 
         section(steam ? "@servers.local.steam" : "@servers.local", local, false);
         section("@servers.remote", remote, false);
-        section("@servers.global", global, true);
+        if(Core.settings.getBool("communityservers", true)){
+            section("@servers.global", global, true);
+        }
 
         ScrollPane pane = new ScrollPane(hosts);
         pane.setFadeScrollBars(false);
@@ -428,8 +432,11 @@ public class JoinDialog extends BaseDialog{
 
             Table[] groupTable = {null, null};
 
+            boolean favorite = group.favorite();
             if(group.prioritized){
-                addHeader(groupTable, group, hidden, false);
+                addHeader(groupTable, group, hidden, favorite, false);
+            }else if (favorite){
+                addHeader(groupTable, group, hidden, true, true);//weird behaviour if false?
             }
             //table containing all groups
             for(String address : group.addresses){
@@ -460,9 +467,9 @@ public class JoinDialog extends BaseDialog{
                         || (res.modeName != null && res.modeName.toLowerCase().contains(serverSearch)))) return;
 
                     if(groupTable[0] == null){
-                        addHeader(groupTable, group, hidden, true);
+                        addHeader(groupTable, group, hidden, favorite, true);
                     }else if(!groupTable[0].visible){
-                        addHeader(groupTable, group, hidden, true);
+                        addHeader(groupTable, group, hidden, favorite, true); //why are these calls the exact same -BalaM314, merging v8, Apr 13 2025
                     }
 
                     addCommunityHost(res, groupTable[1]);
@@ -474,7 +481,7 @@ public class JoinDialog extends BaseDialog{
         }
     }
 
-    void addHeader(Table[] groupTable, ServerGroup group, boolean hidden, boolean doInit){ // outlined separately
+    void addHeader(Table[] groupTable, ServerGroup group, boolean hidden, boolean favorite, boolean doInit){ // outlined separately
         if(groupTable[0] == null){
             global.table(t -> groupTable[0] = t).fillX().left().row();
         }
@@ -491,15 +498,25 @@ public class JoinDialog extends BaseDialog{
             head.image().height(3f).growX().color(col);
 
             //button for showing/hiding servers
-            ImageButton[] image = {null};
-            image[0] = head.button(hidden ? Icon.eyeOffSmall : Icon.eyeSmall, Styles.grayi, () -> {
+            ImageButton[] image = {null, null};
+            image[0] = head.button(Icon.star, new ImageButton.ImageButtonStyle(){{
+                imageUpColor = favorite ? Pal.accent : Color.lightGray;
+                imageDownColor = Color.white;
+            }}, () -> {
+                group.setFavorite(!group.favorite());
+                image[0].getStyle().imageUpColor = group.favorite() ? Pal.accent : Pal.lightishGray;
+            }).size(40f).get();
+            image[0].getStyle().imageUpColor = favorite ? Pal.accent : Pal.lightishGray;
+
+            //button for showing/hiding servers
+            image[1] = head.button(hidden ? Icon.eyeOffSmall : Icon.eyeSmall, Styles.grayi, () -> {
                group.setHidden(!group.hidden());
-               image[0].getStyle().imageUp = group.hidden() ? Icon.eyeOffSmall : Icon.eyeSmall;
+               image[1].getStyle().imageUp = group.hidden() ? Icon.eyeOffSmall : Icon.eyeSmall;
                if(group.hidden() && !showHidden){
                    groupTable[0].remove();
                }
             }).size(40f).get();
-            image[0].addListener(new Tooltip(t -> t.background(Styles.black6).margin(4).label(() -> !group.hidden() ? "@server.shown" : "@server.hidden")));
+            image[1].addListener(new Tooltip(t -> t.background(Styles.black6).margin(4).label(() -> !group.hidden() ? "@server.shown" : "@server.hidden")));
         }).width(targetWidth() * columns()).padBottom(-2).row();
 
         groupTable[1] = groupTable[0].row().table().top().left().grow().get();
@@ -686,7 +703,7 @@ public class JoinDialog extends BaseDialog{
         fetchServers(urls, 0, false);
     }
 
-    private void fetchServers(String[] urls, int index, boolean refreshCommunity){
+    private static void fetchServers(String[] urls, int index, boolean refreshCommunity){
         if(index >= urls.length) return;
         Log.debug("Fetching community servers at @", urls[index]);
 
@@ -724,7 +741,7 @@ public class JoinDialog extends BaseDialog{
                 servers.sort(s -> s.name == null ? Integer.MAX_VALUE : s.name.hashCode());
                 defaultServers.addAll(servers);
                 if(refreshCommunity) refreshCommunity();
-                Log.info("Fetched @ community servers.", defaultServers.size);
+                Log.info("Fetched @ community servers.", defaultServers.sum(s -> s.addresses.length));
                 if(onCommunityFetch != null){
                     onCommunityFetch.run();
                     onCommunityFetch = null;

@@ -3,6 +3,7 @@ package mindustry.logic;
 import arc.*;
 import arc.func.*;
 import arc.graphics.*;
+import arc.input.*;
 import arc.scene.actions.*;
 import arc.scene.ui.*;
 import arc.scene.ui.TextButton.*;
@@ -19,6 +20,8 @@ import mindustry.logic.LStatements.*;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 import mindustry.world.blocks.logic.*;
+
+import java.util.*;
 
 import static mindustry.Vars.*;
 import static mindustry.logic.LCanvas.*;
@@ -58,6 +61,12 @@ public class LogicDialog extends BaseDialog{
             }
         });
 
+        //show add instruction on shift+enter
+        keyDown(KeyCode.enter, () -> {
+            if(Core.input.shift()){
+                showAddDialog();
+            }
+        });
 
         add(canvas).grow().name("canvas");
         row();
@@ -154,13 +163,13 @@ public class LogicDialog extends BaseDialog{
         buttons.button("@variables", Icon.menu, () -> {
             BaseDialog dialog = new BaseDialog("@variables");
             dialog.hidden(() -> {
-                if(!wasPaused && !net.active()){
+                if(!wasPaused && !net.active() && !state.isMenu()){
                     state.set(State.paused);
                 }
             });
 
             dialog.shown(() -> {
-                if(!wasPaused && !net.active()){
+                if(!wasPaused && !net.active() && !state.isMenu()){
                     state.set(State.playing);
                 }
             });
@@ -187,7 +196,7 @@ public class LogicDialog extends BaseDialog{
                             Label label = out.add("").style(Styles.outlineLabel).padLeft(4).padRight(4).width(140f).wrap().get();
                             label.update(() -> {
                                 if(counter[0] < 0 || (counter[0] += Time.delta) >= period){
-                                    String text = s.isobj ? PrintI.toString(s.objval) : Math.abs(s.numval - (long)s.numval) < 0.00001 ? (long)s.numval + "" : s.numval + "";
+                                    String text = s.isobj ? PrintI.toString(s.objval) : Math.abs(s.numval - Math.round(s.numval)) < 0.00001 ? Math.round(s.numval) + "" : s.numval + "";
                                     if(!label.textEquals(text)){
                                         label.setText(text);
                                         if(counter[0] >= 0f){
@@ -219,9 +228,9 @@ public class LogicDialog extends BaseDialog{
             dialog.buttons.button("@logic.globals", Icon.list, () -> globalsDialog.show()).size(210f, 64f);
 
             dialog.show();
-        }).name("variables").disabled(b -> executor == null || executor.vars.length == 0);
+        }).name("variables").disabled(b -> executor == null || executor.vars.length == 0 || state.isMenu());
 
-        buttons.button("@add", Icon.add, () -> addDialog(canvas.statements.getChildren().size))
+        buttons.button("@add", Icon.add, () -> showDddDialog(canvas.statements.getChildren().size))
             .disabled(t -> (executor.team != player.team() && net.client() && !state.isEditor()) || canvas.statements.getChildren().size >= LExecutor.maxInstructions);
     }
 
@@ -249,44 +258,86 @@ public class LogicDialog extends BaseDialog{
     public void addDialog(int at) {
         BaseDialog dialog = new BaseDialog("@add");
         dialog.cont.table(table -> {
+            String[] searchText = {""};
+            Prov[] matched = {null};
+            Runnable[] rebuild = {() -> {}};
+
             table.background(Tex.button);
-            table.pane(t -> {
-                for(Prov<LStatement> prov : LogicIO.allStatements){
-                    LStatement example = prov.get();
-                    if(example instanceof InvalidStatement || example.hidden() || (example.privileged() && !privileged) || (example.nonPrivileged() && privileged)) continue;
 
-                    LCategory category = example.category();
-                    Table cat = t.find(category.name);
-                    if(cat == null){
-                        t.table(s -> {
-                            if(category.icon != null){
-                                s.image(category.icon, Pal.darkishGray).left().size(15f).padRight(10f);
-                            }
-                            s.add(category.localized()).color(Pal.darkishGray).left().tooltip(category.description());
-                            s.image(Tex.whiteui, Pal.darkishGray).left().height(5f).growX().padLeft(10f);
-                        }).growX().pad(5f).padTop(10f);
+            table.table(s -> {
+                s.image(Icon.zoom).padRight(8);
+                var search = s.field(null, text -> {
+                    searchText[0] = text;
+                    rebuild[0].run();
+                }).growX().get();
+                search.setMessageText("@players.search");
 
-                        t.row();
+                //auto add first match on enter key
+                if(!mobile){
 
-                        cat = t.table(c -> {
-                            c.top().left();
-                        }).name(category.name).top().left().growX().fillY().get();
-                        t.row();
-                    }
+                    //don't focus on mobile (it may cause issues with a popup keyboard)
+                    Core.app.post(search::requestKeyboard);
 
-                    TextButtonStyle style = new TextButtonStyle(Styles.flatt);
-                    style.fontColor = category.color;
-                    style.font = Fonts.outline;
-
-                    cat.button(example.name(), style, () -> {
-                        canvas.addAt(at, prov.get());
-                        dialog.hide();
-                        canvas.layout();
-                        canvas.recalculate();
-                    }).size(130f, 50f).self(c -> tooltip(c, "lst." + example.name())).top().left();
-
-                    if(cat.getChildren().size % 3 == 0) cat.row();
+                    search.keyDown(KeyCode.enter, () -> {
+                        if(!searchText[0].isEmpty() && matched[0] != null){
+                            canvas.add((LStatement)matched[0].get());
+                            dialog.hide();
+                        }
+                    });
                 }
+            }).growX().padBottom(4).row();
+
+            table.pane(t -> {
+                rebuild[0] = () -> {
+                    t.clear();
+
+                    var text = searchText[0].toLowerCase();
+
+                    matched[0] = null;
+
+                    for(Prov<LStatement> prov : LogicIO.allStatements){
+                        LStatement example = prov.get();
+                        if(example instanceof InvalidStatement || example.hidden() || (example.privileged() && !privileged) || (example.nonPrivileged() && privileged) || (!text.isEmpty() && !example.name().toLowerCase(Locale.ROOT).contains(text))) continue;
+
+                        if(matched[0] == null){
+                            matched[0] = prov;
+                        }
+
+                        LCategory category = example.category();
+                        Table cat = t.find(category.name);
+                        if(cat == null){
+                            t.table(s -> {
+                                if(category.icon != null){
+                                    s.image(category.icon, Pal.darkishGray).left().size(15f).padRight(10f);
+                                }
+                                s.add(category.localized()).color(Pal.darkishGray).left().tooltip(category.description());
+                                s.image(Tex.whiteui, Pal.darkishGray).left().height(5f).growX().padLeft(10f);
+                            }).growX().pad(5f).padTop(10f);
+
+                            t.row();
+
+                            cat = t.table(c -> {
+                                c.top().left();
+                            }).name(category.name).top().left().growX().fillY().get();
+                            t.row();
+                        }
+
+                        TextButtonStyle style = new TextButtonStyle(Styles.flatt);
+                        style.fontColor = category.color;
+                        style.font = Fonts.outline;
+
+                        cat.button(example.name(), style, () -> {
+                            canvas.addAt(at, prov.get());
+                            dialog.hide();
+                            canvas.layout();
+                            canvas.recalculate();
+                        }).size(130f, 50f).self(c -> tooltip(c, "lst." + example.name())).top().left();
+
+                        if(cat.getChildren().size % 3 == 0) cat.row();
+                    }
+                };
+
+                rebuild[0].run();
             }).grow();
         }).fill().maxHeight(Core.graphics.getHeight() * 0.8f);
         dialog.addCloseButton();
