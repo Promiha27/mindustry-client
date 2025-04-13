@@ -33,6 +33,7 @@ public class CustomRulesDialog extends BaseDialog{
     private LoadoutDialog loadoutDialog;
     private BannedContentDialog<Block> bannedBlocks = new BannedContentDialog<>("@bannedblocks", ContentType.block, Block::canBeBuilt);
     private BannedContentDialog<UnitType> bannedUnits = new BannedContentDialog<>("@bannedunits", ContentType.unit, u -> !u.isHidden());
+    private BannedContentDialog<Block> revealedBlocks = new BannedContentDialog<>("@revealedblocks", ContentType.block, b -> b.buildVisibility != BuildVisibility.shown);
     public boolean showRuleEditRule;
     public Seq<Table> categories;
     public Table current;
@@ -181,7 +182,7 @@ public class CustomRulesDialog extends BaseDialog{
         }
         check("@rules.hidebannedblocks", b -> rules.hideBannedBlocks = b, () -> rules.hideBannedBlocks);
         check("@bannedblocks.whitelist", b -> rules.blockWhitelist = b, () -> rules.blockWhitelist);
-        main.button("@revealedblocks", () -> showBanned("@revealedblocks", ContentType.block, rules.revealedBlocks, b -> b.buildVisibility != BuildVisibility.shown)).left().width(300f).row();
+        main.button("@revealedblocks", () -> revealedBlocks.show(rules.revealedBlocks)).left().width(300f).row();
 
 
         category("unit");

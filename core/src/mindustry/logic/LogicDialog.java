@@ -64,7 +64,7 @@ public class LogicDialog extends BaseDialog{
         //show add instruction on shift+enter
         keyDown(KeyCode.enter, () -> {
             if(Core.input.shift()){
-                showAddDialog();
+                showAddDialog(canvas.statements.getChildren().size);
             }
         });
 
@@ -230,7 +230,7 @@ public class LogicDialog extends BaseDialog{
             dialog.show();
         }).name("variables").disabled(b -> executor == null || executor.vars.length == 0 || state.isMenu());
 
-        buttons.button("@add", Icon.add, () -> showDddDialog(canvas.statements.getChildren().size))
+        buttons.button("@add", Icon.add, () -> showAddDialog(canvas.statements.getChildren().size))
             .disabled(t -> (executor.team != player.team() && net.client() && !state.isEditor()) || canvas.statements.getChildren().size >= LExecutor.maxInstructions);
     }
 
@@ -255,7 +255,7 @@ public class LogicDialog extends BaseDialog{
         show();
     }
 
-    public void addDialog(int at) {
+    public void showAddDialog(int at) {
         BaseDialog dialog = new BaseDialog("@add");
         dialog.cont.table(table -> {
             String[] searchText = {""};

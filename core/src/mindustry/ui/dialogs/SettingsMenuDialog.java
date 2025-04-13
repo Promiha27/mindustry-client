@@ -517,7 +517,9 @@ public class SettingsMenuDialog extends BaseDialog{
         game.checkPref("communityservers", true, val -> {
             defaultServers.clear();
             if(val){
-                JoinDialog.fetchServers();
+                // FINISHME: JoinDialog methods are not static in foos client because of extra error handling flags
+                // -BalaM314, merging v8, Apr 13 2025
+                // JoinDialog.fetchServers();
             }
         });
 

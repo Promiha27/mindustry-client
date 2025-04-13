@@ -703,7 +703,7 @@ public class JoinDialog extends BaseDialog{
         fetchServers(urls, 0, false);
     }
 
-    private static void fetchServers(String[] urls, int index, boolean refreshCommunity){
+    private void fetchServers(String[] urls, int index, boolean refreshCommunity){
         if(index >= urls.length) return;
         Log.debug("Fetching community servers at @", urls[index]);
 

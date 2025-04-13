@@ -2408,9 +2408,9 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     public boolean validPlace(int x, int y, Block type, int rotation){
         return validPlace(x, y, type, rotation, null);
     }
-    public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore){
-        return validPlace(x, y, type, rotation, ignore, false);
-    }
+    // public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore){
+    //     return validPlace(x, y, type, rotation, ignore, false);
+    // }
 
     public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore, boolean ignoreUnits){
         // FINISHME: this build plan ignore units stuff needs to be sorted out properly, this just ignores the flag
