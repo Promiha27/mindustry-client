@@ -44,7 +44,6 @@ steam_appid.txt
 ios/robovm.properties
 packr-out/
 config/
-buildSrc/
 *.gif
 /tests/out
 
