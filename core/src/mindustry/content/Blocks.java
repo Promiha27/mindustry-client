@@ -5969,6 +5969,7 @@ public class Blocks{
             );
             size = 3;
             consumePower(1.2f);
+            researchCostMultiplier = 0.5f;
         }};
 
         airFactory = new UnitFactory("air-factory"){{
@@ -5979,6 +5980,7 @@ public class Blocks{
             );
             size = 3;
             consumePower(1.2f);
+            researchCostMultiplier = 0.5f;
         }};
 
         navalFactory = new UnitFactory("naval-factory"){{
