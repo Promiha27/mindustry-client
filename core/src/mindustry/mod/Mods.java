@@ -1271,8 +1271,12 @@ public class Mods implements Loadable{
                 (mainFile.exists() || meta.java) &&
                 !skipModLoading() &&
                 Core.settings.getBool("mod-" + baseName + "-enabled", true) &&
-                /*Version.isAtLeast(meta.minGameVersion) &&*/
-                (meta.getMinMajor() >= minJavaModGameVersion || headless) &&
+                (Core.settings.getBool("ignoremodminversion") ||
+                    (
+                        Version.isAtLeast(meta.minGameVersion) &&
+                        (meta.getMinMajor() >= minJavaModGameVersion || headless)
+                    )
+                ) &&
                 !skipModCode &&
                 initialize
             ){
@@ -1419,9 +1423,10 @@ public class Mods implements Loadable{
             //no unsupported mods on servers
             if(headless) return true;
 
-            if(isOutdated() || isBlacklisted()) return false;
+            boolean ignoreMinVersion = Core.settings.getBool("ignoremodminversion");
+            if((!ignoreMinVersion && isOutdated()) || isBlacklisted()) return false;
             if(clientBlacklisted()) return false; // FINISHME: Make it display a warning or something and maybe disable them the first time? It shouldn't force people to not use mods
-            return Core.settings.getBool("ignoremodminversion") || Version.isAtLeast(meta.minGameVersion);
+            return ignoreMinVersion || Version.isAtLeast(meta.minGameVersion);
         }
 
         /** Some mods are known to cause issues with the game; this detects and returns whether a mod is manually blacklisted. */
