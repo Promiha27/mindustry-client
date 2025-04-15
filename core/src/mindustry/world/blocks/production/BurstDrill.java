@@ -55,6 +55,15 @@ public class BurstDrill extends Drill{
     }
 
     @Override
+    public void drawPlace(int x, int y, int rotation, boolean valid){
+        // Incredibly lazy. The boost is squared for serpulo drills, so just de-square it first
+        float oldLiquidBoostIntensity = liquidBoostIntensity;
+        liquidBoostIntensity = Mathf.sqrt(oldLiquidBoostIntensity);
+        super.drawPlace(x, y, rotation, valid);
+        liquidBoostIntensity = oldLiquidBoostIntensity;
+    }
+
+    @Override
     public void setStats(){
         super.setStats();
 
