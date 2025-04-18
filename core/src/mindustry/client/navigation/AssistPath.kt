@@ -141,7 +141,7 @@ class AssistPath(val assisting: Player?, val type: Type = Type.Regular, var circ
                 } else player.unit().moveAt((input as MobileInput).movement)
             }
             Type.Cursor -> goTo(assisting.mouseX + (circleRadius * Mathf.cos(theta)), assisting.mouseY + (circleRadius * Mathf.sin(theta)), tolerance, tolerance + tilesize * 5)
-            Type.BuildPath -> if (!plans.isEmpty) buildPath?.follow() else goTo(assisting.x + (circleRadius * Mathf.cos(theta)), assisting.y + (circleRadius * Mathf.sin(theta)), tolerance, aStarTolerance + tilesize * 5) // Follow build path if plans exist, otherwise follow player
+            Type.BuildPath -> if (!plans.isEmpty || !(unit.plans?.isEmpty?: true)) buildPath?.follow() else goTo(assisting.x + (circleRadius * Mathf.cos(theta)), assisting.y + (circleRadius * Mathf.sin(theta)), tolerance, aStarTolerance + tilesize * 5) // Follow build path if plans exist, otherwise follow player
         }
     }
 
