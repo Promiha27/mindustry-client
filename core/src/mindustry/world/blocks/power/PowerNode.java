@@ -239,7 +239,11 @@ public class PowerNode extends PowerBlock{
             !Structs.contains(Edges.getEdges(size), p -> { //do not link to adjacent buildings
                 var t = world.tile(tile.x + p.x, tile.y + p.y);
                 return t != null && t.build == other;
-            });
+            }) &&
+            //do not link to phase conveyors who are configured to go nowhere
+            (syncWithServer || !(other instanceof ItemBridge.ItemBridgeBuild i &&
+                !((ItemBridge)i.block).positionsValid(i.tile.x, i.tile.y, Point2.x(i.link), Point2.y(i.link))))
+            ;
 
         tempBuilds.clear();
         graphs.clear();
@@ -270,8 +274,8 @@ public class PowerNode extends PowerBlock{
             int type = -Boolean.compare(a.block instanceof PowerNode, b.block instanceof PowerNode);
             if(type != 0) return type;
             if(!syncWithServer && (type = Boolean.compare(
-                a instanceof ItemBridge.ItemBridgeBuild i && i.link == -1,
-                b instanceof ItemBridge.ItemBridgeBuild i && i.link == -1
+                a instanceof ItemBridge.ItemBridgeBuild i && !((ItemBridge)i.block).linkValid(i.tile, world.tile(i.link)),
+                b instanceof ItemBridge.ItemBridgeBuild i && !((ItemBridge)i.block).linkValid(i.tile, world.tile(i.link))
             )) != 0) return type;
             return Float.compare(a.dst2(tile), b.dst2(tile));
         });

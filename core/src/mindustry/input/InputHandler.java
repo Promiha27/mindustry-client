@@ -2041,7 +2041,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         if(build.block.commandable && commandMode){
             //TODO handled in tap.
             consumed = true;
-        }else if(build.block.configurable && (build.interactable(player.team()) || build.block instanceof LogicBlock)){ //check if tapped block is configurable
+        }else if(build.block.configurable && (build.interactable(player.team()) || build.block.category == Category.logic)){ //check if tapped block is configurable
             consumed = true;
             if((!config.isShown() && build.shouldShowConfigure(player)) //if the config fragment is hidden, show
             //alternatively, the current selected block can 'agree' to switch config tiles
