@@ -612,7 +612,7 @@ fun setupCommands() {
         if (args.isEmpty() || args[0] == "") player.sendMessage(Core.bundle.get("client.command.gamelosetext.clear"))
         else {
             Core.settings.put("gamelosetext", args[0])
-            player.sendMessage(Core.bundle.get("client.command.gamelosetext.success"))
+            player.sendMessage(Core.bundle.get("client.command.gamelosetext.success", args[0]))
         }
     }
 

@@ -78,6 +78,10 @@ class ClientLogic {
                     4 -> Server.current.mapVote(Random.nextInt(0..2))
                     }
                 }
+                hidingAirUnits = false
+                showingTurrets = false
+                showingAllyTurrets = false
+                showingInvTurrets = false
             }
             configs.clear()
             control.input.lastVirusWarning = null
@@ -85,10 +89,6 @@ class ClientLogic {
             dispatchingBuildPlans = false
             hidingBlocks = false
             hidingUnits = false
-            hidingAirUnits = false
-            showingTurrets = false
-            showingAllyTurrets = false
-            showingInvTurrets = false
             if (state.rules.pvp && !isDeveloper()) ui.announce("[scarlet]Don't use a client in pvp, it's uncool!", 5f)
             if (!state.rules.schematicsAllowed && !syncing) ui.announce("[scarlet]This map has schematics disabled.", 5f)
             overdrives.clear()

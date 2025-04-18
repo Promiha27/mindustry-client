@@ -102,7 +102,7 @@ abstract class Navigator {
             if (Time.timeSinceMillis(lastTp) > 3000) lastTp = Time.millis() - 2900 // Didn't tp, try again in .1s
         }
 
-        val avoidFlood = CustomMode.flood() && player.unit().type != UnitTypes.horizon
+        val avoidFlood = CustomMode.flood() && player.unit().type != UnitTypes.horizon && player.team() !== Team.blue
         val canBoost = player.unit().type.canBoost
         val solidity = player.unit().solidity()
         val ret = findPath(
