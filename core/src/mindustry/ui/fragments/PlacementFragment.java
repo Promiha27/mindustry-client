@@ -502,7 +502,7 @@ public class PlacementFragment{
                         u.left();
                         int[] curCount = {0};
                         UnitCommand[] currentCommand = {null};
-                        var commands = new Seq<UnitCommand>();
+                        var commands = new ObjectMap<UnitCommand, Boolean[]>();
 
                         UnitStance[] currentStance = {null};
                         var stances = new Seq<UnitStance>();
@@ -544,20 +544,21 @@ public class PlacementFragment{
 
                                             b.addListener(listener);
                                             b.addListener(new HandCursorListener());
-                                            //gray on hover
-                                            b.update(() -> ((Group)b.getChildren().first()).getChildren().first().setColor(listener.isOver() ? Color.lightGray : Color.white));
+                                            var boolrefs = new Boolean[type.commands.size][];
+                                            for(int j = 0; j < type.commands.size; j++){
+                                                boolrefs[j] = commands.get(type.commands.get(j), () -> new Boolean[]{false});
+                                            }
+                                            b.update(() ->
+                                                // gray on hover, green on command hover
+                                                ((Group)b.getChildren().first()).getChildren().first().setColor(
+                                                    Structs.contains(boolrefs, ref -> ref[0]) ? Pal.heal :
+                                                    listener.isOver() ? Color.lightGray : Color.white
+                                                )
+                                            );
                                         });
 
                                         if(++col % 7 == 0){
                                             unitlist.row();
-                                        }
-
-                                        if(!firstCommand){
-                                            commands.add(type.commands);
-                                            firstCommand = true;
-                                        }else{
-                                            //remove commands that this next unit type doesn't have
-                                            commands.removeAll(com -> !type.commands.contains(com));
                                         }
 
                                         if(!firstStance){
@@ -577,10 +578,19 @@ public class PlacementFragment{
                                     u.table(coms -> {
                                         coms.left();
                                         int scol = 0;
-                                        for(var command : commands){
+                                        for(var commandEntry : commands){
+                                            var command = commandEntry.key;
+                                            var ref = commandEntry.value;
                                             coms.button(Icon.icons.get(command.icon, Icon.cancel), Styles.clearNoneTogglei, () -> {
                                                 Call.setUnitCommand(player, units.mapInt(un -> un.id).toArray(), command);
-                                            }).checked(i -> currentCommand[0] == command).size(50f).tooltip(command.localized(), true);
+                                            }).size(50f).tooltip(command.localized(), true).with(b -> {
+                                                var listener = new ClickListener();
+                                                b.addListener(listener);
+                                                b.update(() -> {
+                                                    ref[0] = listener.isOver();
+                                                    b.setChecked(currentCommand[0] == command);
+                                                });
+                                            });
 
                                             if(++scol % 6 == 0) coms.row();
                                         }
@@ -664,7 +674,8 @@ public class PlacementFragment{
                                     }
                                 }
 
-                                for(UnitCommand command : commands){
+                                for(var commandEntry : commands){
+                                    var command = commandEntry.key;
                                     //first stance must always be the stop stance
                                     if(command.keybind != null && Core.input.keyTap(command.keybind)){
                                         Call.setUnitCommand(player, control.input.selectedUnits.mapInt(un -> un.id).toArray(), command);
