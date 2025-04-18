@@ -50,6 +50,7 @@ public class SchematicBrowserDialog extends BaseDialog {
     public SchematicBrowserDialog(){
         super("@client.schematic.browser");
 
+        runMigrations();
         shouldPause = true;
         addCloseButton();
         buttons.button("@schematics", Icon.copy, SchematicBrowserDialog::hideBrowser);
@@ -192,7 +193,8 @@ public class SchematicBrowserDialog extends BaseDialog {
             firstSchematic = null;
             String filteredNameSearch = ignoreSymbols.matcher(nameSearch.toLowerCase()).replaceAll("");
             String filteredDescSearch = ignoreSymbols.matcher(descSearch.toLowerCase()).replaceAll("");
-            for (String repo : loadedRepositories.keys().toSeq().sort()) {
+            for (String repo : repositoryLinks) {
+                if (!loadedRepositories.containsKey(repo)) continue;
                 if (hiddenRepositories.contains(repo)) continue;
                 buildRepo(t[0], repo, filteredNameSearch, filteredDescSearch);
             }
@@ -531,7 +533,7 @@ public class SchematicBrowserDialog extends BaseDialog {
 
     void getSettings(){
         repositoryLinks.clear();
-        repositoryLinks.add(Core.settings.getString("schematicrepositories","bend-n/design-it").split(";"));
+        repositoryLinks.add(Core.settings.getString("schematicrepositories","MindustryDesignIt/design-it").split(";"));
 
         if (!Core.settings.getString("hiddenschematicrepositories", "").isEmpty()) {
             hiddenRepositories.clear();
@@ -671,11 +673,40 @@ public class SchematicBrowserDialog extends BaseDialog {
         return this;
     }
 
+    static void runMigrations(){
+        final String defaultRepoFrom = "bend-n/design-it";
+        final String defaultRepoTo = "MindustryDesignIt/design-it";
+
+        // Migrate bend-n/design-it repository
+        var repos = Seq.with(Core.settings.getString("schematicrepositories", "").split(";"));
+
+        if (repos.replace(defaultRepoFrom, defaultRepoTo)) {
+            // Overwrite setting
+            Core.settings.put("schematicrepositories", repos.toString(";"));
+
+            // Rename file
+            Fi origFile = schematicRepoDirectory.child(defaultRepoFrom.replace("/","") + ".zip");
+            Fi nextFile = schematicRepoDirectory.child(defaultRepoTo.replace("/","") + ".zip");
+            if (origFile.exists() && !nextFile.exists()) {
+                origFile.moveTo(nextFile);
+            }
+
+            Log.info("Schematic Browser: Migrated @ to @.", defaultRepoFrom, defaultRepoTo);
+        }
+    }
+
     protected static class SchematicRepositoriesDialog extends BaseDialog {
         public Table repoTable = new Table();
         private final Pattern pattern = Pattern.compile("(?:https?://)?github\\.com/");
         private boolean refetch = false;
         private boolean rebuild = false;
+
+        static final ImageButton.ImageButtonStyle repositorySettingsStyle = new ImageButton.ImageButtonStyle(){{
+            imageDisabledColor = Color.darkGray;
+            imageOverColor = Color.white;
+            imageDownColor = Pal.accent;
+            imageUpColor = Color.gray;
+        }};
 
         public SchematicRepositoriesDialog(){
             super("@client.schematic.browser.repo");
@@ -703,7 +734,26 @@ public class SchematicBrowserDialog extends BaseDialog {
             for (var i = 0; i < ui.schematicBrowser.repositoryLinks.size; i++) {
                 final String link = ui.schematicBrowser.repositoryLinks.get(i);
                 Table table = new Table();
-                table.button(Icon.cancel, Styles.settingTogglei, 16f, () -> {
+                int finalI = i;
+                table.button(Icon.upOpen, repositorySettingsStyle, 16f, () -> {
+                    if (finalI < 1) return;
+                    var links = ui.schematicBrowser.repositoryLinks;
+                    String temp = links.get(finalI);
+                    links.set(finalI, links.get(finalI - 1));
+                    links.set(finalI - 1, temp);
+                    rebuild();
+                    ui.schematicBrowser.rebuildResults();
+                }).padRight(20f).tooltip("@editor.moveup").get().setDisabled(i == 0);
+                table.button(Icon.downOpen, repositorySettingsStyle, 16f, () -> {
+                    if (finalI >= ui.schematicBrowser.repositoryLinks.size - 1) return;
+                    var links = ui.schematicBrowser.repositoryLinks;
+                    String temp = links.get(finalI);
+                    links.set(finalI, links.get(finalI + 1));
+                    links.set(finalI + 1, temp);
+                    rebuild();
+                    ui.schematicBrowser.rebuildResults();
+                }).padRight(20f).tooltip("@editor.movedown").get().setDisabled(i == ui.schematicBrowser.repositoryLinks.size - 1);
+                table.button(Icon.cancel, repositorySettingsStyle, 16f, () -> {
                     ui.schematicBrowser.repositoryLinks.remove(link);
                     ui.schematicBrowser.loadedRepositories.remove(link);
                     ui.schematicBrowser.hiddenRepositories.remove(link);
@@ -711,15 +761,14 @@ public class SchematicBrowserDialog extends BaseDialog {
                     rebuild = true;
                     rebuild();
                 }).padRight(20f).tooltip("@save.delete");
-                int finalI = i;
-                table.button(Icon.edit, Styles.settingTogglei, 16f, () -> editRepo(link, l -> {
+                table.button(Icon.edit, repositorySettingsStyle, 16f, () -> editRepo(link, l -> {
                     ui.schematicBrowser.repositoryLinks.set(finalI, l);
                     ui.schematicBrowser.loadedRepositories.remove(link);
                     ui.schematicBrowser.hiddenRepositories.remove(link);
                     ui.schematicBrowser.unfetchedRepositories.add(l);
                     refetch = true;
                 })).padRight(20f).tooltip("@client.schematic.browser.edit");
-                table.button(ui.schematicBrowser.hiddenRepositories.contains(link) ? Icon.eyeOffSmall : Icon.eyeSmall, Styles.settingTogglei, 16f, () -> {
+                table.button(ui.schematicBrowser.hiddenRepositories.contains(link) ? Icon.eyeOffSmall : Icon.eyeSmall, repositorySettingsStyle, 16f, () -> {
                     if (!ui.schematicBrowser.hiddenRepositories.contains(link)) { // hide, unload to save memory
                         ui.schematicBrowser.loadedRepositories.remove(link);
                         ui.schematicBrowser.hiddenRepositories.add(link);
