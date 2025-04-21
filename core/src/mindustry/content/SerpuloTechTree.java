@@ -140,7 +140,7 @@ public class SerpuloTechTree{
                                 });
                             });
 
-                            node(plastaniumCompressor, Seq.with(new SectorComplete(windsweptIslands), new OnSector(tarFields)), () -> {
+                            node(plastaniumCompressor, Seq.with(new SectorComplete(windsweptIslands)), () -> {
                                 node(phaseWeaver, Seq.with(new SectorComplete(tarFields)), () -> {
 
                                 });
@@ -169,12 +169,15 @@ public class SerpuloTechTree{
                             });
                         });
 
-                        //logic disabled until further notice
                         node(microProcessor, () -> {
                             node(switchBlock, () -> {
                                 node(message, () -> {
                                     node(logicDisplay, () -> {
                                         node(largeLogicDisplay, () -> {
+
+                                        });
+
+                                        node(logicDisplayTile, () -> {
 
                                         });
                                     });
@@ -436,7 +439,7 @@ public class SerpuloTechTree{
                     });
                 });
 
-                node(additiveReconstructor, Seq.with(new SectorComplete(craters)), () -> {
+                node(additiveReconstructor, Seq.with(new SectorComplete(fungalPass)), () -> {
                     node(multiplicativeReconstructor, Seq.with(new SectorComplete(frontier)), () -> {
                         node(exponentialReconstructor, () -> {
                             node(tetrativeReconstructor, () -> {

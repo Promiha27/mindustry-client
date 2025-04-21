@@ -189,6 +189,7 @@ public class CustomRulesDialog extends BaseDialog{
         }
         check("@rules.hidebannedblocks", b -> rules.hideBannedBlocks = b, () -> rules.hideBannedBlocks);
         check("@bannedblocks.whitelist", b -> rules.blockWhitelist = b, () -> rules.blockWhitelist);
+        // FINISHME: Update for v8, use `client.revealedblocks` as key, rename revealedBlocks variable
         main.button("@revealedblocks", () -> revealedBlocks.show(rules.revealedBlocks)).left().width(300f).row();
 
 
