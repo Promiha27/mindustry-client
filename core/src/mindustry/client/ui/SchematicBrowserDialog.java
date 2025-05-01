@@ -136,7 +136,7 @@ public class SchematicBrowserDialog extends BaseDialog {
                     descSearch = res;
                     rebuildPane.run();
                 }).growX().get();
-                descSearchField.setMessageText("@schematic.searchdescription");
+                descSearchField.setMessageText("@client.schematic.searchdescription");
             }).growX().padLeft(4);
         }).fillX().padBottom(4);
         cont.row();
