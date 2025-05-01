@@ -88,7 +88,7 @@ public class KeybindDialog extends Dialog{
 
             if(lastCategory != keybind.category && keybind.category != null){
                 table.add(bundle.get("category." + keybind.category + ".name", Strings.capitalize(keybind.category))).color(Color.gray).colspan(4).pad(10).padBottom(4).row();
-                table.image().color(Color.gray).fillX().height(3).pad(6).colspan(4).padTop(0).padBottom(10).row(); // FINISHME: Span 5?
+                table.image().color(Color.gray).fillX().height(3).pad(6).colspan(5).padTop(0).padBottom(10).row();
                 lastCategory = keybind.category;
             }
 
@@ -110,7 +110,7 @@ public class KeybindDialog extends Dialog{
                     rebindMin = true;
                     rebindKey = keybind;
                     rebind(keybind, KeyCode.unset);
-                }).size(bw, bh).padLeft(4f);
+                }).size(bw, bh).padLeft(4f).disabled(t -> keybind.value.min == KeyCode.unset);
             }else{
                 table.add(bundle.get("keybind." + keybind.name + ".name", Strings.capitalize(keybind.name)), Color.white).left().padRight(40).padLeft(8);
                 table.label(() -> keybind.value.key.toString()).color(Pal.accent).left().minWidth(90).padRight(20);
@@ -126,13 +126,13 @@ public class KeybindDialog extends Dialog{
                     rebindMin = false;
                     rebindKey = keybind;
                     rebind(keybind, KeyCode.unset);
-                }).size(bw, bh).padLeft(4f);
+                }).size(bw, bh).padLeft(4f).disabled(t -> keybind.value.key == KeyCode.unset);
             }
             table.button("@settings.resetKey", tstyle, keybind::resetToDefault).disabled(t -> keybind.isDefault()).size(bw, bh).pad(2f).padLeft(4f);
             table.row();
         }
 
-        table.button("@settings.reset", Icon.refresh, tstyle, KeyBind::resetAll).minWidth(200f).colspan(4).padTop(4).margin(10f).height(50f).fill();
+        table.button("@settings.reset", Icon.refresh, tstyle, KeyBind::resetAll).minWidth(200f).colspan(5).padTop(4).margin(10f).height(50f).fill();
     }
 
     void rebind(KeyBind bind, KeyCode newKey){
