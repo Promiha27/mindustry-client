@@ -731,7 +731,7 @@ public class MapEditorDialog extends Dialog implements Disposable{
                 view.setGrid(!view.isGrid());
             }
 
-            if (Core.input.keyTap(Binding.hide_blocks)) { // Ctrl + I: Toggle block visibility
+            if (Core.input.keyTap(Binding.hideBlocks)) { // Ctrl + I: Toggle block visibility
                 ClientVars.hidingBlocks = !ClientVars.hidingBlocks;
                 editor.renderer.updateAll();
             }

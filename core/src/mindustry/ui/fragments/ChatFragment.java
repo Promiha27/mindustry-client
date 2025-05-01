@@ -17,7 +17,6 @@ import mindustry.*;
 import mindustry.client.*;
 import mindustry.client.ui.*;
 import mindustry.client.utils.*;
-import mindustry.core.*;
 import mindustry.game.*;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
@@ -83,12 +82,12 @@ public class ChatFragment extends Table{
                     updateChat();
                 }
                 boolean tabConsumed = false;
-                if (input.keyTap(Binding.chat_autocomplete) && completion.any() /*&& mode == ChatMode.normal*/) {
+                if (input.keyTap(Binding.chatAutocomplete) && completion.any() /*&& mode == ChatMode.normal*/) {
                     completionPos = Mathf.clamp(completionPos, 0, completion.size - 1);
                     String oldText = chatfield.getText();
                     chatfield.setText(completion.get(completionPos).getCompletion(chatfield.getText()) + " ");
                     updateCursor();
-                    if(chatfield.getText() != oldText){
+                    if(!chatfield.getText().equals(oldText)){
                         tabConsumed = true;
                     }
                 }

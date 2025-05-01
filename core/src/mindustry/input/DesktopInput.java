@@ -113,34 +113,34 @@ public class DesktopInput extends InputHandler{
                             str.append("\n").append(bundle.format(dispatchingBuildPlans ? "client.stopsendbuildplans" : "client.sendbuildplans", Binding.sendBuildQueue.value.key.toString()));
                         }
                         if(hidingUnits || hidingAirUnits){
-                            str.append("\n").append(bundle.format("client.toggleunits", Binding.invisible_units.value.key.toString()));
-                            str.append("\n").append(bundle.format("client.toggleairunits", Binding.invisible_units.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleunits", Binding.invisibleUnits.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleairunits", Binding.invisibleUnits.value.key.toString()));
                         }
                         if(showingTurrets){
-                            str.append("\n").append(bundle.format("client.toggleenemyturrets", Binding.show_turret_ranges.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleenemyturrets", Binding.showTurretRanges.value.key.toString()));
                         }
                         if (showingAllyTurrets) {
-                            str.append("\n").append(bundle.format("client.toggleallyturrets", Binding.show_turret_ranges.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleallyturrets", Binding.showTurretRanges.value.key.toString()));
                         }
                         if(showingInvTurrets){
-                            str.append("\n").append(bundle.format("client.toggleinvturrets", Binding.show_turret_ranges.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleinvturrets", Binding.showTurretRanges.value.key.toString()));
                         }
                         if(showingOverdrives){
-                            str.append("\n").append(bundle.format("client.toggleoverdrives", Binding.show_turret_ranges.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleoverdrives", Binding.showTurretRanges.value.key.toString()));
                         }
                         if(showingMassDrivers){
                             str.append("\n").append(bundle.format("client.togglemassdrivers", Binding.showMassdriverConfigs.value.key.toString()));
                         }
                         if(hidingBlocks){
-                            str.append("\n").append(bundle.format("client.toggleblocks", Binding.hide_blocks.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleblocks", Binding.hideBlocks.value.key.toString()));
                         }
                         if (hidingPlans) {
-                            str.append("\n").append(bundle.format("client.toggleplans", Binding.hide_blocks.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleplans", Binding.hideBlocks.value.key.toString()));
                         }
                         if(Navigation.state == NavigationState.RECORDING){
-                            str.append("\n").append(bundle.format("client.waypoint", Binding.place_waypoint.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.waypoint", Binding.placeWaypoint.value.key.toString()));
                         }else if(Navigation.state == NavigationState.FOLLOWING){
-                            str.append("\n").append(bundle.format("client.stoppath", Binding.stop_following_path.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.stoppath", Binding.stopFollowingPath.value.key.toString()));
                         }
 
                         if(selectPlans.any()){ // Any selection
@@ -330,10 +330,10 @@ public class DesktopInput extends InputHandler{
             ui.listfrag.toggle();
         }
 
-        conveyorPlaceNormal = input.keyDown(Binding.toggle_placement_modifiers);
+        conveyorPlaceNormal = input.keyDown(Binding.togglePlacementModifiers);
 
         if(Navigation.state == NavigationState.RECORDING){
-            if(input.keyTap(Binding.place_waypoint) && scene.getKeyboardFocus() == null){
+            if(input.keyTap(Binding.placeWaypoint) && scene.getKeyboardFocus() == null){
                 Navigation.addWaypointRecording(Pools.obtain(PositionWaypoint.class, PositionWaypoint::new).set(player.x, player.y));
             }
         }
@@ -352,17 +352,17 @@ public class DesktopInput extends InputHandler{
             }
         }
 
-        if(input.keyTap(Binding.invisible_units) && scene.getKeyboardFocus() == null){
+        if(input.keyTap(Binding.invisibleUnits) && scene.getKeyboardFocus() == null){
             if (input.shift()) hidingAirUnits = !hidingAirUnits;
             else hidingUnits = !hidingUnits;
         }
 
-        if(input.keyTap(Binding.show_reactor_and_dome_ranges)){
+        if(input.keyTap(Binding.showReactorAndDomeRanges)){
             settings.put("showreactors", !settings.getBool("showreactors"));
             settings.put("showdomes", !settings.getBool("showdomes"));
         }
 
-        if(input.keyTap(Binding.show_turret_ranges) && scene.getKeyboardFocus() == null){
+        if(input.keyTap(Binding.showTurretRanges) && scene.getKeyboardFocus() == null){
             if (input.shift()) showingOverdrives = !showingOverdrives;
             else if (input.ctrl() && settings.getBool("allowinvturrets")) showingInvTurrets = !showingInvTurrets;
             else if (input.alt()) showingAllyTurrets = !showingAllyTurrets;
@@ -373,16 +373,16 @@ public class DesktopInput extends InputHandler{
             showingMassDrivers = !showingMassDrivers;
         }
 
-        if(input.keyTap(Binding.hide_blocks) && scene.getKeyboardFocus() == null){
+        if(input.keyTap(Binding.hideBlocks) && scene.getKeyboardFocus() == null){
             if (input.shift()) hidingPlans = !hidingPlans;
             else hidingBlocks = !hidingBlocks;
         }
 
-        if(input.keyTap(Binding.stop_following_path) && scene.getKeyboardFocus() == null){
+        if(input.keyTap(Binding.stopFollowingPath) && scene.getKeyboardFocus() == null){
             Navigation.stopFollowing();
         }
 
-        if(input.keyTap(Binding.auto_build) && scene.getKeyboardFocus() == null && !player.dead()){
+        if(input.keyTap(Binding.autoBuild) && scene.getKeyboardFocus() == null && !player.dead()){
             if(input.shift()) {
                 var plans = player.unit().plans;
                 var arr = plans.toArray(BuildPlan.class); // FINISHME: Add an overload that takes an array param to avoid making a new one every time, make it use arraycopy twice instead of running get() in a loop
@@ -393,15 +393,15 @@ public class DesktopInput extends InputHandler{
             } else Navigation.follow(new BuildPath());
         }
 
-        if(input.keyTap(Binding.auto_repair) && scene.getKeyboardFocus() == null && (input.shift() || (player != null && player.unit() != null && player.unit().type.canHeal))){
+        if(input.keyTap(Binding.autoRepair) && scene.getKeyboardFocus() == null && (input.shift() || (player != null && player.unit() != null && player.unit().type.canHeal))){
             Navigation.follow(new RepairPath());
         }
 
-        if(input.keyTap(Binding.auto_mine) && scene.getKeyboardFocus() == null && (input.shift() || (player != null && player.unit() != null && player.unit().type.mineTier > 0))){
+        if(input.keyTap(Binding.autoMine) && scene.getKeyboardFocus() == null && (input.shift() || (player != null && player.unit() != null && player.unit().type.mineTier > 0))){
             Navigation.follow(new MinePath());
         }
 
-        if(input.keyTap(Binding.toggle_strict_mode) && scene.getKeyboardFocus() == null){
+        if(input.keyTap(Binding.toggleStrictMode) && scene.getKeyboardFocus() == null){
             settings.put("assumeunstrict", !settings.getBool("assumeunstrict"));
         }
 
@@ -422,7 +422,7 @@ public class DesktopInput extends InputHandler{
         float camSpeed = (!Core.input.keyDown(Binding.boost) ? panSpeed : panBoostSpeed) * Time.delta;
         boolean detached = settings.getBool("detach-camera", false);
 
-        if(input.keyTap(Binding.navigate_to_cursor) && scene.getKeyboardFocus() == null){
+        if(input.keyTap(Binding.navigateToCursor) && scene.getKeyboardFocus() == null){
             if(selectPlans.any() == input.shift() && !input.ctrl()) Navigation.navigateTo(input.mouseWorld()); // Z to nav to cursor (SHIFT + Z when placing schem)
             else if (selectPlans.isEmpty()){ // SHIFT + Z to view lastSentPos, double tap to nav there, special case for logic viruses as well (does nothing when placing schem)
                 if(input.shift()) {
@@ -461,14 +461,14 @@ public class DesktopInput extends InputHandler{
                 if(state.gameOver && !state.rules.pvp) followGameEndPan = false;
             }
 
-            if(Core.settings.getBool("returnonmove") && ((!input.keyDown(Binding.freecam_modifier) && (Math.abs(Core.input.axis(Binding.moveX)) > 0 || Math.abs(Core.input.axis(Binding.moveY)) > 0)) || input.keyDown(Binding.mouseMove))){
+            if(Core.settings.getBool("returnonmove") && ((!input.keyDown(Binding.freecamModifier) && (Math.abs(Core.input.axis(Binding.moveX)) > 0 || Math.abs(Core.input.axis(Binding.moveY)) > 0)) || input.keyDown(Binding.mouseMove))){
                 panning = false;
                 spectating = null;
             }
         }
 
         // FINISHME(v147): Vanilla has some sort of detach keybind now, can we use that instead?
-        if(input.keyDown(Binding.freecam_modifier) && (input.axis(Binding.moveX) != 0f || input.axis(Binding.moveY) != 0f) && scene.getKeyboardFocus() == null){
+        if(input.keyDown(Binding.freecamModifier) && (input.axis(Binding.moveX) != 0f || input.axis(Binding.moveY) != 0f) && scene.getKeyboardFocus() == null){
             spectating = null;
             panning = true;
             logicCutscene = false; // Cancel the cutscene
@@ -483,14 +483,14 @@ public class DesktopInput extends InputHandler{
         panning |= detached;
 
 
-        if(input.keyDown(Binding.drop_payload) && scene.getKeyboardFocus() == null){
+        if(input.keyDown(Binding.dropPayload) && scene.getKeyboardFocus() == null){
             mode = payloadPlace;
         }
-        if(input.keyRelease(Binding.drop_payload) && scene.getKeyboardFocus() == null){
+        if(input.keyRelease(Binding.dropPayload) && scene.getKeyboardFocus() == null){
             mode = none;
         }
 
-        if (input.keyDown(Binding.find_modifier) && input.keyRelease(Binding.find)) {
+        if (input.keyDown(Binding.findModifier) && input.keyRelease(Binding.find)) {
             FindDialog.INSTANCE.show();
         }
 
@@ -646,7 +646,7 @@ public class DesktopInput extends InputHandler{
         if(!scene.hasMouse() && !locked){
             // FINISHME: Move this into its own method, its huge
             Unit sl;
-            if(Core.input.keyDown(Binding.tile_actions_menu_modifier) && Core.input.keyTap(Binding.select) && selectPlans.isEmpty() && !selectedBlock() && cursor != null && ((sl = selectedUnit(true)) == null || sl instanceof BlockUnitUnit)){ // Tile actions / alt click menu
+            if(Core.input.keyDown(Binding.tileActionsMenuModifier) && Core.input.keyTap(Binding.select) && selectPlans.isEmpty() && !selectedBlock() && cursor != null && ((sl = selectedUnit(true)) == null || sl instanceof BlockUnitUnit)){ // Tile actions / alt click menu
                 int itemHeight = 30;
                 Table table = new Table(Tex.buttonTrans);
                 table.setWidth(400);
@@ -797,7 +797,7 @@ public class DesktopInput extends InputHandler{
 
         if(state.isMenu() || Core.scene.hasDialog()) return;
 
-        if(input.keyTap(Binding.reset_camera) && scene.getKeyboardFocus() == null && (cursor == null || cursor.build == null || !(cursor.build.block.rotate && cursor.build.block.quickRotate && cursor.build.interactable(player.team()))) && !input.alt()){
+        if(input.keyTap(Binding.resetCamera) && scene.getKeyboardFocus() == null && (cursor == null || cursor.build == null || !(cursor.build.block.rotate && cursor.build.block.quickRotate && cursor.build.interactable(player.team()))) && !input.alt()){
             panning = false;
             Spectate.INSTANCE.setPos(null); // FINISHME: Vanilla has a spectate feature now
         }
@@ -1318,7 +1318,7 @@ public class DesktopInput extends InputHandler{
         float speed = unit.speed();
         float xa = Core.input.axis(Binding.moveX);
         float ya = Core.input.axis(Binding.moveY);
-        if(input.keyDown(Binding.freecam_modifier)){
+        if(input.keyDown(Binding.freecamModifier)){
             xa = ya = 0f;
         }
         boolean boosted = (unit instanceof Mechc && unit.isFlying());

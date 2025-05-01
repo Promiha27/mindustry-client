@@ -355,24 +355,24 @@ public class HudFragment{
                 wavesMain.table(Tex.wavepane, st -> {
                     var a = 0.5f;
                     //i dont think there is anything better
-                    modeIcon(st, () -> showingTurrets, () -> showingTurrets ^= true, Icon.turret.tint(1, 0.33f, 0.33f, a), "Showing Turrets", Binding.show_turret_ranges);
-                    modeIcon(st, () -> showingAllyTurrets, () -> showingAllyTurrets ^= true, Icon.turret.tint(0.67f, 1, 0.67f, a), "Showing Ally Turrets", Binding.show_turret_ranges, "Alt");
+                    modeIcon(st, () -> showingTurrets, () -> showingTurrets ^= true, Icon.turret.tint(1, 0.33f, 0.33f, a), "Showing Turrets", Binding.showTurretRanges);
+                    modeIcon(st, () -> showingAllyTurrets, () -> showingAllyTurrets ^= true, Icon.turret.tint(0.67f, 1, 0.67f, a), "Showing Ally Turrets", Binding.showTurretRanges, "Alt");
                     if(Core.settings.getBool("allowinvturrets"))
-                        modeIcon(st, () -> showingInvTurrets, () -> showingInvTurrets ^= true, Icon.turret.tint(1, 0.67f, 0.33f, a), "Inverting Ground/Air", Binding.show_turret_ranges, "Ctrl");
-                    modeIcon(st, () -> hidingUnits, () -> hidingUnits ^= true, new SlashTextureRegionDrawable(Icon.units.getRegion(), new Color(1f, 1f, 1f, a)), "Hiding Units", Binding.invisible_units);
-                    modeIcon(st, () -> hidingAirUnits, () -> hidingAirUnits ^= true, new SlashTextureRegionDrawable(Icon.planeOutline.getRegion(), new Color(1f, 1f, 1f, a)), "Hiding Air Units", Binding.invisible_units, "Shift");
-                    modeIcon(st, () -> hidingBlocks, () -> hidingBlocks ^= true, new SlashTextureRegionDrawable(Icon.layers.getRegion(), new Color(1f, 1f, 1f, a)), "Hiding Blocks", Binding.hide_blocks);
-                    modeIcon(st, () -> hidingPlans, () -> hidingPlans ^= true, new SlashTextureRegionDrawable(Icon.effect.getRegion(), new Color(0.5f, 0.5f, 0.5f, a)), "Hiding Plans", Binding.hide_blocks, "Shift");
+                        modeIcon(st, () -> showingInvTurrets, () -> showingInvTurrets ^= true, Icon.turret.tint(1, 0.67f, 0.33f, a), "Inverting Ground/Air", Binding.showTurretRanges, "Ctrl");
+                    modeIcon(st, () -> hidingUnits, () -> hidingUnits ^= true, new SlashTextureRegionDrawable(Icon.units.getRegion(), new Color(1f, 1f, 1f, a)), "Hiding Units", Binding.invisibleUnits);
+                    modeIcon(st, () -> hidingAirUnits, () -> hidingAirUnits ^= true, new SlashTextureRegionDrawable(Icon.planeOutline.getRegion(), new Color(1f, 1f, 1f, a)), "Hiding Air Units", Binding.invisibleUnits, "Shift");
+                    modeIcon(st, () -> hidingBlocks, () -> hidingBlocks ^= true, new SlashTextureRegionDrawable(Icon.layers.getRegion(), new Color(1f, 1f, 1f, a)), "Hiding Blocks", Binding.hideBlocks);
+                    modeIcon(st, () -> hidingPlans, () -> hidingPlans ^= true, new SlashTextureRegionDrawable(Icon.effect.getRegion(), new Color(0.5f, 0.5f, 0.5f, a)), "Hiding Plans", Binding.hideBlocks, "Shift");
                     modeIcon(st, () -> showingMassDrivers, () -> showingMassDrivers ^= true, new TextureRegionDrawable(Blocks.massDriver.region), "Showing Massdriver Links", Binding.showMassdriverConfigs);
-                    modeIcon(st, () -> showingOverdrives, () -> showingOverdrives ^= true, new TextureRegionDrawable(Blocks.overdriveProjector.region), "Showing Overdrive Ranges", Binding.show_turret_ranges);
-                    modeIcon(st, () -> Core.settings.getBool("showdomes"), () -> Core.settings.put("showdomes", !Core.settings.getBool("showdomes")), Icon.commandRally, "Showing Dome Ranges", Binding.show_reactor_and_dome_ranges);
+                    modeIcon(st, () -> showingOverdrives, () -> showingOverdrives ^= true, new TextureRegionDrawable(Blocks.overdriveProjector.region), "Showing Overdrive Ranges", Binding.showTurretRanges);
+                    modeIcon(st, () -> Core.settings.getBool("showdomes"), () -> Core.settings.put("showdomes", !Core.settings.getBool("showdomes")), Icon.commandRally, "Showing Dome Ranges", Binding.showReactorAndDomeRanges);
                     st.row();
                     modeIcon(st, () -> !Vars.control.input.isBuilding, () -> Vars.control.input.isBuilding ^= true, Icon.pause.tint(1, 0.33f, 0.33f, a), "Paused Building", Binding.pauseBuilding);
                     modeIcon(st, () -> control.input.isFreezeQueueing, () -> control.input.isFreezeQueueing ^= true, Icon.pause.tint(0.33f, 0.33f, 1, a), "Freeze Queuing", Binding.pauseBuilding, "Shift");
                     modeIcon(st, () -> Core.settings.getBool("autotarget"), () -> Core.settings.put("autotarget", !Core.settings.getBool("autotarget")), Icon.modeAttack.tint(1f, 0.33f, 0.33f, a), "Auto Target", Binding.toggleAutoTarget);
                     modeIcon(st, () -> AutoTransfer.enabled, () -> AutoTransfer.enabled ^= true, Icon.resize.tint(1, 0.33f, 1, a), "Auto Transfer", Binding.toggleAutoTarget, "Shift");
                     modeIcon(st, () -> dispatchingBuildPlans, () -> dispatchingBuildPlans ^= true, Icon.tree.tint(1, 1, 1, a), "Sending Build Plans", Binding.sendBuildQueue);
-                    modeIcon(st, () -> Navigation.currentlyFollowing != null, Navigation::stopFollowing, Icon.android.tint(Color.cyan.cpy().a(a)), "Navigating", Binding.stop_following_path);
+                    modeIcon(st, () -> Navigation.currentlyFollowing != null, Navigation::stopFollowing, Icon.android.tint(Color.cyan.cpy().a(a)), "Navigating", Binding.stopFollowingPath);
                 }).marginTop(3).marginBottom(3).growX().get();
             }
 
