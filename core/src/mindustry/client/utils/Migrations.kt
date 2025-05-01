@@ -1,19 +1,18 @@
 package mindustry.client.utils
 
-import arc.*
 import arc.Core.*
-import arc.input.*
 import arc.struct.*
 import arc.util.*
-import mindustry.input.*
 import mindustry.type.*
 
 @Suppress("unused")
 /** Allows for simple migrations between versions of the client. */
 class Migrations {
     fun runMigrations() {
+        val start = Time.nanos()
         val functions = this::class.java.declaredMethods // Cached function list. Using kotlin reflection to find functions is extremely slow.
         var migration = settings.getInt("foomigration", 1) // Starts at 1
+        val prevMigration = migration
         while (true) {
             val migrateFun = functions.find { it.name == "migration$migration" } ?: break // Find next migration or break
             Log.debug("Running foo's migration $migration")
@@ -23,7 +22,8 @@ class Migrations {
             Log.debug("Finished running foo's migration $migration")
             migration++
         }
-        if (settings.getInt("foomigration", 1) != migration) settings.put("foomigration", migration) // Avoids saving settings if the value remains the same
+        if (prevMigration != migration) settings.put("foomigration", migration) // Avoids saving settings if the value remains the same
+        Log.debug("${migration - prevMigration} migrations ran in ${Time.millisSinceNanos(start)}ms.")
     }
 
     private fun migration1() { // All of the migrations from before the existence of the migration system
@@ -58,16 +58,7 @@ class Migrations {
     }
 
     private fun migration3() { // Finally changed Binding.navigate_to_camera to navigate_to_cursor
-        InputDevice.DeviceType.entries.forEach { device ->
-            if (!settings.has("keybind-default-$device-navigate_to_camera-key")) return@forEach
-            val saved = settings.getInt("keybind-default-$device-navigate_to_camera-key")
-            settings.remove("keybind-default-$device-navigate_to_camera-key")
-            settings.remove("keybind-default-$device-navigate_to_camera-single")
-            keybinds.sections.first { it.name == "default" }.binds[device, ::OrderedMap].put(
-                Binding.navigate_to_cursor,
-                KeyBinds.Axis(KeyCode.byOrdinal(saved))
-            )
-        }
+        // NOOP: Code changed relating to keybinds and this migration is 2 years old so its not even worth fixing.
     }
 
     private fun migration4() = settings.remove("broadcastcoreattack") // Removed as it was super annoying

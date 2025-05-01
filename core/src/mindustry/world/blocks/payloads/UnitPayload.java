@@ -124,7 +124,7 @@ public class UnitPayload implements Payload{
             return false;
         }
 
-        if (lastDump == null || lastDump != unit) {
+        if (Vars.net.client() && (lastDump == null || lastDump != unit)) {
             Events.fire(new UnitUnloadEvent(unit));
             lastDump = unit;
         }
@@ -136,6 +136,8 @@ public class UnitPayload implements Payload{
         unit.vel.add(Mathf.range(0.5f), Mathf.range(0.5f));
         unit.add();
         unit.unloaded();
+        Events.fire(new UnitUnloadEvent(unit));
+        Units.notifyUnitSpawn(unit);
 
         return true;
     }

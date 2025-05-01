@@ -45,12 +45,12 @@ public class ContentLoader{
         loadStart = Time.nanos();
         UnitCommand.loadAll();
         logLoad("UnitCommand");
-        UnitStance.loadAll();
-        logLoad("UnitStance");
         TeamEntries.load();
         logLoad("TeamEntries");
         Items.load();
         logLoad("Items");
+        UnitStance.loadAll(); //needs to access items
+        logLoad("UnitStance");
         StatusEffects.load();
         logLoad("StatusEffects");
         Liquids.load();

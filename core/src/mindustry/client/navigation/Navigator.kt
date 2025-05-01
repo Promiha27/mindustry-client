@@ -38,11 +38,16 @@ abstract class Navigator {
     fun navigate(start: Vec2, end: Vec2, obstacles: Iterable<TurretPathfindingEntity>): Array<PositionWaypoint> {
         start.clamp(0f, 0f, world.unitWidth().toFloat(), world.unitHeight().toFloat())
         end.clamp(0f, 0f, world.unitWidth().toFloat(), world.unitHeight().toFloat())
-        val additionalRadius = player.unit().hitSize / 2 + tilesize
+
+        @Suppress("RemoveRedundantQualifierName")
+        val unit: mindustry.gen.Unit? = player.unit()
+        val type = unit?.type ?: UnitTypes.gamma // FINISHME: Instead of defaulting to gamma, maybe pick the largest core unit on the map?
+
+        val additionalRadius = (unit?.hitSize() ?: 16F) / 2 + tilesize // Default to about the size of a mega
         val pool = Pools.get(Circle::class.java, ::Circle)
 
         // Turrets and units FINISHME: Turrets should probably not use this system
-        if (player.unit().type.targetable(player.unit(), player.team()) && player.unit().type.hittable(player.unit())) {
+        if (type.targetable(unit, player.team()) && type.hittable(unit)) {
             for (turret in obstacles) {
                 if (turret.isObstacle()) {
                     realObstacles.add(
@@ -89,12 +94,12 @@ abstract class Navigator {
         //Consider respawning at a core
         if (Time.timeSinceMillis(lastTp) > 3000 && player.team().cores().any()) {
             if (
-                player.unit().spawnedByCore &&
-                player.unit().stack.amount == 0 &&
-                (if(player.unit() is Payloadc) !(player.unit() as Payloadc).hasPayload() else true)
+                unit?.spawnedByCore == true &&
+                unit.stack.amount == 0 &&
+                (unit as? Payloadc)?.hasPayload()?.not() ?: true // no payloads
             ) {
                 val bestCore = player.team().cores().min(Structs.comps(Structs.comparingInt { -it.block.size }, Structs.comparingFloat { it.dst2(end) }))
-                if (player.dst2(bestCore) > buildingRange * buildingRange && player.dst2(end) > bestCore.dst2(end) && player.dst2(bestCore) > player.unit().speed() * player.unit().speed() * 24 * 24) { // don't try to move if we're already close to that core
+                if (player.dst2(bestCore) > buildingRange * buildingRange && player.dst2(end) > bestCore.dst2(end) && player.dst2(bestCore) > unit.speed() * unit.speed() * 24 * 24) { // don't try to move if we're already close to that core
                     lastTp = Time.millis() // Try again in 3s
                     if (ClientVars.ratelimitRemaining > 1) Call.buildingControlSelect(player, bestCore)
                 }
@@ -102,9 +107,9 @@ abstract class Navigator {
             if (Time.timeSinceMillis(lastTp) > 3000) lastTp = Time.millis() - 2900 // Didn't tp, try again in .1s
         }
 
-        val avoidFlood = CustomMode.flood() && player.unit().type != UnitTypes.horizon && player.team() !== Team.blue
-        val canBoost = player.unit().type.canBoost
-        val solidity = player.unit().solidity()
+        val avoidFlood = CustomMode.flood() && type != UnitTypes.horizon && player.team() !== Team.blue
+        val canBoost = type.canBoost
+        val solidity = unit?.solidity()
         val ret = findPath(
             start, end, realObstacles, world.unitWidth().toFloat(), world.unitHeight().toFloat()
         ) { x, y ->

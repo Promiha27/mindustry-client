@@ -129,7 +129,7 @@ public class SerpuloTechTree{
                         });
                     });
 
-                    node(siliconSmelter, () -> {
+                    node(siliconSmelter, Seq.with(new SectorComplete(frozenForest)), () -> {
 
                         node(sporePress, () -> {
                             node(coalCentrifuge, () -> {
@@ -361,7 +361,7 @@ public class SerpuloTechTree{
                         });
                     });
 
-                    node(nova, () -> {
+                    node(nova, Seq.with(new SectorComplete(fungalPass)), () -> {
                         node(pulsar, () -> {
                             node(quasar, () -> {
                                 node(vela, () -> {

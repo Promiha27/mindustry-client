@@ -221,14 +221,15 @@ enum class CustomMode(
                     Log.debug(if (update) "Updating" else "Installing" + " FloodCompat")
                     ui.mods.githubImportMod(ioFloodCompatRepo, true, null, floodMod?.meta?.version) {
                         val new = mods.mods.last { it.name == "floodcompat"} // newly downloaded flood compat if any
-                        if (update && new != floodMod) { // Delete old flood mod for update. If new == old, there was no update.
+                        val installed = !update || new != floodMod
+                        if (update && installed) { // Delete old flood mod for update. If new == old, there was no update.
                             floodMod!!.file.deleteDirectory()
                             floodMod!!.dispose()
                             mods.mods.remove(floodMod)
                         }
                         val reload = Reflect.get<Boolean>(mods, "requiresReload")
                         Reflect.set(mods, "requiresReload", reload)
-                        Toast(3f).add("FloodCompat " + if (update) "updated" else "installed" + " successfully!")
+                        if (installed) Toast(3f).add("FloodCompat " + if (update) "updated" else "installed" + " successfully!")
                         Core.settings.put("mod-floodcompat-enabled", false) // Set as disabled as there's no reason to load it outside of flood gamemode
                         floodMod = mods.getMod("floodcompat") // floodMod is still null from before, set it to the mod we just downloaded
                         enable()

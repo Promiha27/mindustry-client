@@ -83,9 +83,11 @@ public class Schematics implements Loadable{
 
         var await = Seq.<Future<?>>with();
 
-        for(Fi file : schematicDirectory.list()){
-            await.add(mainExecutor.submit(() -> loadFile(file)));
-        }
+        schematicDirectory.walk(file -> {
+            if(file.extEquals(schematicExtension)){
+                await.add(mainExecutor.submit(() -> loadFile(file)));
+            }
+        });
 
         platform.getWorkshopContent(Schematic.class).each(file -> await.add(mainExecutor.submit(() -> loadFile(file))));
 

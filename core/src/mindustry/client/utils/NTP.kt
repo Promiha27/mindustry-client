@@ -33,6 +33,7 @@ class NTP {
                         )
                     } catch (e: SocketTimeoutException) {
                         Log.debug("NTP Timed out")
+                        Log.err(e)
                     } catch (e: Exception) {
                         if (e.message == "Network is unreachable") Log.debug("NTP server unreachable")
                         else Log.debug("NTP error!\n" + e.stackTraceToString())

@@ -4,6 +4,7 @@ import arc.*;
 import arc.assets.*;
 import arc.files.*;
 import arc.graphics.*;
+import arc.input.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
@@ -460,10 +461,16 @@ public class Vars implements Loadable{
         //needed to make sure binding values are correct
         Vars.android = app.isAndroid();
         settings.defaults("locale", "default", "blocksync", true);
-        keybinds.setDefaults(Binding.values());
         settings.setAutosave(false);
         settings.load();
         if(Core.settings.getBool("debug") || OS.hasProp("debug")) Log.level = Log.LogLevel.debug;
+
+        //this should not be necessary, but in case Binding is initialized before Settings#load(), do that here
+        for(KeyBind bind : KeyBind.all){
+            bind.load();
+        }
+
+        Binding.init();
 
         //https://github.com/Anuken/Mindustry/issues/8483
         if(settings.getInt("uiscale") == 5){

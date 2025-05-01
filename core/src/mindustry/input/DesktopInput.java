@@ -33,7 +33,6 @@ import mindustry.game.EventType.*;
 import mindustry.game.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
-import mindustry.type.*;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 import mindustry.ui.fragments.*;
@@ -41,10 +40,9 @@ import mindustry.world.*;
 import mindustry.world.blocks.logic.*;
 import mindustry.world.blocks.payloads.*;
 import mindustry.world.blocks.storage.*;
-import mindustry.world.meta.*;
 
-import static arc.Core.camera;
 import static arc.Core.*;
+import static arc.Core.camera;
 import static mindustry.Vars.*;
 import static mindustry.client.ClientVars.*;
 import static mindustry.input.PlaceMode.*;
@@ -71,11 +69,6 @@ public class DesktopInput extends InputHandler{
     public long selectMillis = 0;
     /** Previously selected tile. */
     public Tile prevSelected;
-    private long lastShiftZ;
-    /** Position where the player started drag-selecting. Overlaps with selectX/Y but is only used by client. */
-    public float dragX = Float.NaN, dragY;
-    /** Whether the player has provided movement input since some other code set it to false */
-    public boolean moved = false;
 
     /** Most recently selected control group by index */
     public int lastCtrlGroup;
@@ -83,6 +76,14 @@ public class DesktopInput extends InputHandler{
     public long lastCtrlGroupSelectMillis;
 
     private float buildPlanMouseOffsetX, buildPlanMouseOffsetY;
+
+
+    // Client Vars
+    private long lastShiftZ;
+    /** Position where the player started drag-selecting. Overlaps with selectX/Y but is only used by client. */
+    public float dragX = Float.NaN, dragY;
+    /** Whether the player has provided movement input since some other code set it to false */
+    public boolean moved = false;
 
     @Override
     public void buildUI(Group group){
@@ -98,52 +99,52 @@ public class DesktopInput extends InputHandler{
                     str.setLength(0);
                     if(Core.settings.getBool("hints")) {
                         if (isFreezeQueueing) {
-                            str.append("\n").append(bundle.format("client.freezequeueing", keybinds.get(Binding.pause_building).key.toString()));
+                            str.append("\n").append(bundle.format("client.freezequeueing", Binding.pauseBuilding.value.key.toString()));
                         }
                         if(!isBuilding && !isBuildingLock && !settings.getBool("buildautopause") && !isBuildingIgnoreNetworking()){
-                            str.append("\n").append(bundle.format("enablebuilding", keybinds.get(Binding.pause_building).key.toString()));
+                            str.append("\n").append(bundle.format("enablebuilding", Binding.pauseBuilding.value.key.toString()));
                         }else if(isBuildingIgnoreNetworking() || !Player.persistPlans.isEmpty()){
                             str.append("\n")
-                                .append(bundle.format(isBuilding ? "pausebuilding" : "resumebuilding", keybinds.get(Binding.pause_building).key.toString()))
-                                .append("\n").append(bundle.format("cancelbuilding", keybinds.get(Binding.clear_building).key.toString()))
-                                .append("\n").append(bundle.format("selectschematic", keybinds.get(Binding.schematic_select).key.toString()));
+                                .append(bundle.format(isBuilding ? "pausebuilding" : "resumebuilding", Binding.pauseBuilding.value.key))
+                                .append("\n").append(bundle.format("cancelbuilding", Binding.clearBuilding.value.key.toString()))
+                                .append("\n").append(bundle.format("selectschematic", Binding.schematicSelect.value.key.toString()));
                         }
                         if(isBuildingIgnoreNetworking() || dispatchingBuildPlans){
-                            str.append("\n").append(bundle.format(dispatchingBuildPlans ? "client.stopsendbuildplans" : "client.sendbuildplans", keybinds.get(Binding.send_build_queue).key.toString()));
+                            str.append("\n").append(bundle.format(dispatchingBuildPlans ? "client.stopsendbuildplans" : "client.sendbuildplans", Binding.sendBuildQueue.value.key.toString()));
                         }
                         if(hidingUnits || hidingAirUnits){
-                            str.append("\n").append(bundle.format("client.toggleunits", keybinds.get(Binding.invisible_units).key.toString()));
-                            str.append("\n").append(bundle.format("client.toggleairunits", keybinds.get(Binding.invisible_units).key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleunits", Binding.invisible_units.value.key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleairunits", Binding.invisible_units.value.key.toString()));
                         }
                         if(showingTurrets){
-                            str.append("\n").append(bundle.format("client.toggleenemyturrets", keybinds.get(Binding.show_turret_ranges).key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleenemyturrets", Binding.show_turret_ranges.value.key.toString()));
                         }
                         if (showingAllyTurrets) {
-                            str.append("\n").append(bundle.format("client.toggleallyturrets", keybinds.get(Binding.show_turret_ranges).key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleallyturrets", Binding.show_turret_ranges.value.key.toString()));
                         }
                         if(showingInvTurrets){
-                            str.append("\n").append(bundle.format("client.toggleinvturrets", keybinds.get(Binding.show_turret_ranges).key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleinvturrets", Binding.show_turret_ranges.value.key.toString()));
                         }
                         if(showingOverdrives){
-                            str.append("\n").append(bundle.format("client.toggleoverdrives", keybinds.get(Binding.show_turret_ranges).key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleoverdrives", Binding.show_turret_ranges.value.key.toString()));
                         }
                         if(showingMassDrivers){
-                            str.append("\n").append(bundle.format("client.togglemassdrivers", keybinds.get(Binding.show_massdriver_configs).key.toString()));
+                            str.append("\n").append(bundle.format("client.togglemassdrivers", Binding.showMassdriverConfigs.value.key.toString()));
                         }
                         if(hidingBlocks){
-                            str.append("\n").append(bundle.format("client.toggleblocks", keybinds.get(Binding.hide_blocks).key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleblocks", Binding.hide_blocks.value.key.toString()));
                         }
                         if (hidingPlans) {
-                            str.append("\n").append(bundle.format("client.toggleplans", keybinds.get(Binding.hide_blocks).key.toString()));
+                            str.append("\n").append(bundle.format("client.toggleplans", Binding.hide_blocks.value.key.toString()));
                         }
                         if(Navigation.state == NavigationState.RECORDING){
-                            str.append("\n").append(bundle.format("client.waypoint", keybinds.get(Binding.place_waypoint).key.toString()));
+                            str.append("\n").append(bundle.format("client.waypoint", Binding.place_waypoint.value.key.toString()));
                         }else if(Navigation.state == NavigationState.FOLLOWING){
-                            str.append("\n").append(bundle.format("client.stoppath", keybinds.get(Binding.stop_following_path).key.toString()));
+                            str.append("\n").append(bundle.format("client.stoppath", Binding.stop_following_path.value.key.toString()));
                         }
 
                         if(selectPlans.any()){ // Any selection
-                            str.append("\n").append(bundle.format("schematic.flip", keybinds.get(Binding.schematic_flip_x).key.toString(), keybinds.get(Binding.schematic_flip_y).key.toString()));
+                            str.append("\n").append(bundle.format("schematic.flip", Binding.schematicFlipX.value.key.toString(), Binding.schematicFlipY.value.key.toString()));
                         }
                     }
 
@@ -185,18 +186,18 @@ public class DesktopInput extends InputHandler{
         }
         //draw break selection
         if(mode == breaking){
-            drawBreakSelection(selectX, selectY, cursorX, cursorY, /*!(Core.input.keyDown(Binding.schematic_select) && schemX != -1 && schemY != -1) ? maxLength :*/ Vars.maxSchematicSize, false);
+            drawBreakSelection(selectX, selectY, cursorX, cursorY, /*!(Core.input.keyDown(Binding.schematicSelect) && schemX != -1 && schemY != -1) ? maxLength :*/ Vars.maxSchematicSize, false);
         }
         //draw dequeueing selection
         if (mode == dequeue){
-            drawSelection(selectX, selectY, cursorX, cursorY, maxSchematicSize, Color.gray, Color.white);
+            drawSelection(selectX, selectY, cursorX, cursorY, Vars.maxSchematicSize, Color.gray, Color.white);
         }
 
         if(!Core.scene.hasKeyboard() && mode != breaking && mode != freezing && mode != dequeue){
 
-            if(Core.input.keyDown(Binding.schematic_select) && schemX != -1 && schemY != -1){
+            if(Core.input.keyDown(Binding.schematicSelect) && schemX != -1 && schemY != -1){
                 drawSelection(schemX, schemY, cursorX, cursorY, Vars.maxSchematicSize);
-            }else if(Core.input.keyDown(Binding.rebuild_select)){
+            }else if(Core.input.keyDown(Binding.rebuildSelect)){
                 drawRebuildSelection(schemX, schemY, cursorX, cursorY);
             }
         }
@@ -325,7 +326,7 @@ public class DesktopInput extends InputHandler{
     public void update(){ // FINISHME v8: This has been cleaned up in v8. We should mirror those changes and ideally have an updateClient() or something for handling client keybinds.
         super.update();
 
-        if(Core.input.keyTap(Binding.player_list) && (scene.getKeyboardFocus() == null || scene.getKeyboardFocus().isDescendantOf(ui.listfrag.content) || scene.getKeyboardFocus().isDescendantOf(ui.minimapfrag.elem))){
+        if(Core.input.keyTap(Binding.playerList) && (scene.getKeyboardFocus() == null || scene.getKeyboardFocus().isDescendantOf(ui.listfrag.content) || scene.getKeyboardFocus().isDescendantOf(ui.minimapfrag.elem))){
             ui.listfrag.toggle();
         }
 
@@ -337,7 +338,7 @@ public class DesktopInput extends InputHandler{
             }
         }
 
-        if(input.keyTap(Binding.run_js) && scene.getKeyboardFocus() == null){
+        if(input.keyTap(Binding.runJS) && scene.getKeyboardFocus() == null){
             boolean ran = false;
             for(var opt : JSBindingOption.values()){
                 if(opt.check.get() && !ran){
@@ -345,7 +346,7 @@ public class DesktopInput extends InputHandler{
                         ChatFragment.handleClientCommand(Core.settings.getString(opt.settingsKey));
                         ran = true;
                     } else {
-                        Vars.player.sendMessage(Strings.format(opt.message, Core.keybinds.get(Binding.run_js).key.toString()));
+                        Vars.player.sendMessage(Strings.format(opt.message, Binding.runJS.value.key.toString()));
                     }
                 }
             }
@@ -368,7 +369,7 @@ public class DesktopInput extends InputHandler{
             else showingTurrets = !showingTurrets;
         }
 
-        if(input.keyTap(Binding.show_massdriver_configs) && scene.getKeyboardFocus() == null){
+        if(input.keyTap(Binding.showMassdriverConfigs) && scene.getKeyboardFocus() == null){
             showingMassDrivers = !showingMassDrivers;
         }
 
@@ -404,7 +405,7 @@ public class DesktopInput extends InputHandler{
             settings.put("assumeunstrict", !settings.getBool("assumeunstrict"));
         }
 
-        if(input.keyTap(Binding.toggle_auto_target) && scene.getKeyboardFocus() == null && selectPlans.isEmpty()){
+        if(input.keyTap(Binding.toggleAutoTarget) && scene.getKeyboardFocus() == null && selectPlans.isEmpty()){
             if (input.shift()) { // Toggle auto transfer
                 AutoTransfer.enabled ^= true;
                 settings.put("autotransfer", AutoTransfer.enabled);
@@ -444,7 +445,7 @@ public class DesktopInput extends InputHandler{
         }
 
         if(!scene.hasField() && !scene.hasDialog()){
-            if(input.keyTap(Binding.detach_camera)){
+            if(input.keyTap(Binding.detachCamera)){
                 settings.put("detach-camera", detached = !detached);
                 if(!detached){
                     panning = false;
@@ -460,14 +461,14 @@ public class DesktopInput extends InputHandler{
                 if(state.gameOver && !state.rules.pvp) followGameEndPan = false;
             }
 
-            if(Core.settings.getBool("returnonmove") && ((!input.keyDown(Binding.freecam_modifier) && (Math.abs(Core.input.axis(Binding.move_x)) > 0 || Math.abs(Core.input.axis(Binding.move_y)) > 0)) || input.keyDown(Binding.mouse_move))){
+            if(Core.settings.getBool("returnonmove") && ((!input.keyDown(Binding.freecam_modifier) && (Math.abs(Core.input.axis(Binding.moveX)) > 0 || Math.abs(Core.input.axis(Binding.moveY)) > 0)) || input.keyDown(Binding.mouseMove))){
                 panning = false;
                 spectating = null;
             }
         }
 
         // FINISHME(v147): Vanilla has some sort of detach keybind now, can we use that instead?
-        if(input.keyDown(Binding.freecam_modifier) && (input.axis(Binding.move_x) != 0f || input.axis(Binding.move_y) != 0f) && scene.getKeyboardFocus() == null){
+        if(input.keyDown(Binding.freecam_modifier) && (input.axis(Binding.moveX) != 0f || input.axis(Binding.moveY) != 0f) && scene.getKeyboardFocus() == null){
             spectating = null;
             panning = true;
             logicCutscene = false; // Cancel the cutscene
@@ -476,7 +477,7 @@ public class DesktopInput extends InputHandler{
             float speed = Time.delta;
             speed *= camera.width;
             speed /= 75f;
-            camera.position.add(input.axis(Binding.move_x) * speed, input.axis(Binding.move_y) * speed);
+            camera.position.add(input.axis(Binding.moveX) * speed, input.axis(Binding.moveY) * speed);
         }
 
         panning |= detached;
@@ -495,11 +496,11 @@ public class DesktopInput extends InputHandler{
 
         if(!locked){
             if(((player.dead() || state.isPaused() || detached) && !ui.chatfrag.shown()) && !scene.hasField() && !scene.hasDialog()){
-                if(input.keyDown(Binding.mouse_move)){
+                if(input.keyDown(Binding.mouseMove)){
                     panCam = true;
                 }
 
-                Core.camera.position.add(Tmp.v1.setZero().add(Core.input.axis(Binding.move_x), Core.input.axis(Binding.move_y)).nor().scl(camSpeed));
+                Core.camera.position.add(Tmp.v1.setZero().add(Core.input.axis(Binding.moveX), Core.input.axis(Binding.moveY)).nor().scl(camSpeed));
             }else if((!player.dead() || spectating != null) && !panning){
                 //TODO do not pan
                 Team corePanTeam = state.won ? state.rules.waveTeam : player.team();
@@ -520,10 +521,10 @@ public class DesktopInput extends InputHandler{
 
         if(!locked && block == null && !scene.hasField() && !scene.hasDialog() &&
                 //disable command mode when player unit can boost and command mode binding is the same
-                !(!player.dead() && player.unit().type.canBoost && keybinds.get(Binding.command_mode).key == keybinds.get(Binding.boost).key)){
+                !(!player.dead() && player.unit().type.canBoost && Binding.commandMode.value.key == Binding.boost.value.key)){
             if(settings.getBool("commandmodehold")){
-                commandMode = input.keyDown(Binding.command_mode);
-            }else if(input.keyTap(Binding.command_mode)){
+                commandMode = input.keyDown(Binding.commandMode);
+            }else if(input.keyTap(Binding.commandMode)){
                 commandMode = !commandMode;
             }
         }else{
@@ -531,26 +532,51 @@ public class DesktopInput extends InputHandler{
         }
 
         //validate commanding units
-        selectedUnits.removeAll(u -> !u.isCommandable() || !u.isValid() || u.team != player.team());
+        selectedUnits.removeAll(u -> !u.allowCommand() || !u.isValid() || u.team != player.team());
 
         if(commandMode && !scene.hasField() && !scene.hasDialog()){
-            if(input.keyTap(Binding.select_all_units)){
+            if(input.keyTap(Binding.selectAllUnits)){
                 selectedUnits.clear();
                 commandBuildings.clear();
-                for(var unit : player.team().data().units){
-                    if(unit.isCommandable()){
-                        selectedUnits.add(unit);
+                if(input.keyDown(Binding.selectAcrossScreen)){
+                    camera.bounds(Tmp.r1);
+                    selectedUnits.set(selectedCommandUnits(Tmp.r1.x, Tmp.r1.y, Tmp.r1.width, Tmp.r1.height));
+                }else {
+                    for(var unit : player.team().data().units){
+                        if(unit.allowCommand()){
+                            selectedUnits.add(unit);
+                        }
+                    }
+                }
+
+            }
+
+            if(input.keyTap(Binding.selectAllUnitTransport)){
+                selectedUnits.clear();
+                commandBuildings.clear();
+                if(input.keyDown(Binding.selectAcrossScreen)){
+                    camera.bounds(Tmp.r1);
+                    selectedUnits.set(selectedCommandUnits(Tmp.r1.x, Tmp.r1.y, Tmp.r1.width, Tmp.r1.height, u -> u instanceof Payloadc));
+                }else {
+                    for(var unit : player.team().data().units){
+                        if(unit.allowCommand() && unit instanceof  Payloadc){
+                            selectedUnits.add(unit);
+                        }
                     }
                 }
             }
 
-            if(input.keyTap(Binding.select_all_unit_factories)){
+            if(input.keyTap(Binding.selectAllUnitFactories)){
                 selectedUnits.clear();
                 commandBuildings.clear();
                 for(var build : player.team().data().buildings){
                     if(build.block.commandable){
                         commandBuildings.add(build);
                     }
+                }
+                if(input.keyDown(Binding.selectAcrossScreen)){
+                    camera.bounds(Tmp.r1);
+                    commandBuildings.retainAll(b -> Tmp.r1.overlaps(b.x - (b.hitSize() /2), b.y - (b.hitSize() /2), b.hitSize(), b.hitSize()));
                 }
             }
 
@@ -561,7 +587,7 @@ public class DesktopInput extends InputHandler{
                     if(controlGroups[i] == null) controlGroups[i] = new IntSeq();
 
                     IntSeq group = controlGroups[i];
-                    boolean creating = input.keyDown(Binding.create_control_group);
+                    boolean creating = input.keyDown(Binding.createControlGroup);
 
                     //clear existing if making a new control group
                     //if any of the control group edit buttons are pressed take the current selection
@@ -765,7 +791,7 @@ public class DesktopInput extends InputHandler{
 
         if(state.isGame() && !scene.hasDialog() && !scene.hasField()){
             if(Core.input.keyTap(Binding.minimap)) ui.minimapfrag.toggle();
-            if(Core.input.keyTap(Binding.planet_map) && state.isCampaign()) ui.planet.toggle();
+            if(Core.input.keyTap(Binding.planetMap) && state.isCampaign()) ui.planet.toggle();
             if(Core.input.keyTap(Binding.research) && state.isCampaign()) ui.research.toggle();
         }
 
@@ -773,13 +799,13 @@ public class DesktopInput extends InputHandler{
 
         if(input.keyTap(Binding.reset_camera) && scene.getKeyboardFocus() == null && (cursor == null || cursor.build == null || !(cursor.build.block.rotate && cursor.build.block.quickRotate && cursor.build.interactable(player.team()))) && !input.alt()){
             panning = false;
-            Spectate.INSTANCE.setPos(null);
+            Spectate.INSTANCE.setPos(null); // FINISHME: Vanilla has a spectate feature now
         }
 
         //zoom camera
-        if((!Core.scene.hasScroll() || Core.input.keyDown(Binding.diagonal_placement)) && !ui.chatfrag.shown() && !ui.consolefrag.shown() && Math.abs(Core.input.axisTap(Binding.zoom)) > 0
-            && !Core.input.keyDown(Binding.rotateplaced) && (Core.input.keyDown(Binding.diagonal_placement) ||
-                !keybinds.get(Binding.zoom).equals(keybinds.get(Binding.rotate)) || ((!player.isBuilder() || !isPlacing() || !block.rotate) && selectPlans.isEmpty()))){
+        if((!Core.scene.hasScroll() || Core.input.keyDown(Binding.diagonalPlacement)) && !ui.chatfrag.shown() && !ui.consolefrag.shown() && Math.abs(Core.input.axisTap(Binding.zoom)) > 0
+            && !Core.input.keyDown(Binding.rotatePlaced) && (Core.input.keyDown(Binding.diagonalPlacement) ||
+                !Binding.zoom.value.equals(Binding.rotate.value) || ((!player.isBuilder() || !isPlacing() || !block.rotate) && selectPlans.isEmpty()))){
             renderer.scaleCamera(Core.input.axisTap(Binding.zoom));
         }
 
@@ -790,7 +816,7 @@ public class DesktopInput extends InputHandler{
             }
         }
 
-        if(player.dead() || locked){
+        if(player.dead() || locked){ // FINISHME: Should we comment out the dead check?
             cursorType = ui.chatfrag.hasLit ? SystemCursor.hand : SystemCursor.arrow;
             if(!Core.scene.hasMouse()){
                 Core.graphics.cursor(cursorType);
@@ -816,7 +842,7 @@ public class DesktopInput extends InputHandler{
             selectScale = 0f;
         }
 
-        if(!Core.input.keyDown(Binding.diagonal_placement) && Math.abs((int)Core.input.axisTap(Binding.rotate)) > 0){
+        if(!Core.input.keyDown(Binding.diagonalPlacement) && Math.abs((int)Core.input.axisTap(Binding.rotate)) > 0){
             rotation = Mathf.mod(rotation + (int)Core.input.axisTap(Binding.rotate), 4);
 
             if(splan != null){
@@ -865,7 +891,7 @@ public class DesktopInput extends InputHandler{
                     cursorType = ui.targetCursor;
                 }
 
-                if(input.keyTap(Binding.command_queue) && keybinds.get(Binding.command_queue).key.type != KeyType.mouse){
+                if(input.keyTap(Binding.commandQueue) && Binding.commandQueue.value.key.type != KeyType.mouse){
                     commandTap(input.mouseX(), input.mouseY(), true);
                 }
             }
@@ -878,7 +904,7 @@ public class DesktopInput extends InputHandler{
                 cursorType = ui.unloadCursor;
             }
 
-            if(!ui.chatfrag.shown() && cursor.build != null && cursor.interactable(player.team()) && !isPlacing() && Math.abs(Core.input.axisTap(Binding.rotate)) > 0 && Core.input.keyDown(Binding.rotateplaced) && cursor.block().rotate && cursor.block().quickRotate){
+            if(!ui.chatfrag.shown() && cursor.build != null && cursor.interactable(player.team()) && !isPlacing() && Math.abs(Core.input.axisTap(Binding.rotate)) > 0 && Core.input.keyDown(Binding.rotatePlaced) && cursor.block().rotate && cursor.block().quickRotate){
                 Call.rotateBlock(player, cursor.build, Core.input.axisTap(Binding.rotate) > 0);
             }
         }
@@ -958,30 +984,30 @@ public class DesktopInput extends InputHandler{
             player.unit().mineTile = null;
         }
 
-        if(Core.input.keyTap(Binding.clear_building)){
+        if(Core.input.keyTap(Binding.clearBuilding)){
             if(Core.input.shift()){
                 frozenPlans.clear();
             }else{
-                if(player.unit().plans.isEmpty()){
+                if(!player.dead() && player.unit().plans.isEmpty()){
                     lastSchematic = null;
                     selectPlans.clear();
                 }
-                Player.persistPlans.clear();
+                Player.persistPlans.clear(); // FINISHME: Persistplans is vanilla now
                 if(player.unit() != null) player.unit().clearBuilding(); // As of v8, the player unit is null when dead
             }
         }
 
-        if((Core.input.keyTap(Binding.schematic_select) || Core.input.keyTap(Binding.rebuild_select)) && !Core.scene.hasKeyboard() && mode != breaking){
+        if((Core.input.keyTap(Binding.schematicSelect) || Core.input.keyTap(Binding.rebuildSelect)) && !Core.scene.hasKeyboard() && mode != breaking){
             schemX = rawCursorX;
             schemY = rawCursorY;
         }
 
-        if(Core.input.keyTap(Binding.schematic_menu) && !Core.scene.hasKeyboard()){
+        if(Core.input.keyTap(Binding.schematicMenu) && !Core.scene.hasKeyboard()){
             if(Core.input.shift()) ui.toggleSchematicBrowser();
             else ui.toggleSchematicMenu();
         }
 
-        if(/*Core.input.keyTap(Binding.clear_building) || */isPlacing()){
+        if(/*Core.input.keyTap(Binding.clearBuilding) || */isPlacing()){
             // if(!Core.input.shift()) {
                 lastSchematic = null;
                 selectPlans.clear();
@@ -989,7 +1015,7 @@ public class DesktopInput extends InputHandler{
         }
 
         if(!Core.scene.hasKeyboard() && selectX == -1 && selectY == -1 && schemX != -1 && schemY != -1){
-            if(Core.input.keyRelease(Binding.schematic_select)){
+            if(Core.input.keyRelease(Binding.schematicSelect)){
                 lastSchematic = schematics.create(schemX, schemY, rawCursorX, rawCursorY);
                 useSchematic(lastSchematic);
                 if(selectPlans.isEmpty()){
@@ -997,7 +1023,7 @@ public class DesktopInput extends InputHandler{
                 }
                 schemX = -1;
                 schemY = -1;
-            }else if(input.keyRelease(Binding.rebuild_select)){
+            }else if(input.keyRelease(Binding.rebuildSelect)){
 
                 rebuildArea(schemX, schemY, rawCursorX, rawCursorY);
                 schemX = -1;
@@ -1006,11 +1032,11 @@ public class DesktopInput extends InputHandler{
         }
 
         if(!selectPlans.isEmpty()){
-            if(Core.input.keyTap(Binding.schematic_flip_x) && !input.shift()){ // Don't rotate when shift is held, if shift is held navigate instead.
+            if(Core.input.keyTap(Binding.schematicFlipX) && !input.shift()){ // Don't rotate when shift is held, if shift is held navigate instead.
                 flipPlans(selectPlans, true);
             }
 
-            if(Core.input.keyTap(Binding.schematic_flip_y)){
+            if(Core.input.keyTap(Binding.schematicFlipY)){
                 flipPlans(selectPlans, false);
             }
         }
@@ -1029,14 +1055,13 @@ public class DesktopInput extends InputHandler{
             linePlans.clear();
         }
 
-        if(Core.input.keyTap(Binding.pause_building)){
+        if(Core.input.keyTap(Binding.pauseBuilding)){
             if (Core.input.shift()) isFreezeQueueing = !isFreezeQueueing;
             else if (Core.input.ctrl()) {
                 temp.set(frozenPlans);
                 flushPlans(temp, false, false, true);
                 temp.clear();
-            }
-            else {
+            } else {
                 isBuilding = !isBuilding;
                 buildWasAutoPaused = false;
 
@@ -1074,12 +1099,12 @@ public class DesktopInput extends InputHandler{
             tappedOne = false;
             BuildPlan plan = getPlan(cursorX, cursorY);
 
-            if(Core.input.keyDown(Binding.break_block)){
+            if(Core.input.keyDown(Binding.breakBlock)){
                 mode = none;
             }else if(selectPlans.any()){
                 flushPlans(
                     temp.selectFrom(selectPlans, s -> s.block.isVisible() || s.block instanceof CoreBlock),
-                    isFreezeQueueing, Core.input.keyDown(Binding.force_place_modifier), isFreezeQueueing);
+                    isFreezeQueueing, Core.input.keyDown(Binding.forcePlaceModifier), isFreezeQueueing);
                 temp.clear();
             }else if(isPlacing()){
                 selectX = cursorX;
@@ -1116,7 +1141,7 @@ public class DesktopInput extends InputHandler{
         }else if(Core.input.keyTap(Binding.deselect) && !selectPlans.isEmpty()){
             selectPlans.clear();
             lastSchematic = null;
-        }else if(Core.input.keyTap(Binding.break_block) && !Core.scene.hasMouse() && !commandMode/*&& player.isBuilder()*/){
+        }else if(Core.input.keyTap(Binding.breakBlock) && !Core.scene.hasMouse() && !commandMode){
             //is recalculated because setting the mode to breaking removes potential multiblock cursor offset
             deleting = false;
             mode = Core.input.shift() ? freezing : Core.input.ctrl() ? dequeue : breaking;
@@ -1137,7 +1162,7 @@ public class DesktopInput extends InputHandler{
         }
 
         if(mode == placing && block != null){
-            if(!overrideLineRotation && !Core.input.keyDown(Binding.diagonal_placement) && (selectX != cursorX || selectY != cursorY) && ((int)Core.input.axisTap(Binding.rotate) != 0)){
+            if(!overrideLineRotation && !Core.input.keyDown(Binding.diagonalPlacement) && (selectX != cursorX || selectY != cursorY) && ((int)Core.input.axisTap(Binding.rotate) != 0)){
                 rotation = ((int)((Angles.angle(selectX, selectY, cursorX, cursorY) + 45) / 90f)) % 4;
                 overrideLineRotation = true;
             }
@@ -1149,13 +1174,13 @@ public class DesktopInput extends InputHandler{
             mode = Core.input.shift() ?  freezing : Core.input.ctrl() ? dequeue : breaking;
         }
 
-        if(Core.input.keyRelease(Binding.break_block) && Core.input.keyDown(Binding.schematic_select) && mode == breaking){
+        if(Core.input.keyRelease(Binding.breakBlock) && Core.input.keyDown(Binding.schematicSelect) && mode == breaking){
             lastSchematic = schematics.create(schemX, schemY, rawCursorX, rawCursorY);
             schemX = -1;
             schemY = -1;
         }
 
-        if(Core.input.keyRelease(Binding.break_block) || Core.input.keyRelease(Binding.select)){
+        if(Core.input.keyRelease(Binding.breakBlock) || Core.input.keyRelease(Binding.select)){
 
             if(mode == placing && block != null){ //touch up while placing, place everything in selection
                 // Why do we even need reversed build plans - SBytes 17/08/2022
@@ -1168,8 +1193,7 @@ public class DesktopInput extends InputHandler{
                 linePlans.clear();
                 Events.fire(new LineConfirmEvent());
             }else if(mode == breaking){ //touch up while breaking, break everything in selection
-                removeSelection(selectX, selectY, cursorX, cursorY, false, /*!Core.input.keyDown(Binding.schematic_select) ? maxLength :*/ Vars.maxSchematicSize, isFreezeQueueing);
-
+                removeSelection(selectX, selectY, cursorX, cursorY, false, /*!Core.input.keyDown(Binding.schematicSelect) ? maxLength :*/ Vars.maxSchematicSize, isFreezeQueueing);
                 if(lastSchematic != null){
                     useSchematic(lastSchematic);
                     lastSchematic = null;
@@ -1203,11 +1227,11 @@ public class DesktopInput extends InputHandler{
             mode = none;
         }
 
-        if(Core.input.keyTap(Binding.toggle_block_status)){
+        if(Core.input.keyTap(Binding.toggleBlockStatus)){
             Core.settings.put("blockstatus", !Core.settings.getBool("blockstatus"));
         }
 
-        if(Core.input.keyTap(Binding.toggle_power_lines)){
+        if(Core.input.keyTap(Binding.togglePowerLines)){
             if(Core.settings.getInt("lasersopacity") == 0){
                 Core.settings.put("lasersopacity", Core.settings.getInt("preferredlaseropacity", 100));
             }else{
@@ -1244,7 +1268,7 @@ public class DesktopInput extends InputHandler{
             commandTap(x, y);
         }
 
-        if(button == keybinds.get(Binding.command_queue).key){
+        if(button == Binding.commandQueue.value.key){
             commandTap(x, y, true);
         }
 
@@ -1281,7 +1305,7 @@ public class DesktopInput extends InputHandler{
     }
 
     @Override
-    public void panCamera(Vec2 position){ // FINISHME: Does this work? Haven't tested
+    public void panCamera(Vec2 position){
         if(!locked()){
             panning = true;
             camera.position.set(position);
@@ -1292,8 +1316,8 @@ public class DesktopInput extends InputHandler{
         boolean omni = unit.type.omniMovement;
 
         float speed = unit.speed();
-        float xa = Core.input.axis(Binding.move_x);
-        float ya = Core.input.axis(Binding.move_y);
+        float xa = Core.input.axis(Binding.moveX);
+        float ya = Core.input.axis(Binding.moveY);
         if(input.keyDown(Binding.freecam_modifier)){
             xa = ya = 0f;
         }
@@ -1310,7 +1334,7 @@ public class DesktopInput extends InputHandler{
             }
         }else{
             movement.set(xa, ya).nor().scl(speed);
-            if(Core.input.keyDown(Binding.mouse_move)){
+            if(Core.input.keyDown(Binding.mouseMove)){
                 movement.add(input.mouseWorld().sub(player).scl(1f / 25f * speed)).limit(speed);
             }
         }

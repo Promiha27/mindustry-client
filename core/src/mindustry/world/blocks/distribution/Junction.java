@@ -22,6 +22,7 @@ import static mindustry.Vars.*;
 public class Junction extends Block{
     public float speed = 26; //frames taken to go through this junction
     public int capacity = 6;
+    public float displayedSpeed = 13f;
 
     // FINISHME: Rework to work with junctions with size >1
     static float baseOffsetX, baseOffsetY;
@@ -47,6 +48,15 @@ public class Junction extends Block{
         float y = -tilesize / 3.1f * mode;
         baseOffsetX = -tilesize/2f;
         baseOffsetY = y;
+    }
+
+    @Override
+    public void setStats(){
+        super.setStats();
+
+        //(60f / speed * capacity) returns 13.84 which is not the actual value (non linear, depends on fps)
+        stats.add(Stat.itemsMoved, displayedSpeed, StatUnit.itemsSecond);
+        stats.add(Stat.itemCapacity, capacity, StatUnit.items);
     }
 
     @Override

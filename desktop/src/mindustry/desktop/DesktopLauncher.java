@@ -61,8 +61,7 @@ public class DesktopLauncher extends ClientLauncher{
                 width = 900;
                 height = 700;
                 samples = aaSamples[0];
-                //request 3.1, which has instancing
-                gl30Minor = 1;
+                gl30Minor = 2;
                 gl30 = true;
                 for(int i = 0; i < arg.length; i++){
                     if(arg[i].charAt(0) == '-'){
@@ -70,8 +69,10 @@ public class DesktopLauncher extends ClientLauncher{
                         try{
                             //noinspection EnhancedSwitchMigration
                             switch(name){
-                                case "width": width = Integer.parseInt(arg[i + 1]); break;
-                                case "height": height = Integer.parseInt(arg[i + 1]); break;
+                                case "width": width = Strings.parseInt(arg[i + 1], width); break;
+                                case "height": height = Strings.parseInt(arg[i + 1], height); break;
+                                case "glMajor": gl30Major = Strings.parseInt(arg[i + 1], gl30Major);
+                                case "glMinor": gl30Minor = Strings.parseInt(arg[i + 1], gl30Minor);
                                 case "gl3": gl30 = true; break;
                                 case "gl2": gl30 = false; break;
                                 case "coreGl": coreProfile = true; break;

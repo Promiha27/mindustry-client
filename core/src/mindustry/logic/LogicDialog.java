@@ -32,7 +32,7 @@ public class LogicDialog extends BaseDialog{
     boolean privileged;
     @Nullable LExecutor executor;
     GlobalVarsDialog globalsDialog = new GlobalVarsDialog();
-    boolean wasRows, wasPortrait;
+    boolean wasRows, wasPortrait, forceRestart;
 
     public LogicDialog(){
         super("logic");
@@ -143,7 +143,14 @@ public class LogicDialog extends BaseDialog{
                         }catch(Throwable e){
                             ui.showException(e);
                         }
-                    }).marginLeft(12f).disabled(b -> Core.app.getClipboardText() == null);
+                    }).marginLeft(12f).disabled(b -> Core.app.getClipboardText() == null).row();
+
+                    t.button("@logic.restart", Icon.refresh, style, () -> {
+                        forceRestart = true;
+                        dialog.hide();
+                        hide();
+                    }).marginLeft(12f);
+
                 });
             });
 
@@ -251,28 +258,7 @@ public class LogicDialog extends BaseDialog{
         return executor != null && executor.vars.length > 0 && !state.isMenu();
     }
 
-    public void show(String code, LExecutor executor, boolean privileged, Cons<String> modified){
-        this.executor = executor;
-        this.privileged = privileged;
-        canvas.statements.clearChildren();
-        canvas.rebuild();
-        canvas.privileged = privileged;
-        try{
-            canvas.load(code);
-        }catch(Throwable t){
-            Log.err(t);
-            canvas.load("");
-        }
-        this.consumer = result -> {
-            if(!result.equals(code)){
-                modified.get(result);
-            }
-        };
-
-        show();
-    }
-
-    public void showAddDialog(int at) {
+    public void showAddDialog(int at){
         BaseDialog dialog = new BaseDialog("@add");
         dialog.cont.table(table -> {
             String[] searchText = {""};
@@ -359,5 +345,27 @@ public class LogicDialog extends BaseDialog{
         }).fill().maxHeight(Core.graphics.getHeight() * 0.8f);
         dialog.addCloseButton();
         dialog.show();
+    }
+
+    public void show(String code, LExecutor executor, boolean privileged, Cons<String> modified){
+        this.executor = executor;
+        this.privileged = privileged;
+        this.forceRestart = false;
+        canvas.statements.clearChildren();
+        canvas.rebuild();
+        canvas.privileged = privileged;
+        try{
+            canvas.load(code);
+        }catch(Throwable t){
+            Log.err(t);
+            canvas.load("");
+        }
+        this.consumer = result -> {
+            if(forceRestart || !result.equals(code)){
+                modified.get(result);
+            }
+        };
+
+        show();
     }
 }

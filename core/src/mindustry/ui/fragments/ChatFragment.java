@@ -73,12 +73,12 @@ public class ChatFragment extends Table{
             }
 
             if(shown){
-                if(input.keyTap(Binding.chat_history_prev) && historyPos < history.size - 1){
+                if(input.keyTap(Binding.chatHistoryPrev) && historyPos < history.size - 1){
                     if(historyPos == 0) history.set(0, chatfield.getText().replaceFirst("^" + mode.normalizedPrefix(), ""));
                     historyPos++;
                     updateChat();
                 }
-                if(input.keyTap(Binding.chat_history_next) && historyPos > 0){
+                if(input.keyTap(Binding.chatHistoryNext) && historyPos > 0){
                     historyPos--;
                     updateChat();
                 }
@@ -92,10 +92,10 @@ public class ChatFragment extends Table{
                         tabConsumed = true;
                     }
                 }
-                if (input.keyTap(Binding.chat_mode) && !tabConsumed) {
+                if (input.keyTap(Binding.chatMode) && !tabConsumed) {
                     nextMode();
                 }
-                scrollPos = (int)Mathf.clamp(scrollPos + input.axis(Binding.chat_scroll), 0, Math.max(0, messages.size - messagesShown));
+                scrollPos = (int)Mathf.clamp(scrollPos + input.axis(Binding.chatScroll), 0, Math.max(0, messages.size - messagesShown));
             }
         });
 
@@ -408,7 +408,7 @@ public class ChatFragment extends Table{
         //avoid sending prefix-empty messages
         if(message.isEmpty() || (message.startsWith(mode.prefix) && message.substring(mode.prefix.length()).isEmpty())) return;
 
-        history.insert(1, message.replaceFirst("^" + mode.normalizedPrefix(), ""));
+        if(history.size < 2 || !history.get(1).equals(message)) history.insert(1, message.replaceFirst("^" + mode.normalizedPrefix(), ""));
 
         // Allow sending commands with chat modes; "/t /help" becomes "/help", "/a !go" becomes "!go"
         for (ChatMode mode : ChatMode.all) {

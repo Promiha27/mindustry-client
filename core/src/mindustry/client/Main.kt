@@ -220,7 +220,7 @@ object Main : ApplicationListener {
     override fun update() {
         communicationClient.update()
 
-        if (Core.scene.keyboardFocus == null && Core.input?.keyTap(Binding.send_build_queue) == true) {
+        if (Core.scene.keyboardFocus == null && Core.input?.keyTap(Binding.sendBuildQueue) == true) {
             ClientVars.dispatchingBuildPlans = !ClientVars.dispatchingBuildPlans
         }
 
