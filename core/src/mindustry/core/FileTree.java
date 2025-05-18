@@ -94,7 +94,7 @@ public class FileTree implements FileHandleResolver{
     }
 
 
-    private boolean checkedOutdated, outdated, notified;
+    private boolean checkedOutdated, outdated, notified, logDownloadDisabledMusic, logDownloadDisabledSound;
     private boolean outdated(){
         if(!checkedOutdated){
             checkedOutdated = true;
@@ -128,7 +128,16 @@ public class FileTree implements FileHandleResolver{
             return;
         }
 
-        if(!Core.settings.getBool("download" + clazz.toLowerCase())) return; // Automatic downloading of music and sound can be disabled
+        if(!Core.settings.getBool("download" + clazz.toLowerCase())) { // Automatic downloading of music and sound can be disabled
+            if (audio instanceof Sound && !logDownloadDisabledSound) { // This is kind of horrible, but I don't really care
+                logDownloadDisabledSound = true;
+                Log.debug("Sound downloading is disabled");
+            } else if (audio instanceof Music && !logDownloadDisabledMusic) {
+                logDownloadDisabledMusic = true;
+                Log.debug("Music downloading is disabled");
+            }
+            return;
+        }
 
         ConsT<Http.HttpResponse, Exception> writeDownloadedAudio = res -> { // This creates garbage, but it's convenient and shouldn't matter as this method is called few times
             if(!cached.exists() || cached.length() != res.getContentLength()){ // Only download if the existing file isn't the same size
