@@ -87,9 +87,6 @@ task steamtest(dependsOn: dist){
             }else if(System.getProperty("os.name").toLowerCase().contains("mac")){
                 into "/Users/nate/Library/Application Support/Steam/steamapps/common/Mindustry/Mindustry.app/Contents/Resources"
                 rename("Mindustry.jar", "desktop.jar")
-            }else{
-                into "C:\\SteamLibrary\\steamapps\\common\\Mindustry\\jre"
-                rename("Mindustry.jar", "client.jar")
             }
         }
     }
