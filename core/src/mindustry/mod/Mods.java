@@ -448,7 +448,8 @@ public class Mods implements Loadable{
                         u.load();
                         u.loadIcon();
                         if(u.generateIcons && !c.minfo.mod.meta.pregenerated){
-                            await.add(mainExecutor.submit(() -> u.createIcons(packer)));
+                            if (c.minfo.mod.meta.parallelIcons) await.add(mainExecutor.submit(() -> u.createIcons(packer)));
+                            else u.createIcons(packer);
                         }
                     }
                 });
@@ -1553,6 +1554,9 @@ public class Mods implements Loadable{
         public boolean pregenerated;
         /** If set, load the mod content in this order by content names */
         public String[] contentOrder;
+
+        /** Load icons in parallel (Foo's optimization) */
+        public boolean parallelIcons;
 
         public String shortDescription(){
             return Strings.truncate(subtitle == null ? (description == null || description.length() > maxModSubtitleLength ? "" : description) : subtitle, maxModSubtitleLength, "...");
