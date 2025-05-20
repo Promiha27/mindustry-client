@@ -452,7 +452,7 @@ public class HudFragment{
                             getNonHeapUsage[0] = Class.forName("java.lang.management.MemoryMXBean").getMethod("getNonHeapMemoryUsage");
                         }
                     } catch (ClassNotFoundException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-                        Log.err("Failed to get memBean", e);
+                        Log.warn("Failed to get memBean", e);
                     }
                     info.label(() -> {
                         try {
