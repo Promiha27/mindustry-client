@@ -109,7 +109,7 @@ public class SchematicsDialog extends BaseDialog{
                         rebuildPane.run();
                     }
                 });
-                descSearchField.setMessageText("@schematic.searchdescription");
+                descSearchField.setMessageText("@client.schematic.searchdescription");
             }).growX().padLeft(4);
         }).fillX().padBottom(4);
         cont.row();
