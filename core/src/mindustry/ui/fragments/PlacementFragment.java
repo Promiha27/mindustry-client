@@ -516,6 +516,8 @@ public class PlacementFragment{
                         var stances = new Seq<UnitStance>();
                         var stancesOut = new Seq<UnitStance>();
 
+                        UnitCommand[] hoveredCommand = {null};
+
                         rebuildCommand = () -> {
                             u.clearChildren();
                             var units = control.input.selectedUnits;
@@ -570,7 +572,8 @@ public class PlacementFragment{
                                             b.update(() ->
                                                 // gray on hover, green on command hover
                                                 ((Group)b.getChildren().first()).getChildren().first().setColor(
-                                                    false ? Pal.heal : // FINISHME: Fix hover highlight
+                                                    hoveredCommand[0] != null &&
+                                                    type.commands.contains(hoveredCommand[0], true) ? Pal.heal :
                                                     listener.isOver() ? Color.lightGray : Color.white
                                                 )
                                             );
@@ -597,9 +600,18 @@ public class PlacementFragment{
                                         coms.left();
                                         int scol = 0;
                                         for(var command : commands){
+                                            final int i = scol;
                                             coms.button(Icon.icons.get(command.icon, Icon.cancel), Styles.clearNoneTogglei, () -> {
                                                 Call.setUnitCommand(player, units.mapInt(un -> un.id, un -> un.type.allowCommand(un, command)).toArray(), command);
-                                            }).checked(i -> activeCommands.get(command.id)).size(50f).tooltip(command.localized(), true);
+                                            }).size(50f).tooltip(command.localized(), true).with(b -> {
+                                                var listener = new ClickListener();
+                                                b.addListener(listener);
+                                                b.update(() -> {
+                                                    if(i == 0) hoveredCommand[0] = null; // Invaldiate every frame
+                                                    if(listener.isOver()) hoveredCommand[0] = command;
+                                                    b.setChecked(activeCommands.get(command.id));
+                                                });
+                                            });
 
                                             if(++scol % 6 == 0) coms.row();
                                         }
