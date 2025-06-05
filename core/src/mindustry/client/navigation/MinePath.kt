@@ -37,7 +37,7 @@ class MinePath @JvmOverloads constructor(
         }
 
         if (items.isEmpty) {
-            items.addAll(player.unit().type.mineItems)
+            if (player.unit() != null) items.addAll(player.unit().type.mineItems)
             if (split.none { Strings.parseInt(it) > 0 }) player.sendMessage("client.path.miner.allinvalid".bundle())
         }
         else if (cap >= 0) {
