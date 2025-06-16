@@ -544,7 +544,7 @@ public class Control implements ApplicationListener, Loadable{
             }
         }
 
-        for(Music music : assets.getAll(Music.class, FileTree.clientLoadedMusic)){
+        for(Music music : assets.getAll(Music.class, new Seq<>())){
             music.stop();
         }
 

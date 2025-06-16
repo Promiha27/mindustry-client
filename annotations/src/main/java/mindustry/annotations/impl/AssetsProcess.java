@@ -1,5 +1,6 @@
 package mindustry.annotations.impl;
 
+import arc.*;
 import arc.audio.*;
 import arc.files.*;
 import arc.scene.style.*;
@@ -174,7 +175,10 @@ public class AssetsProcess extends BaseProcessor{
             if(genid){
                 staticb.addStatement("soundToId.put($L, $L)", name, id);
                 staticb.addStatement("idToSound.put($L, $L)", id, name);
+                staticb.addStatement("$L.file = new $T($S)", name, Fi.class, filepath); // This hack allows us to set a "fake" file for sounds so that they can be grabbed by name prior to loading
             }
+
+            staticb.addStatement("$T.assets.addAssetPublic($S, $L.class, $L)", Core.class, filepath, rtype, name); // We don't register the sound/music normally, use this hack to register them
             loadBegin.addStatement("mindustry.Vars.tree.loadAudio($L, $S, $L)", name, filepath, p.length());
 
             type.addField(FieldSpec.builder(ClassName.bestGuess(rtype), name, Modifier.STATIC, Modifier.PUBLIC).initializer("new " + rtype + "()").build());

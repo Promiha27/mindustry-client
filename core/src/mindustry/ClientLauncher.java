@@ -254,14 +254,14 @@ public abstract class ClientLauncher extends ApplicationCore implements Platform
                 loader.dispose();
                 loader = null;
                 Log.info("Total time to load: @ms", Time.timeSinceMillis(beginTime));
-                Time.mark();
+                var listenerBefore = Time.nanos();
                 for(ApplicationListener listener : modules){
-                    Time.mark();
+                    var before = Time.nanos();
                     listener.init();
-                    float dur = Time.elapsed();
+                    float dur = Time.millisSinceNanos(before);
                     Log.debug("Listener @ in @ms", listener.getClass().getName(), dur);
                 }
-                Log.debug("Listener init: @ms", Time.elapsed());
+                Log.debug("Listener init: @ms", Time.millisSinceNanos(listenerBefore));
                 mods.eachClass(Mod::init);
                 finished = true;
                 Time.mark();

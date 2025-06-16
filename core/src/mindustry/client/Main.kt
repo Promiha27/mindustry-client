@@ -40,7 +40,7 @@ object Main : ApplicationListener {
 
     /** Run on client load. */
     override fun init() {
-        Time.mark()
+        val start = Time.nanos()
         if (Core.app.isDesktop) {
             ntp = NTP()
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
@@ -158,6 +158,8 @@ object Main : ApplicationListener {
                 }
             }
         }
+
+        Log.debug("Main in @ms", Time.millisSinceNanos(start))
     }
 
     private fun findMessage(id: Short): ChatFragment.ChatMessage? {
