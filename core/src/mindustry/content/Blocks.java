@@ -4280,7 +4280,7 @@ public class Blocks{
                 hitSize = 7f;
                 shootEffect = sfe;
                 smokeEffect = Fx.shootBigSmoke;
-                ammoMultiplier = 1;
+                ammoMultiplier = 2;
                 reloadMultiplier = 1f;
                 pierceCap = 4;
                 pierce = true;

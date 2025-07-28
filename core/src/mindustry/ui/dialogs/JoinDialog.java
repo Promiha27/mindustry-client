@@ -563,7 +563,7 @@ public class JoinDialog extends BaseDialog{
         inner.setColor(Pal.gray);
 
         button[0].clearChildren();
-        button[0].add(inner).growX();
+        button[0].add(inner).height(45f).growX();
 
         inner.add(host.name + "   " + versionString).left().padLeft(10f).wrap().style(Styles.outlineLabel).growX();
 
@@ -730,6 +730,8 @@ public class JoinDialog extends BaseDialog{
 
         Http.get(urls[index])
         .error(t -> {
+            if(fetchedServers) return;
+
             if(index < urls.length - 1){
                 Log.debug("Failed to fetch community servers from @, trying next url.", urls[index]);
                 //attempt fetching from the next URL upon failure
@@ -741,10 +743,14 @@ public class JoinDialog extends BaseDialog{
             }
         })
         .submit(result -> {
+            if(fetchedServers) return;
+
             String text = result.getResultAsString();
             Seq<ServerGroup> servers = parseServerString(text);
             //modify default servers on main thread
             Core.app.post(() -> {
+                if(fetchedServers) return;
+
                 //cache the server list to a file, so it can be loaded in case of an outage later
                 try{
                     serverCacheFile.writeString(text);
