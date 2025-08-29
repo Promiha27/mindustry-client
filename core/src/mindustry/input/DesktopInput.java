@@ -839,100 +839,21 @@ public class DesktopInput extends InputHandler{
             }
         }
 
-<<<<<<< ours
-        if(player.dead() || locked){ // FINISHME: Should we comment out the dead check?
-            cursorType = ui.chatfrag.hasLit ? SystemCursor.hand : SystemCursor.arrow;
-            if(!Core.scene.hasMouse()){
-                Core.graphics.cursor(cursorType);
-            }
-            return;
-        }
-
-        pollInput();
-
-        //deselect if not placing
-        if(!isPlacing() && mode == placing){
-            mode = none;
-        }
-
-        if(player.shooting && !canShoot()){
-            player.shooting = false;
-        }
-
-        if(isPlacing() /*&& player.isBuilder()*/){
-            cursorType = SystemCursor.hand;
-            selectScale = Mathf.lerpDelta(selectScale, 1f, 0.2f);
-=======
         if(Core.input.keyRelease(Binding.select) && commandRect){
             selectUnitsRect();
         }
 
-        if(player.dead() || locked){
-            cursorType = SystemCursor.arrow;
+        if(player.dead() || locked){ // FINISHME: Should we comment out the dead check?
+            cursorType = ui.chatfrag.hasLit ? SystemCursor.hand : SystemCursor.arrow;
             if(!locked){
                 pollInputNoPlayer();
             }
->>>>>>> theirs
         }else{
             pollInputPlayer();
         }
 
-<<<<<<< ours
-        cursorType = SystemCursor.arrow;
-
-        if(ui.chatfrag.hasLit){ // Scuffed foo's addition to ensure clickable chat takes priority
-            cursorType = SystemCursor.hand;
-        }else if(cursor != null){
-            if(cursor.build != null){
-                cursorType = cursor.build.getCursor();
-            }
-
-            if(canRepairDerelict(cursor) && !player.dead() && player.unit().canBuild()){
-                cursorType = ui.repairCursor;
-            }
-
-            if((isPlacing() /*&& player.isBuilder()*/) || !selectPlans.isEmpty()){
-                cursorType = SystemCursor.hand;
-            }
-
-            if(!isPlacing() && canMine(cursor)){
-                cursorType = ui.drillCursor;
-            }
-
-            if(commandMode && selectedUnits.any()){
-                boolean canAttack = (cursor.build != null && !cursor.build.inFogTo(player.team()) && cursor.build.team != player.team());
-
-                if(!canAttack){
-                    var unit = selectedEnemyUnit(input.mouseWorldX(), input.mouseWorldY());
-                    if(unit != null){
-                        canAttack = selectedUnits.contains(u -> u.canTarget(unit));
-                    }
-                }
-
-                if(canAttack){
-                    cursorType = ui.targetCursor;
-                }
-
-                if(input.keyTap(Binding.commandQueue) && Binding.commandQueue.value.key.type != KeyType.mouse){
-                    commandTap(input.mouseX(), input.mouseY(), true);
-                }
-            }
-
-            if(getPlan(cursor.x, cursor.y) != null && mode == none){
-                cursorType = SystemCursor.hand;
-            }
-
-            if(canTapPlayer(Core.input.mouseWorld().x, Core.input.mouseWorld().y)){
-                cursorType = ui.unloadCursor;
-            }
-
-            if(!ui.chatfrag.shown() && cursor.build != null && cursor.interactable(player.team()) && !isPlacing() && Math.abs(Core.input.axisTap(Binding.rotate)) > 0 && Core.input.keyDown(Binding.rotatePlaced) && cursor.block().rotate && cursor.block().quickRotate){
-                Call.rotateBlock(player, cursor.build, Core.input.axisTap(Binding.rotate) > 0);
-            }
-=======
         if(Core.input.keyRelease(Binding.select)){
             player.shooting = false;
->>>>>>> theirs
         }
 
         if(!Core.scene.hasMouse() && !ui.minimapfrag.shown()){
@@ -1270,7 +1191,7 @@ public class DesktopInput extends InputHandler{
             player.shooting = false;
         }
 
-        if(isPlacing() && player.isBuilder()){
+        if(isPlacing() /*&& player.isBuilder()*/){
             cursorType = SystemCursor.hand;
             selectScale = Mathf.lerpDelta(selectScale, 1f, 0.2f);
         }else{
@@ -1295,7 +1216,9 @@ public class DesktopInput extends InputHandler{
 
         cursorType = SystemCursor.arrow;
 
-        if(cursor != null){
+        if(ui.chatfrag.hasLit){ // Sciffed fpp's addition to ensure clickable chat takes priority
+            cursorType = SystemCursor.hand;
+        }else if(cursor != null){
             if(cursor.build != null && cursor.build.interactable(player.team())){
                 cursorType = cursor.build.getCursor();
             }
@@ -1304,7 +1227,7 @@ public class DesktopInput extends InputHandler{
                 cursorType = ui.repairCursor;
             }
 
-            if((isPlacing() && player.isBuilder()) || !selectPlans.isEmpty()){
+            if((isPlacing() /*&& player.isBuilder()*/) || !selectPlans.isEmpty()){
                 cursorType = SystemCursor.hand;
             }
 
@@ -1339,7 +1262,7 @@ public class DesktopInput extends InputHandler{
                 cursorType = ui.unloadCursor;
             }
 
-            if(cursor.build != null && cursor.interactable(player.team()) && !isPlacing() && Math.abs(Core.input.axisTap(Binding.rotate)) > 0 && Core.input.keyDown(Binding.rotatePlaced) && cursor.block().rotate && cursor.block().quickRotate){
+            if(!ui.chatfrag.shown() && cursor.build != null && cursor.interactable(player.team()) && !isPlacing() && Math.abs(Core.input.axisTap(Binding.rotate)) > 0 && Core.input.keyDown(Binding.rotatePlaced) && cursor.block().rotate && cursor.block().quickRotate){
                 Call.rotateBlock(player, cursor.build, Core.input.axisTap(Binding.rotate) > 0);
             }
         }
