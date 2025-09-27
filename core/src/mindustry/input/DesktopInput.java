@@ -558,7 +558,6 @@ public class DesktopInput extends InputHandler{
                         }
                     }
                 }
-
             }
 
             if(input.keyTap(Binding.selectAllUnitTransport)){
