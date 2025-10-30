@@ -222,8 +222,8 @@ allprojects{
     }
 }
 
-//compile with java 8 compatibility for everything except the annotation project
-configure(subprojects - project(":annotations")){
+//compile with java 8 compatibility for everything except the annotations and tests
+configure(subprojects - project(":annotations") - project(":tests")){
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.addAll(['--release', '8'])
     }
@@ -443,6 +443,12 @@ project(":tests"){
         testImplementation "org.bouncycastle:bcprov-jdk15on:1.69"
         testImplementation "org.bouncycastle:bcpkix-jdk15on:1.69"
         testImplementation "org.bouncycastle:bctls-jdk15on:1.69"
+    }
+
+    tasks.withType(JavaCompile){
+        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17
+        options.compilerArgs.addAll(['--release', '17'])
     }
 
     test{

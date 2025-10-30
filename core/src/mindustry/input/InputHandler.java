@@ -490,7 +490,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
     @Remote(targets = Loc.both, forward = true, called = Loc.server, ratelimited = true)
     public static void transferInventory(Player player, Building build){
-        if(player == null || build == null || !player.within(build, itemTransferRange) || build.items == null || player.dead() || (state.rules.onlyDepositCore && !(build instanceof CoreBuild))) return;
+        if(player == null || build == null || !player.within(build, itemTransferRange) || build.items == null || player.dead() || !build.allowDeposit()) return;
 
         if(net.server() && (player.unit().stack.amount <= 0 || !Units.canInteract(player, build) ||
         //to avoid rejecting deposit packets that happen to overlap due to packet speed differences, the actual cap is double the cooldown with 2 deposits.
@@ -2445,7 +2445,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         if(invBuild != null && invBuild.acceptStack(stack.item, stack.amount, player.unit()) > 0 && invBuild.interactable(player.team()) &&
         invBuild.block.hasItems && player.unit().stack().amount > 0 && invBuild.interactable(player.team())){
 
-            if(!(state.rules.onlyDepositCore && !(build instanceof CoreBuild)) && itemDepositCooldown <= 0f){
+            if(build.allowDeposit() && itemDepositCooldown <= 0f){
                 if(Navigation.state == NavigationState.RECORDING) Navigation.addWaypointRecording(new ItemDropoffWaypoint(build)); // FINISHME: This is going to be problematic
                 Call.transferInventory(player, invBuild);
                 itemDepositCooldown = state.rules.itemDepositCooldown;
@@ -2622,7 +2622,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
             Point2 next = i == points.size - 1 ? null : points.get(i + 1);
             line.x = point.x;
             line.y = point.y;
-            if(!overrideLineRotation || diagonal){
+            if((!overrideLineRotation || diagonal) && !(block != null && block.ignoreLineRotation)){
                 int result = baseRotation;
                 if(next != null){
                     result = Tile.relativeTo(point.x, point.y, next.x, next.y);
