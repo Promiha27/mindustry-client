@@ -1545,7 +1545,7 @@ public class UnitType extends UnlockableContent implements Senseable{
     }
 
     public void drawMining(Unit unit){
-        if(drawMineBeam){
+        if(drawMineBeam && !Mathf.zero(Renderer.laserOpacity)){
             float focusLen = mineBeamOffset + Mathf.absin(Time.time, 1.1f, 0.5f);
             float px = unit.x + Angles.trnsx(unit.rotation, focusLen);
             float py = unit.y + Angles.trnsy(unit.rotation, focusLen);
