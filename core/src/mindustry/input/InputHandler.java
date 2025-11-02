@@ -1778,7 +1778,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
                 }
             }
 
-            boolean valid = validPlace(plan.x, plan.y, plan.block, plan.rotation);
+            boolean valid = validPlace(plan.x, plan.y, plan.block, plan.rotation, null, true);
             if(freeze || (force && world.tile(plan.x, plan.y) != null) || valid){
                 BuildPlan copy = plan.copy();
                 if(configLogic && copy.block instanceof LogicBlock && copy.config != null) { // Store the configs for logic blocks locally, they cause issues when sent to the server
@@ -2498,13 +2498,15 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     //     return validPlace(x, y, type, rotation, ignore, false);
     // }
 
-    public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore, boolean ignoreUnits){
+    public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore){
         // FINISHME: this build plan ignore units stuff needs to be sorted out properly, this just ignores the flag
-        return validPlace(x, y, type, rotation, ignore);
+        return validPlace(x, y, type, rotation, ignore, false);
     }
 
-    public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore){
-        if (!Build.validPlace(type, player.team(), x, y, rotation, true)) return false;
+    public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore, boolean ignoreUnits){
+        if(ignoreUnits
+            ? !Build.validPlaceIgnoreUnits(type, player.team(), x, y, rotation, true, true)
+            : !Build.validPlace(type, player.team(), x, y, rotation, true)) return false;
 
         if(player.unit().plans.size > 0){
             Tmp.r1.setCentered(x * tilesize + type.offset, y * tilesize + type.offset, type.size * tilesize);
