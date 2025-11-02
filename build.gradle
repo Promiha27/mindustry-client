@@ -223,7 +223,7 @@ allprojects{
 }
 
 //compile with java 8 compatibility for everything except the annotations and tests
-configure(subprojects - project(":annotations") - project(":tests")){
+configure(subprojects - project(":annotations")){
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.addAll(['--release', '8'])
     }
