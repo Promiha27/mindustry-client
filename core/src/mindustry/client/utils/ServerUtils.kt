@@ -34,12 +34,7 @@ enum class Server( // FINISHME: This is horrible. Why have I done this?
     other(null),
     nydus("nydus"),
     cn("Chaotic Neutral", rtv = Cmd("/rtv")),
-    io("io", MapVote(), Cmd("/w"), Cmd("/rtv"), object : Cmd("/freeze", 4) {
-        override fun run(vararg args: String) { // Freeze command requires admin in game but the packet does not
-            if (!player.admin) Call.serverPacketReliable("freeze_by_id", args[0]) // Yes this will cause a crash when args.size == 0, it shouldn't happen
-            else super.run(*args)
-        }
-    }, votekickString = "Type[orange] /vote <y/n>[] to vote.") {
+    io("io", MapVote(), Cmd("/w"), Cmd("/rtv"), Cmd("/freeze", 4), votekickString = "Type[orange] /vote <y/n>[] to vote.") {
         override fun handleBan(p: Player) {
             ui.showTextInput("@client.banreason.title", "@client.banreason.body", "Griefing.") { reason ->
                 val id = p.trace?.uuid ?: p.serverID
@@ -64,9 +59,11 @@ enum class Server( // FINISHME: This is horrible. Why have I done this?
                 val (code) = playerCodeMatch.destructured
                 msg.addButton(code) { Core.app.setClipboardText(code) }
             }
-            if (defense() && "Type [green]/agree[] to vote!" in message) { // td upgrade voting
+            if (defense() && Core.bundle.get("client.io.shop-vote") in message) { // td upgrade voting
                 val agree = Cmd("/agree", 0)
                 msg.addButton(agree.str, agree::invoke)
+                val disagree = Cmd("/disagree", 0)
+                msg.addButton(disagree.str, disagree::invoke)
             }
         }
     },
