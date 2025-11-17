@@ -53,7 +53,7 @@ enum class Server( // FINISHME: This is horrible. Why have I done this?
             if (msg.sender !== null) return
             val message = msg.message
             val playerCodeMatch =
-                ("""(?:player code: \[[#\w]+\]|last placed by:[\s\S]+\[[#\w]+\]ID:\[[#\w]+\] )([A-Z0-9]+)\s""")
+                ("""(?:has (?:dis)?connected \[#?\w+\]- |last placed by:[\s\S]+\[#?\w+\]ID:\[#?\w+\] )([A-Z0-9]+)""")
                 .toRegex().find(message)
             if (playerCodeMatch !== null) {
                 val (code) = playerCodeMatch.destructured
