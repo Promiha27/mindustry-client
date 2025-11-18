@@ -12,7 +12,7 @@ import mindustry.game.*
 import mindustry.gen.*
 import mindustry.net.*
 import mindustry.ui.*
-import java.time.Instant
+import java.time.*
 import java.util.concurrent.*
 
 class Moderation {
@@ -31,13 +31,14 @@ class Moderation {
 
                     fun String.i() = json.getInt(this, Int.MAX_VALUE)
                     fun String.s() = json.getString(this, "unknown")
+                    fun String.l(default: Long = Long.MAX_VALUE) = json.getLong(this, default)
 
                     val id = "id".i()
                     val player = Groups.player.getByID(id) ?: return@addPacketHandler
                     player.serverID = "playercode".s()
 
-                    if (player == freezePlayer) freezeState = json.getLong("frozen", 0) > Instant.now().epochSecond
-                    if (player == mutePlayer) muteState = json.getLong("muted", 0) > Instant.now().epochSecond
+                    if (player == freezePlayer) freezeState = "frozen".l(0) > Instant.now().epochSecond
+                    if (player == mutePlayer) muteState = "muted".l(0) > Instant.now().epochSecond
 
                     val rank = "rank".i() // 0 for unranked, 1 for active, 2 for veteran etc
                     if (player == Vars.player) ClientVars.rank = rank // Set rank var accordingly
