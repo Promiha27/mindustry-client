@@ -28,6 +28,8 @@ enum class Server( // FINISHME: This is horrible. Why have I done this?
     private val rtv: Cmd = Cmd("/rtv", -1),
     @JvmField val freeze: Cmd = Cmd("/freeze", -1),
     @JvmField val thaw: Cmd = Cmd("/thaw", -1),
+    @JvmField val mute: Cmd = Cmd("/mute", -1),
+    @JvmField val unmute: Cmd = Cmd("/unmute", -1),
     @JvmField val ghost: Boolean = false,
     private val votekickString: String = "Type[orange] /vote <y/n>[] to agree.",
     @JvmField var blockAnnoyances: Boolean = true
@@ -35,7 +37,9 @@ enum class Server( // FINISHME: This is horrible. Why have I done this?
     other(null),
     nydus("nydus"),
     cn("Chaotic Neutral", rtv = Cmd("/rtv")),
-    io("io", MapVote(), Cmd("/w"), Cmd("/rtv"), Cmd("/freeze", 4), Cmd("/thaw", 4), votekickString = "Type[orange] /vote <y/n>[] to vote.") {
+    io("io", MapVote(), Cmd("/w"), Cmd("/rtv"),
+        Cmd("/freeze", 4), Cmd("/thaw", 4), Cmd("/mute", 4), Cmd("/unmute", 4),
+        votekickString = "Type[orange] /vote <y/n>[] to vote.") {
         override fun handleBan(p: Player) {
             ui.showTextInput("@client.banreason.title", "@client.banreason.body", "Griefing.") { reason ->
                 val id = p.trace?.uuid ?: p.serverID

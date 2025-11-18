@@ -21,6 +21,8 @@ class Moderation {
     companion object {
         @JvmField var freezePlayer: Player? = null
         @JvmField var freezeState: Boolean = false
+        @JvmField var mutePlayer: Player? = null
+        @JvmField var muteState: Boolean = false
         init {
             Vars.netClient.addPacketHandler("playerdata") { // Handles autostats from plugins
                 if (Server.io() || Server.phoenix()) {
@@ -35,6 +37,7 @@ class Moderation {
                     player.serverID = "playercode".s()
 
                     if (player == freezePlayer) freezeState = json.getLong("frozen", 0) > Instant.now().epochSecond
+                    if (player == mutePlayer) muteState = json.getLong("muted", 0) > Instant.now().epochSecond
 
                     val rank = "rank".i() // 0 for unranked, 1 for active, 2 for veteran etc
                     if (player == Vars.player) ClientVars.rank = rank // Set rank var accordingly

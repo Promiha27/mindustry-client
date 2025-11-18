@@ -84,7 +84,7 @@ public class PlayerListFragment{
 
         float h = 74f;
         float bs = h / 2;
-        float width = 750f + (Server.current.freeze.canRun() ? 20f : 0);
+        float width = 750f + (Server.current.freeze.canRun() ? 20f : 0) + (Server.current.mute.canRun() ? 20f : 0);
         boolean found = false;
 
         players.clear();
@@ -289,6 +289,37 @@ public class PlayerListFragment{
                     dialog.hidden(() -> Moderation.freezePlayer = null);
                     dialog.show();
                 }).tooltip("@client.freeze");
+            }
+
+            if (Server.current.mute.canRun()) { // Apprentice+ on io
+                button.button(new TextureRegionDrawable(StatusEffects.disarmed.uiIcon).tint(Color.gray), ustyle, () -> {
+                    BaseDialog dialog = new BaseDialog("@confirm");
+                    dialog.cont.label(() -> Core.bundle.format("client.confirmmute", user.name())).width(mobile ? 400f : 500f).wrap().pad(4f).get().setAlignment(Align.center, Align.center);
+                    dialog.buttons.defaults().size(200f, 54f).pad(2f);
+                    dialog.setFillParent(false);
+                    dialog.buttons.button("@cancel", Icon.cancel, dialog::hide);
+                    dialog.buttons.button("@ok", Icon.ok, () -> {
+                        dialog.hide();
+                        if(Moderation.muteState)
+                            Server.current.unmute.invoke(user);
+                        else
+                            Server.current.mute.invoke(user);
+                    });
+                    dialog.keyDown(KeyCode.enter, () -> {
+                        dialog.hide();
+                        if(Moderation.muteState)
+                            Server.current.unmute.invoke(user);
+                        else
+                            Server.current.mute.invoke(user);
+                    });
+                    dialog.keyDown(KeyCode.escape, dialog::hide);
+                    dialog.keyDown(KeyCode.back, dialog::hide);
+                    Moderation.muteState = !Moderation.muteState;
+                    Moderation.mutePlayer = user;
+                    Call.serverPacketReliable("playerdata_by_id", String.valueOf(user.id)); // Retrieve mute state from server
+                    dialog.hidden(() -> Moderation.mutePlayer = null);
+                    dialog.show();
+                }).tooltip("@client.modmute");
             }
 
             content.add(button).padBottom(-6).width(width).maxHeight(h + 14);
