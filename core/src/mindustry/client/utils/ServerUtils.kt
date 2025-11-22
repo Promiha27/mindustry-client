@@ -52,7 +52,7 @@ enum class Server( // FINISHME: This is horrible. Why have I done this?
             }
         }
 
-        override fun adminui() = player.admin || ClientVars.rank >= 5
+        override fun adminui() = player.admin || ClientVars.rank >= 4
         override fun handleVoteButtons(msg: ChatMessage) {
             super.handleVoteButtons(msg)
             if (msg.sender !== null) return
