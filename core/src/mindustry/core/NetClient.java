@@ -232,7 +232,6 @@ public class NetClient implements ApplicationListener{
     @Remote(variants = Variant.both, unreliable = true, called = Loc.server)
     public static void soundAt(Sound sound, float x, float y, float volume, float pitch){
         if(sound == null || headless) return;
-        if(sound == Sounds.corexplode && Server.io.b()) return;
 
         sound.at(x, y, Mathf.clamp(pitch, 0f, 20f), Mathf.clamp(volume, 0, 4f));
     }

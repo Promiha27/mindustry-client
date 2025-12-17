@@ -610,7 +610,7 @@ public class ConstructBlock extends Block{
 
             // Play warning sound (only played when no reactor has been built for 10s)
             if (warnBlock.soundDistance == 101 || distance <= (warnBlock.soundDistance)) {
-                if (Time.timeSinceMillis(lastWarn) > 10 * 1000) Sounds.corexplode.play(.3f * (float)Core.settings.getInt("sfxvol") / 100.0F);
+                if (Time.timeSinceMillis(lastWarn) > 10 * 1000) Sounds.explosionCore.play(.3f * (float)Core.settings.getInt("sfxvol") / 100.0F);
                 lastWarn = Time.millis();
             }
 
