@@ -315,7 +315,7 @@ public class NetClient implements ApplicationListener{
             findCoords(output);
             findLinks(output, playersender == null ? 0 : playersender.coloredName().length() + 16 + output.prefix.length());
 
-            Sounds.chatMessage.play();
+            Sounds.uiChat.play();
         }
 
         if(playersender != null && unformatted != null){
@@ -367,7 +367,7 @@ public class NetClient implements ApplicationListener{
 
         Server.current.handleVoteButtons(output);
 
-        Sounds.chatMessage.play();
+        Sounds.uiChat.play();
     }
 
     public static class FoundCoords {
