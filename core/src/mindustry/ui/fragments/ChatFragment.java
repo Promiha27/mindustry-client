@@ -86,7 +86,7 @@ public class ChatFragment extends Table{
                     completionPos = Mathf.clamp(completionPos, 0, completion.size - 1);
                     String oldText = chatfield.getText();
                     String newText = completion.get(completionPos).getCompletion(chatfield.getText());
-                    if(!newText.equals(oldText)){
+                    if(!(newText.equals(oldText) || oldText.equals(newText + " "))){
                         //sometimes the autocomplete returns that it has a value
                         //but it doesn't actually do anything
                         //this breaks tab to switch modes
