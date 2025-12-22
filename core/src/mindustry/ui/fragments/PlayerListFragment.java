@@ -133,7 +133,7 @@ public class PlayerListFragment{
                     Strings.stripColors(user.name))
             ).wrap().width(400).growY().pad(10);
 
-            if(user.admin && !(!user.isLocal() && net.server())) button.image(Icon.admin).padRight(7.5f); // FINISHME change to size?
+            if(user.admin && !(!user.isLocal() && net.server())) button.image(Icon.admin).padRight(20f);
             if(user.fooUser || (user.isLocal() && Core.settings.getBool("displayasuser"))) button.image(Icon.wrench).padRight(5f).tooltip("@client.clientuser");
 
             var style = new ImageButtonStyle(){{
@@ -262,51 +262,15 @@ public class PlayerListFragment{
 
             if (Server.current.freeze.canRun()) { // Apprentice+ on io, Colonel+ on phoenix
                 button.button(new TextureRegionDrawable(StatusEffects.freezing.uiIcon).tint(Color.cyan), ustyle, () -> {
-                    Moderation.freezeState = true;
                     Moderation.freezePlayer = user;
                     Call.serverPacketReliable("playerdata_by_id", String.valueOf(user.id)); // Retrieve freeze state from server
-
-                    BaseDialog dialog = new BaseDialog("@confirm");
-                    dialog.cont.label(() -> Core.bundle.format("client.confirmfreeze", user.name())).width(mobile ? 400f : 500f).wrap().pad(4f).get().setAlignment(Align.center, Align.center);
-                    dialog.buttons.defaults().size(200f, 54f).pad(2f);
-                    dialog.setFillParent(false);
-                    dialog.buttons.button("@cancel", Icon.cancel, dialog::hide);
-                    Runnable submitRequest = () -> {
-                        dialog.hide();
-                        if(Moderation.freezeState) Server.current.thaw.invoke(user);
-                        else Server.current.freeze.invoke(user);
-                    };
-                    dialog.buttons.button("@ok", Icon.ok, submitRequest);
-                    dialog.keyDown(KeyCode.enter, submitRequest);
-                    dialog.keyDown(KeyCode.escape, dialog::hide);
-                    dialog.keyDown(KeyCode.back, dialog::hide);
-                    dialog.hidden(() -> Moderation.freezePlayer = null);
-                    dialog.show();
                 }).tooltip("@client.freeze");
             }
 
             if (Server.current.mute.canRun()) { // Apprentice+ on io
                 button.button(new TextureRegionDrawable(StatusEffects.disarmed.uiIcon).tint(Color.gray), ustyle, () -> {
-                    Moderation.muteState = true;
                     Moderation.mutePlayer = user;
                     Call.serverPacketReliable("playerdata_by_id", String.valueOf(user.id)); // Retrieve mute state from server
-
-                    BaseDialog dialog = new BaseDialog("@confirm");
-                    dialog.cont.label(() -> Core.bundle.format("client.confirmmute", user.name())).width(mobile ? 400f : 500f).wrap().pad(4f).get().setAlignment(Align.center, Align.center);
-                    dialog.buttons.defaults().size(200f, 54f).pad(2f);
-                    dialog.setFillParent(false);
-                    dialog.buttons.button("@cancel", Icon.cancel, dialog::hide);
-                    Runnable submitRequest = () -> {
-                        dialog.hide();
-                        if(Moderation.muteState) Server.current.unmute.invoke(user);
-                        else Server.current.mute.invoke(user);
-                    };
-                    dialog.buttons.button("@ok", Icon.ok, submitRequest);
-                    dialog.keyDown(KeyCode.enter, submitRequest);
-                    dialog.keyDown(KeyCode.escape, dialog::hide);
-                    dialog.keyDown(KeyCode.back, dialog::hide);
-                    dialog.hidden(() -> Moderation.mutePlayer = null);
-                    dialog.show();
                 }).tooltip("@client.modmute");
             }
 
