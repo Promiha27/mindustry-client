@@ -43,6 +43,7 @@ public class DesktopLauncher extends ClientLauncher{
 
     public static void main(String[] arg){
 //        Events.debugType = ClientLoadEvent.class;
+        System.setProperty("java.awt.headless", "false");
         System.out.println("Launching Mindustry! Arguments: " + Arrays.toString(arg));
         try{
             int[] aaSamples = new int[1];
