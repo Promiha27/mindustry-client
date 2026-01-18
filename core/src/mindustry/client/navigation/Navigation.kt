@@ -3,6 +3,7 @@ package mindustry.client.navigation
 import arc.*
 import arc.math.geom.*
 import arc.struct.*
+import arc.util.Log
 import mindustry.*
 import mindustry.client.navigation.waypoints.*
 import mindustry.game.EventType.*
@@ -66,6 +67,7 @@ object Navigation {
 
     @JvmOverloads @JvmStatic
     fun follow(path: Path?, repeat: Boolean = false) {
+        if (path is AssistPath && Vars.ui.listfrag.shown()) Core.app.post { Vars.ui.listfrag.rebuild() }
         stopFollowing()
         currentlyFollowing = path ?: return
         path.init()
@@ -191,6 +193,7 @@ object Navigation {
 
     @JvmStatic
     fun stopFollowing() {
+        if (currentlyFollowing is AssistPath && Vars.ui.listfrag.shown()) Core.app.post { Vars.ui.listfrag.rebuild() }
         val lastPath = currentlyFollowing
         currentlyFollowing = null
         state = NavigationState.NONE
