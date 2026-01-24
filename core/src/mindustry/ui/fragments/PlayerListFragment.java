@@ -128,7 +128,7 @@ public class PlayerListFragment{
         });
         Events.on(ServerJoinEvent.class, e -> Timer.schedule(() -> {
             if(visible) rebuild();
-        }, .1f));
+        }, .2f));
     }
 
     public void rebuild(){
