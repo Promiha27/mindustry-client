@@ -383,6 +383,8 @@ public class PlayerListFragment{
         }else{
             Core.scene.setKeyboardFocus(null);
             search.clearText();
+            playerName = p -> p.coloredName() + (Core.settings.getBool("showuserid") ? " [accent](#" + p.id + ")" : "");
+            playerClipboard = Player::plainName;
         }
     }
 
