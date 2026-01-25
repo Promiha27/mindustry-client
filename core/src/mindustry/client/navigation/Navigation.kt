@@ -3,7 +3,6 @@ package mindustry.client.navigation
 import arc.*
 import arc.math.geom.*
 import arc.struct.*
-import arc.util.Log
 import mindustry.*
 import mindustry.client.navigation.waypoints.*
 import mindustry.game.EventType.*
