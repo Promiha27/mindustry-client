@@ -18,7 +18,7 @@ class TurretPathfindingEntity(@JvmField val entity: Ranged, @JvmField val range:
     fun range() = range.get()
     fun canShoot() = canShoot.get()
     fun canHitPlayer() = if (player.unit()?.isFlying ?: false) targetAir else targetGround
-    fun isObstacle() = canShoot() && canHitPlayer() && !ignoreDamageSource(player.unit().type, entity)
+    fun isObstacle() = canShoot() && canHitPlayer() && !ignoreDamageSource(player.unit()?.type ?: UnitTypes.alpha, entity)
     fun x() = entity.x
     fun y() = entity.y
     @JvmField val turret = entity is Building
