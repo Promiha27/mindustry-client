@@ -202,7 +202,6 @@ public class DesktopLauncher extends ClientLauncher{
         testMobile = Seq.with(args).contains("-testMobile");
 
         add(Main.INSTANCE);
-        startDiscord();
 
         if(Version.isSteam){
             Events.on(ClientLoadEvent.class, event -> {
