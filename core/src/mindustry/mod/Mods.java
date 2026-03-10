@@ -16,6 +16,7 @@ import arc.util.serialization.*;
 import arc.util.serialization.Jval.*;
 import kotlin.*;
 import mindustry.*;
+import mindustry.client.*;
 import mindustry.client.utils.*;
 import mindustry.core.*;
 import mindustry.ctype.*;
@@ -63,7 +64,10 @@ public class Mods implements Loadable{
     private IntMap<PageType> pageTypes;
 
     public Mods(){
-        Events.on(ClientLoadEvent.class, e -> Core.app.post(this::checkWarnings));
+        Events.on(ClientLoadEvent.class, e -> Core.app.post(() -> {
+            checkWarnings();
+            iconLoaderTask.submit();
+        }));
     }
 
     /** @return the main class loader for all mods */
@@ -226,18 +230,18 @@ public class Mods implements Loadable{
         }
     }
 
-    private boolean hasLoadedIcons;
-    public void loadIcons(long start, int limit) { // FINISHME: This could be further sped up by running part of the texture creation on mainExecutor
-        if(hasLoadedIcons) return; // Skip doing any work
-        hasLoadedIcons = true; // This will be set back to false if a mod is missing an iconTexture
-        mods.each(m -> !m.attemptedIconLoad, m -> {
-            hasLoadedIcons = false;
+    private final BackgroundTask<Void> iconLoaderTask = new BackgroundTask<>() {
+        @Override
+        public boolean processStep() {
+            var m = mods.find(mod -> !mod.attemptedIconLoad);
+            if (m == null) return true;
+
             var startM = Time.nanos();
-            if(Time.nanosToMillis(startM) - start > limit) return;
             loadIcon(m);
             Log.debug("Attempted icon load for mod '@' in @ms", m.meta.name, Time.millisSinceNanos(startM));
-        });
-    }
+            return false; // This will cause one extra loop but that's fine
+        }
+    };
 
     private void loadIcon(LoadedMod mod){
         //try to load icon for each mod that can have one
@@ -1392,7 +1396,7 @@ public class Mods implements Loadable{
             this.name = meta.name.toLowerCase(Locale.ROOT).replace(" ", "-");
             if(shouldBeEnabled() && (!iconLoadingOptimization || iconDeferralUnsupported.contains(this.name))){ // This is terrible. Loads icons immediately if icon loading optimization is disabled
                 Core.app.post(() -> Vars.mods.loadIcon(this));
-            }else Vars.mods.hasLoadedIcons = false; // Makes sure that another round of icon loading will happen if icon loading optimization is enabled and we're adding a new mod
+            }else Vars.mods.iconLoaderTask.submit(); // Makes sure that another round of icon loading will happen if icon loading optimization is enabled and we're adding a new mod
         }
 
         /** @return whether this is a java class mod. */
