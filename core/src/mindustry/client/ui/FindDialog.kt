@@ -19,7 +19,13 @@ object FindDialog : BaseDialog("@client.find") {
     private var guesses: MutableList<Block> = mutableListOf()
 
     private fun updateGuesses() {
-        guesses = content.blocks().copy().toMutableList().apply { sortBy { biasedLevenshtein(it.localizedName, inputField.text) } }
+        guesses = content.blocks().copy().toMutableList().apply {
+            if(" " in inputField.text) sortBy {
+                biasedLevenshtein(it.localizedName, inputField.text, false, true)
+            } else sortBy {
+                biasedLevenshtein(it.localizedName.replace(" ", ""), inputField.text, false, true)
+            }
+        }
     }
 
     private fun updateImages() {
