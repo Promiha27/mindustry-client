@@ -556,6 +556,8 @@ fun biasedLevenshtein(x: String, y: String, caseSensitive: Boolean = false, leng
 // FINISHME: This should be merged with the function above
 @Suppress("NAME_SHADOWING")
 private fun biasedLevenshteinLengthIndependent(x: String, y: String): Float {
+    if (x == y) return 0f
+    if (x.endsWith(y)) return 0.2f
     var x = x
     var y = y
     if (x.length > y.length) x = y.apply { y = x } // Y will be the longer of the two
@@ -583,7 +585,7 @@ private fun biasedLevenshteinLengthIndependent(x: String, y: String): Float {
     }
 
     // startsWith
-    if (dp[curr + xl] == 0) return 0f
+    if (dp[curr + xl] == 0) return 0.1f
     // Disregard insertions at the end - if it made it it made it
     var output = xl
     for (i in curr until curr + yl) {
