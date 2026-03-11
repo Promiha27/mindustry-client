@@ -490,7 +490,9 @@ public class DesktopInput extends InputHandler{
             panning = true;
             logicCutscene = false; // Cancel the cutscene
             if(state.gameOver && !state.rules.pvp) followGameEndPan = false;
+            boolean spectated = Spectate.INSTANCE.getPos() != null;
             Spectate.INSTANCE.setPos(null);
+            if(spectated && ui.listfrag.shown()) ui.listfrag.rebuild();
             float speed = Time.delta;
             speed *= camera.width;
             speed /= 75f;
@@ -829,6 +831,7 @@ public class DesktopInput extends InputHandler{
         if(input.keyTap(Binding.resetCamera) && scene.getKeyboardFocus() == null && (cursor == null || cursor.build == null || !(cursor.build.block.rotate && cursor.build.block.quickRotate && cursor.build.interactable(player.team()))) && !input.alt()){
             panning = false;
             Spectate.INSTANCE.setPos(null); // FINISHME: Vanilla has a spectate feature now
+            if(ui.listfrag.shown()) ui.listfrag.rebuild();
         }
 
         //zoom camera
