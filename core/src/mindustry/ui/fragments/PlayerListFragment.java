@@ -183,7 +183,6 @@ public class PlayerListFragment{
 
             if(connection == null && net.server() && !user.isLocal()) return;
 
-            ClickListener listener = new ClickListener();
 
             Table button = new Table(){
                 @Override
@@ -197,15 +196,18 @@ public class PlayerListFragment{
             button.left();
             button.margin(5).marginBottom(10);
 
+            ClickListener listener = new ClickListener();
             Table iconTable = new Table(){
                 @Override
                 public void draw(){
                     super.draw();
-                    Draw.colorMul(user.team().color, listener.isOver() ? 1.3f : 1f);
-                    Draw.alpha(parentAlpha);
-                    Lines.stroke(Scl.scl(4f));
-                    Lines.rect(x, y, width, height);
-                    Draw.reset();
+                    if(listener.isOver()){
+                        Draw.color(Pal.accent);
+                        Draw.alpha(parentAlpha);
+                        Lines.stroke(Scl.scl(4f));
+                        Lines.rect(x, y, width, height);
+                        Draw.reset();
+                    }
                 }
             };
 
@@ -214,7 +216,7 @@ public class PlayerListFragment{
             iconTable.margin(8);
             iconTable.add(new Image(user.icon()).setScaling(Scaling.bounded)).grow();
             iconTable.name = user.name();
-            iconTable.touchable = Touchable.enabled;
+            iconTable.touchable = user == player ? Touchable.disabled : Touchable.enabled;
 
             iconTable.tapped(() -> {
                 if(!user.dead()){
