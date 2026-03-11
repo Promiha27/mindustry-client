@@ -14,9 +14,7 @@ import arc.scene.ui.TextButton.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
-import mindustry.*;
 import mindustry.client.*;
-import mindustry.client.antigrief.*;
 import mindustry.client.navigation.*;
 import mindustry.client.navigation.AssistPath.*;
 import mindustry.client.utils.*;
@@ -127,7 +125,7 @@ public class PlayerListFragment{
         });
         Events.on(ServerJoinEvent.class, e -> Timer.schedule(() -> {
             if(visible) rebuild();
-        }, .2f));
+        }, .3f)); // delay so client has time to get all the players
     }
 
     public void rebuild(){
@@ -406,12 +404,6 @@ public class PlayerListFragment{
 
     private boolean shiftKeyRelease(){
         return Core.input.keyRelease(KeyCode.shiftLeft) || Core.input.keyRelease(KeyCode.shiftRight);
-    }
-
-    private boolean checkInput(){
-        return !Core.input.keyDown(KeyCode.mouseLeft) &&
-            !(Core.scene.hit(Core.input.mouseX(), Core.input.mouseY(), true) instanceof Image ||
-                Core.scene.hit(Core.input.mouseX(), Core.input.mouseY(), true) instanceof ImageButton);
     }
 
     private String formatLabel(){
