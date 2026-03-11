@@ -29,6 +29,7 @@ import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 
 import static mindustry.Vars.*;
+import static mindustry.client.utils.ClientUtils.*;
 
 public class PlayerListFragment{
     public Table content = new Table().marginRight(13f).marginLeft(13f);
@@ -201,8 +202,8 @@ public class PlayerListFragment{
                 @Override
                 public void draw(){
                     super.draw();
-                    if(listener.isOver()){
-                        Draw.color(Pal.accent);
+                    if(Core.settings.getBool("showplayerteams") || listener.isOver()){
+                        Draw.colorMul(user.team().color, listener.isOver() && Core.settings.getBool("showplayerteams") ? 1.3f : 1f);
                         Draw.alpha(parentAlpha);
                         Lines.stroke(Scl.scl(4f));
                         Lines.rect(x, y, width, height);
@@ -364,7 +365,7 @@ public class PlayerListFragment{
                 ).tooltip("@client.modmute");
             }
 
-            content.add(button).padBottom(-6).width(width).maxHeight(h + 14);
+            content.add(button).width(width).maxHeight(h + 14);
             content.row();
         }
 
@@ -389,23 +390,6 @@ public class PlayerListFragment{
 
     public boolean shown(){
         return visible;
-    }
-
-    // Core.input.ctrl() and Core.input.shift() but for keyTap and keyRelease
-    private boolean ctrlKeyTap(){
-        return OS.isMac ? Core.input.keyTap(KeyCode.sym) : Core.input.keyTap(KeyCode.controlLeft) || Core.input.keyTap(KeyCode.controlRight);
-    }
-
-    private boolean ctrlKeyRelease(){
-        return OS.isMac ? Core.input.keyRelease(KeyCode.sym) : Core.input.keyRelease(KeyCode.controlLeft) || Core.input.keyRelease(KeyCode.controlRight);
-    }
-
-    private boolean shiftKeyTap(){
-        return Core.input.keyTap(KeyCode.shiftLeft) || Core.input.keyTap(KeyCode.shiftRight);
-    }
-
-    private boolean shiftKeyRelease(){
-        return Core.input.keyRelease(KeyCode.shiftLeft) || Core.input.keyRelease(KeyCode.shiftRight);
     }
 
     private String formatLabel(){
