@@ -49,8 +49,10 @@ object FindDialog : BaseDialog("@client.find") {
         cont.add(imageTable)
 
         inputField.typed {
-            updateGuesses()
-            updateImages()
+            if (!inputField.text.isEmpty()){
+                updateGuesses()
+                updateImages()
+            }
         }
 
         keyDown(KeyCode.enter) {
