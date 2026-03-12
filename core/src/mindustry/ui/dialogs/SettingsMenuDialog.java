@@ -419,7 +419,7 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("alwaysfullnumbers", false);
         client.checkPref("enableunderwaterenv", false);
         client.checkPref("alwaysshowteams", false);
-        client.checkPref("showplayerteams", true);
+        client.checkPref("playerliststyle", true);
 
         client.category("misc");
         client.updatePref();
