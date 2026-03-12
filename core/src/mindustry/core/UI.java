@@ -748,6 +748,9 @@ public class UI implements ApplicationListener, Loadable{
 
         long mag = Math.abs(number);
         String sign = number < 0 ? "-" : "";
+
+        if(Core.settings.getBool("alwaysfullnumbers", false)) return number + "";
+
         if(mag >= 1_000_000_000){
             return sign + Strings.fixed(mag / 1_000_000_000f, 1) + "[gray]" + billions + "[]";
         }else if(mag >= 1_000_000){

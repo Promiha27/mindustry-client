@@ -417,6 +417,7 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("useiconslogs", false);
         client.checkPref("colorizelogs", false);
         client.checkPref("showmassdriverdistance", false);
+        client.checkPref("alwaysfullnumbers", false);
         client.checkPref("enableunderwaterenv", false);
 
         client.category("misc");
