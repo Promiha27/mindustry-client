@@ -202,16 +202,27 @@ public class PlayerListFragment{
                 @Override
                 public void draw(){
                     super.draw();
-                    if(Core.settings.getBool("playerlistoutline") || listener.isOver()){
-                        if(Core.settings.getBool("playerlistoutline")){
-                            Draw.colorMul(user.team().color, listener.isOver() ? 1.3f : 1f);
-                        } else {
-                            Draw.color(Pal.accent);
-                        }
+                    if(Core.settings.getBool("playerliststyle")){
+                        //Square always
+                        Draw.color(user.team().color);
                         Draw.alpha(parentAlpha);
                         Lines.stroke(Scl.scl(4f));
                         Lines.rect(x, y, width, height);
+                        if(listener.isOver()){
+                            //Fill in when hovered
+                            Draw.alpha(parentAlpha * 0.2f);
+                            Fill.crect(x, y, width, height);
+                        }
                         Draw.reset();
+                    } else {
+                        if(listener.isOver()){
+                            //Square only when hovered
+                            Draw.color(Pal.accent);
+                            Draw.alpha(parentAlpha);
+                            Lines.stroke(Scl.scl(4f));
+                            Lines.rect(x, y, width, height);
+                            Draw.reset();
+                        }
                     }
                 }
             };
@@ -357,19 +368,23 @@ public class PlayerListFragment{
                 }
             }).height(bs);
 
-            if (Server.current.freeze.canRun()) {
+            if(Server.current.freeze.canRun()){
                 button.button(new TextureRegionDrawable(StatusEffects.freezing.uiIcon).tint(Color.cyan), ustyle, () ->
                     Server.current.handleFreeze(user)
                 ).tooltip("@client.freeze");
             }
 
-            if (Server.current.mute.canRun()) {
+            if(Server.current.mute.canRun()){
                 button.button(new TextureRegionDrawable(StatusEffects.disarmed.uiIcon).tint(Color.gray), ustyle, () ->
                     Server.current.handleMute(user)
                 ).tooltip("@client.modmute");
             }
 
-            content.add(button).width(width).maxHeight(h + 14);
+            var cell = content.add(button);
+            if(!Core.settings.getBool("playerliststyle")){
+                cell.padBottom(-6);
+            }
+            cell.width(width).maxHeight(h + 14);
             content.row();
         }
 
