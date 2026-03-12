@@ -341,7 +341,7 @@ public class DesktopInput extends InputHandler{
 
         if(Core.input.keyTap(Binding.playerList) && (scene.getKeyboardFocus() == null || scene.getKeyboardFocus().isDescendantOf(ui.listfrag.content) || scene.getKeyboardFocus().isDescendantOf(ui.minimapfrag.elem))){
             Core.settings.getBoolOnce("playerlist-spectate-moved", () ->
-                ui.showOkText("Spectate", "The spectate button has moved. Spectate a player by clicking the image of their unit.", () -> {})
+                ui.showOkText("Spectate", "The spectate button has moved. Spectate a player by clicking the image of their unit.\nThis is where it is in vanilla. Use the setting \"Outline player units in player list\" for the old visual style.", () -> {})
             );
             ui.listfrag.toggle();
         }
