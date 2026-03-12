@@ -202,8 +202,12 @@ public class PlayerListFragment{
                 @Override
                 public void draw(){
                     super.draw();
-                    if(Core.settings.getBool("showplayerteams") || listener.isOver()){
-                        Draw.colorMul(user.team().color, listener.isOver() && Core.settings.getBool("showplayerteams") ? 1.3f : 1f);
+                    if(Core.settings.getBool("playerlistoutline") || listener.isOver()){
+                        if(Core.settings.getBool("playerlistoutline")){
+                            Draw.colorMul(user.team().color, listener.isOver() ? 1.3f : 1f);
+                        } else {
+                            Draw.color(Pal.accent);
+                        }
                         Draw.alpha(parentAlpha);
                         Lines.stroke(Scl.scl(4f));
                         Lines.rect(x, y, width, height);
