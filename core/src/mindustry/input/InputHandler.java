@@ -778,7 +778,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         Events.fire(new ConfigEventBefore(build, player, value));
         if(player != null) build.updateLastAccess(player);
         build.configured(player == null || player.dead() ? null : player.unit(), value);
-        Core.app.post(() -> Events.fire(new ConfigEvent(build, player, value, previous)));
+        Events.fire(new ConfigEvent(build, player, value, previous));
     }
 
     //only useful for servers or local mods, and is not replicated across clients
