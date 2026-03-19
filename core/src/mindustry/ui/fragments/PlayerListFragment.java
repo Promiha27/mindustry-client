@@ -189,7 +189,7 @@ public class PlayerListFragment{
                 @Override
                 public void draw(){
                     super.draw();
-                    Draw.color(showTeams ? user.team().color : Pal.gray);
+                    Draw.color(showTeams && !Core.settings.getBool("playerliststyle") ? user.team().color : Pal.gray);
                     Fill.crect(x, y, width, 4);
                     Draw.reset();
                 }
