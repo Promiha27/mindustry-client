@@ -29,6 +29,7 @@ import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 
 import static mindustry.Vars.*;
+import static mindustry.client.utils.ClientUtils.*;
 
 public class PlayerListFragment{
     public Table content = new Table().marginRight(13f).marginLeft(13f);
@@ -188,7 +189,7 @@ public class PlayerListFragment{
                 @Override
                 public void draw(){
                     super.draw();
-                    Draw.color(showTeams ? user.team().color : Pal.gray);
+                    Draw.color(showTeams && !Core.settings.getBool("playerliststyle") ? user.team().color : Pal.gray);
                     Fill.crect(x, y, width, 4);
                     Draw.reset();
                 }
@@ -201,12 +202,27 @@ public class PlayerListFragment{
                 @Override
                 public void draw(){
                     super.draw();
-                    if(listener.isOver()){
-                        Draw.color(Pal.accent);
+                    if(Core.settings.getBool("playerliststyle")){
+                        //Square always
+                        Draw.color(user.team().color);
                         Draw.alpha(parentAlpha);
                         Lines.stroke(Scl.scl(4f));
                         Lines.rect(x, y, width, height);
+                        if(listener.isOver()){
+                            //Fill in when hovered
+                            Draw.alpha(parentAlpha * 0.2f);
+                            Fill.crect(x, y, width, height);
+                        }
                         Draw.reset();
+                    } else {
+                        if(listener.isOver()){
+                            //Square only when hovered
+                            Draw.color(Pal.accent);
+                            Draw.alpha(parentAlpha);
+                            Lines.stroke(Scl.scl(4f));
+                            Lines.rect(x, y, width, height);
+                            Draw.reset();
+                        }
                     }
                 }
             };
@@ -352,19 +368,23 @@ public class PlayerListFragment{
                 }
             }).height(bs);
 
-            if (Server.current.freeze.canRun()) {
+            if(Server.current.freeze.canRun()){
                 button.button(new TextureRegionDrawable(StatusEffects.freezing.uiIcon).tint(Color.cyan), ustyle, () ->
                     Server.current.handleFreeze(user)
                 ).tooltip("@client.freeze");
             }
 
-            if (Server.current.mute.canRun()) {
+            if(Server.current.mute.canRun()){
                 button.button(new TextureRegionDrawable(StatusEffects.disarmed.uiIcon).tint(Color.gray), ustyle, () ->
                     Server.current.handleMute(user)
                 ).tooltip("@client.modmute");
             }
 
-            content.add(button).padBottom(-6).width(width).maxHeight(h + 14);
+            var cell = content.add(button);
+            if(!Core.settings.getBool("playerliststyle")){
+                cell.padBottom(-6);
+            }
+            cell.width(width).maxHeight(h + 14);
             content.row();
         }
 
@@ -389,23 +409,6 @@ public class PlayerListFragment{
 
     public boolean shown(){
         return visible;
-    }
-
-    // Core.input.ctrl() and Core.input.shift() but for keyTap and keyRelease
-    private boolean ctrlKeyTap(){
-        return OS.isMac ? Core.input.keyTap(KeyCode.sym) : Core.input.keyTap(KeyCode.controlLeft) || Core.input.keyTap(KeyCode.controlRight);
-    }
-
-    private boolean ctrlKeyRelease(){
-        return OS.isMac ? Core.input.keyRelease(KeyCode.sym) : Core.input.keyRelease(KeyCode.controlLeft) || Core.input.keyRelease(KeyCode.controlRight);
-    }
-
-    private boolean shiftKeyTap(){
-        return Core.input.keyTap(KeyCode.shiftLeft) || Core.input.keyTap(KeyCode.shiftRight);
-    }
-
-    private boolean shiftKeyRelease(){
-        return Core.input.keyRelease(KeyCode.shiftLeft) || Core.input.keyRelease(KeyCode.shiftRight);
     }
 
     private String formatLabel(){
