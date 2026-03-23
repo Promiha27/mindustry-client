@@ -1285,7 +1285,7 @@ public class Mods implements Loadable{
                 (Core.settings.getBool("ignoremodminversion") ||
                     (
                         Version.isAtLeast(meta.minGameVersion) &&
-                        (meta.getMinMajor() >= minJavaModGameVersion || headless)
+                        (meta.getMinMajor() >= minJavaModGameVersion || headless || meta.legacyCompatible)
                     )
                 ) &&
                 !skipModCode &&
@@ -1447,7 +1447,7 @@ public class Mods implements Loadable{
 
         /** @return whether this mod is outdated, i.e. not compatible with v8. */
         public boolean isOutdated(){
-            return getMinMajor() < (isJava() ? minJavaModGameVersion : minModGameVersion);
+            return getMinMajor() < (isJava() ? minJavaModGameVersion : minModGameVersion) && !meta.legacyCompatible;
         }
 
         /** @return whether the client disables this mod for one reason or another */
@@ -1564,8 +1564,10 @@ public class Mods implements Loadable{
         public float texturescale = 1.0f;
         /** If true, bleeding is skipped and no content icons are generated. */
         public boolean pregenerated;
-        /** If set, load the mod content in this order by content names */
+        /** If set, load the mod content in this order by content names. */
         public String[] contentOrder;
+        /** Mod from an older major version that is compatible with the latest one as well. */
+        public boolean legacyCompatible;
 
         /** Load icons in parallel (Foo's optimization) */
         public boolean parallelIcons;
