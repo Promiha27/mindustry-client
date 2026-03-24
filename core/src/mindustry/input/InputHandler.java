@@ -148,9 +148,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     private BuildPlan overlappingPlan = null;
     private Player overlappingPlayer = null;
 
-    private Seq<BuildPlan> visiblePlanSeq = new Seq<>();
-    private long lastFrameId;
-    protected Eachable<BuildPlan> allPlans, allSelectLines, allRenderPlansConfig, allOtherPlayerPlans;
+    protected Eachable<BuildPlan> allPlans, allSelectLines, allRenderPlansConfig;
 
     // These 3 vars and init block are used for retrying configs that the server has denied due to exceeding the ratelimit
     private static boolean fromServer;
@@ -1540,13 +1538,15 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         Draw.reset();
 
         //TODO: cannot query for links that are offscreen
-        if (u != null) for(BuildPlan plan : u.plans){
-            if(plan.progress > 0.01f || plan.breaking || (current == plan && plan.initialized && (u.within(plan.x * tilesize, plan.y * tilesize, u.type.buildRange) || state.isEditor()))) continue;
+        if (u != null) {
+            for(BuildPlan plan : u.plans){
+                if(plan.progress > 0.01f || plan.breaking || (current == plan && plan.initialized && (u.within(plan.x * tilesize, plan.y * tilesize, u.type.buildRange) || state.isEditor()))) continue;
 
-            if(Tmp.r2.setCentered(plan.drawx(), plan.drawy(), plan.block.planConfigClipSize()).overlaps(Tmp.r3)){
-                Draw.mixcol(Color.white, 0.24f + Mathf.absin(Time.globalTime, 6f, 0.28f));
-                plan.block.drawPlanConfigTop(plan, allRenderPlansConfig);
-                Draw.reset();
+                if(Tmp.r2.setCentered(plan.drawx(), plan.drawy(), plan.block.planConfigClipSize()).overlaps(Tmp.r3)){
+                    Draw.mixcol(Color.white, 0.24f + Mathf.absin(Time.globalTime, 6f, 0.28f));
+                    plan.block.drawPlanConfigTop(plan, allRenderPlansConfig);
+                    Draw.reset();
+                }
             }
         }
     }
@@ -2033,17 +2033,10 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     }
 
     protected void drawOverPlan(BuildPlan plan, boolean valid, float alpha){
-        if(!plan.isVisible()) return;
         Draw.reset();
-        final long frameId = graphics.getFrameId();
-        if(lastFrameId != frameId){
-            lastFrameId = frameId;
-            visiblePlanSeq.clear();
-            BuildPlan.getVisiblePlans(allSelectLines, visiblePlanSeq);
-        }
         Draw.mixcol(!valid ? Pal.breakInvalid : Color.white, (!valid ? 0.4f : 0.24f) + Mathf.absin(Time.globalTime, 6f, 0.28f));
         Draw.alpha(alpha);
-        plan.block.drawPlanConfigTop(plan, visiblePlanSeq);
+        plan.block.drawPlanConfigTop(plan, allSelectLines);
         Draw.reset();
     }
 
@@ -2723,7 +2716,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
             ? !Build.validPlaceIgnoreUnits(type, player.team(), x, y, rotation, true, true)
             : !Build.validPlace(type, player.team(), x, y, rotation, true)) return false;
 
-        if(player.unit().plans.size > 0){
+        if(!player.dead() && player.unit().plans.size > 0){
             Tmp.r1.setCentered(x * tilesize + type.offset, y * tilesize + type.offset, type.size * tilesize);
             plansOut.clear();
             playerPlanTree.intersect(Tmp.r1, plansOut);
