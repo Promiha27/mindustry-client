@@ -647,11 +647,11 @@ public class ConstructBlock extends Block{
                 lastProgress == 0 && Core.settings.getBool("removecorenukes")
                 && state.rules.reactorExplosions && current instanceof NuclearReactor
                 && !lastBuilder.isLocal() && distance <= 21
-            ) { // Automatically remove reactors within explosion radiusof core
+            ) { // Automatically remove reactors within explosion radius of core
                 Call.buildingControlSelect(player, closestCore());
-                Timer.schedule(() -> player.unit().plans.add( // FINISHME: Cleanup
-                        new BuildPlan(tile.x, tile.y)
-                ), net.client() ? netClient.getPing()/1000f+.3f : 0);
+                Timer.schedule(() -> { // FINISHME: Cleanup
+                    if (player.unit() != null) player.unit().plans.add(new BuildPlan(tile.x, tile.y));
+                }, net.client() ? netClient.getPing()/1000f+.3f : 0);
             }
             lastProgress = progress;
         }
