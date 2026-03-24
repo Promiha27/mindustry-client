@@ -68,13 +68,18 @@ public class SettingsMenuDialog extends BaseDialog{
             rebuildMenu();
         });
 
+        int[] lastRebuildSize = {Core.graphics.getWidth(), Core.graphics.getHeight()};
         onResize(() -> {
-            graphics.rebuild();
-            sound.rebuild();
-            game.rebuild();
-            client.rebuild();
-            moderation.rebuild();
-            updateScrollFocus();
+            if(lastRebuildSize[0] != Core.graphics.getWidth() || lastRebuildSize[1] != Core.graphics.getHeight()){
+                graphics.rebuild();
+                sound.rebuild();
+                game.rebuild();
+                client.rebuild();
+                moderation.rebuild();
+                updateScrollFocus();
+                lastRebuildSize[0] = Core.graphics.getWidth();
+                lastRebuildSize[1] = Core.graphics.getHeight();
+            }
         });
 
         cont.clearChildren();
@@ -151,6 +156,7 @@ public class SettingsMenuDialog extends BaseDialog{
                 ui.showConfirm("@confirm", "@settings.clearcampaignsaves.confirm", () -> {
                     control.saves.load(true);
                     for(var planet : content.planets()){
+                        planet.clearStats();
                         for(var sec : planet.sectors){
                             sec.clearInfo();
                             if(sec.save != null){
@@ -356,7 +362,6 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("highlightclientmsg", false);
         client.checkPref("showclientmsgsendername", true);
         client.checkPref("displayasuser", true);
-        client.checkPref("alwaysshowteams", false);
         client.checkPref("showuserid", false);
         client.checkPref("hideserversbydefault", false); // Inverts behavior of server hiding
         client.checkPref("enablechatlimit", false);
@@ -419,6 +424,8 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("showmassdriverdistance", false);
         client.checkPref("alwaysfullnumbers", false);
         client.checkPref("enableunderwaterenv", false);
+        client.checkPref("alwaysshowteams", false);
+        client.checkPref("playerliststyle", true);
 
         client.category("misc");
         client.updatePref();
@@ -558,6 +565,13 @@ public class SettingsMenuDialog extends BaseDialog{
             game.checkPref("console", false);
         }
 
+        graphics.sliderPref("uiEdgePadding", 0, 0, 100, s -> s + "px", s -> {
+            if(ui != null){
+                ui.updateMargins();
+                Core.scene.resize(Core.graphics.getWidth(), Core.graphics.getHeight());
+            }
+        });
+
         int[] lastUiScale = {settings.getInt("uiscale", 100)};
 
         graphics.sliderPref("uiscale", 100, 25, 300, 5, s -> {
@@ -657,7 +671,7 @@ public class SettingsMenuDialog extends BaseDialog{
         }
 
         graphics.checkPref("effects", true);
-        graphics.checkPref("atmosphere", !mobile);
+        graphics.checkPref("atmosphere", true);
         graphics.checkPref("drawlight", true);
         graphics.checkPref("destroyedblocks", true);
         graphics.checkPref("blockstatus", false);
@@ -671,13 +685,14 @@ public class SettingsMenuDialog extends BaseDialog{
         graphics.checkPref("position", false);
         graphics.checkPref("fps", false);
         graphics.checkPref("playerindicators", true);
+        graphics.checkPref("showpings", true);
+        graphics.checkPref("showotherbuildplans", true);
         graphics.checkPref("indicators", true);
         // graphics.checkPref("showweather", true); FINISHME: Move client weather alpha to this
         graphics.checkPref("animatedwater", true);
 
         if(Shaders.shield != null){
-            //animated shields are off by default on android (generally lower spec devices)
-            graphics.checkPref("animatedshields", !android);
+            graphics.checkPref("animatedshields", true);
         }
 
         graphics.checkPref("bloom", true, val -> renderer.toggleBloom(val));
@@ -887,8 +902,16 @@ public class SettingsMenuDialog extends BaseDialog{
         }
 
         public SliderSetting sliderPref(String name, int def, int min, int max, int step, StringProcessor s){
+            return sliderPref(name, def, min, max, step, s, null);
+        }
+
+        public SliderSetting sliderPref(String name, int def, int min, int max, StringProcessor s, Intc changed){
+            return sliderPref(name, def, min, max, 1, s, changed);
+        }
+
+        public SliderSetting sliderPref(String name, int def, int min, int max, int step, StringProcessor s, Intc changed){
             SliderSetting res;
-            list.add(res = new SliderSetting(name, def, min, max, step, s));
+            list.add(res = new SliderSetting(name, def, min, max, step, s, changed));
             settings.defaults(name, def);
             rebuild();
             return res;
@@ -1101,14 +1124,16 @@ public class SettingsMenuDialog extends BaseDialog{
         public static class SliderSetting extends Setting{
             int def, min, max, step;
             StringProcessor sp;
+            Intc changed;
 
-            public SliderSetting(String name, int def, int min, int max, int step, StringProcessor s){
+            public SliderSetting(String name, int def, int min, int max, int step, StringProcessor s, Intc changed){
                 super(name);
                 this.def = def;
                 this.min = min;
                 this.max = max;
                 this.step = step;
                 this.sp = s;
+                this.changed = changed;
             }
 
             @Override
@@ -1127,6 +1152,7 @@ public class SettingsMenuDialog extends BaseDialog{
                 slider.changed(() -> {
                     settings.put(name, (int)slider.getValue());
                     value.setText(sp.get((int)slider.getValue()));
+                    if(changed != null) changed.get((int)slider.getValue());
                 });
 
                 slider.change();
