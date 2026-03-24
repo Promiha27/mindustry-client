@@ -31,9 +31,9 @@ data class IntRectangle(val x: Int, val y: Int, val width: Int, val height: Int)
     override fun iterator(): Iterator<Point2> = IntRectIterator(this)
 }
 
-private var lastID: Long = 0
 abstract class TileLog(override val cause: Interactor) : InteractionLog {
-    val id: Long = lastID++
+    /** Allows getting details about this log from the server */
+    var id: Int = -1
 
     override var time: Instant = Instant.now()
 
