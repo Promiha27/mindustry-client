@@ -413,9 +413,8 @@ public class ChatFragment extends Table{
     }
 
     //ping format: "x,y [text]"
-    private void checkPing(String message){
-
-        var coords = NetClient.findCoords(message);
+    public static void checkPing(String message){
+        var coords = NetClient.findCoords(message, true);
         if (coords.size == 0) return;
         Log.debug("Found coords in message: @", message);
         var msg = new StringBuilder(message);
