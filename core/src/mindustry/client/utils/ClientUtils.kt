@@ -409,7 +409,7 @@ inline fun circle(x: Int, y: Int, radius: Float, cons: (Tile?) -> Unit) {
 }
 
 /** Send a signed message to chat. */
-fun sendMessage(msg: String) = Call.sendChatMessage(Main.sign(msg))
+fun sendMessage(msg: String) = Call.sendChatMessage(Main.sign(msg).also { checkPing(it) })
 
 fun getName(builder:mindustry.gen.Unit?):String {
     return if(builder == null){
