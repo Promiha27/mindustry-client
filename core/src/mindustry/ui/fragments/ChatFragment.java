@@ -417,6 +417,7 @@ public class ChatFragment extends Table{
 
         var coords = NetClient.findCoords(message);
         if (coords.size == 0) return;
+        Log.debug("Found coords in message: @", message);
         var msg = new StringBuilder(message);
         for (int i = coords.size - 1; i >= 0; i--) {
             var c = coords.get(i);
@@ -424,6 +425,7 @@ public class ChatFragment extends Table{
             if (c.start > 0 && msg.length() > c.start && msg.charAt(c.start-1) == ' ' && msg.charAt(c.start) == ' ') msg.deleteCharAt(c.start); // Coords in the middle with a space on either side: delete one of the spaces
         }
         var c = coords.first().pos;
+        Log.debug("Ping at @, @", c.x/8, c.y/8);
         Call.pingLocation(player, c.x, c.y, msg.toString());
     }
 
