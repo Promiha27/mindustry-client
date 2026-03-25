@@ -646,7 +646,7 @@ public class ConstructBlock extends Block{
             if (
                 lastProgress == 0 && Core.settings.getBool("removecorenukes")
                 && state.rules.reactorExplosions && current instanceof NuclearReactor
-                && !lastBuilder.isLocal() && distance <= 21
+                && !lastBuilder.isLocal() && distance <= 21 && !CustomMode.flood.b() // FINISHME: Can we check if the builder is building the player's local plan easily?
             ) { // Automatically remove reactors within explosion radius of core
                 Call.buildingControlSelect(player, closestCore());
                 Timer.schedule(() -> { // FINISHME: Cleanup
