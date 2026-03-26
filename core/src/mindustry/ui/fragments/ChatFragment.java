@@ -414,6 +414,7 @@ public class ChatFragment extends Table{
 
     //ping format: "x,y [text]"
     public static void checkPing(String message){
+        if (message.startsWith("/") || message.startsWith(ClientVars.clientCommandHandler.prefix)) return;
         var coords = NetClient.findCoords(message, true);
         if (coords.size == 0) return;
         Log.debug("Found coords in message: @", message);
