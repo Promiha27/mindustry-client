@@ -420,7 +420,7 @@ public class LCanvas extends Table{
                     .disabled(b -> canvas.statements.getChildren().size >= LExecutor.maxInstructions).size(24f).padRight(6);
 
                 t.button(Icon.copy, Styles.logici, () -> {
-                }).size(24f).padRight(6).get().tapped(this::copy);
+                }).size(24f).padRight(6).disabled(i -> canvas.statements.getChildren().size >= LExecutor.maxInstructions).get().tapped(this::copy);
 
                 t.button(Icon.paste, Styles.logici, () -> {
                 }).size(24f).padRight(6).tooltip("Paste Here").get().tapped(() -> {
