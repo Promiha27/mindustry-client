@@ -103,7 +103,7 @@ public class OverlayRenderer{
         var plantopAlpha = 0.24F + Mathf.absin(Time.globalTime, 6.0F, 0.28F);
         Boolf<BuildPlan> skip = plan -> {
             Unit unit = player.unit();
-            return /*plan.progress > 0.01F ||*/ frozenPlans.first() == plan && plan.initialized && (unit != null && unit.within(plan.x * tilesize, plan.y * tilesize, buildingRange) || state.isEditor())
+            return /*plan.progress > 0.01F ||*/ frozenPlans.first() == plan && plan.initialized && (unit != null && unit.within(plan.x * tilesize, plan.y * tilesize, buildingRange) || state.isEditor());
         };
 
         for (int i = 0; i < 2; i++) {
