@@ -760,6 +760,7 @@ public class ChatFragment extends Table{
             (player.admin && Groups.player.find(p -> p.admin && p != player) != null)
             //Unless it's io, because the other player may not have the admin flag
             || (Server.io.b() && ClientVars.rank >= 4)
+            || settings.getBool("always-allow-admin-chat", false)
         ),
         staff("/s", () -> Server.fish.b() && settings.getBool("fish-staff", false)),
         client("!c");
