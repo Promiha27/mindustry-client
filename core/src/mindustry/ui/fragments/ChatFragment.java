@@ -100,7 +100,7 @@ public class ChatFragment extends Table{
                     }
                 }
                 if (input.keyTap(Binding.chatMode) && !tabConsumed) {
-                    nextMode();
+                    nextMode(input.shift());
                 }
                 scrollPos = (int)Mathf.clamp(scrollPos + input.axis(Binding.chatScroll), 0, Math.max(0, messages.size - messagesShown));
             }
@@ -580,10 +580,13 @@ public class ChatFragment extends Table{
     }
 
     public void nextMode(){
+        nextMode(false);
+    }
+    public void nextMode(boolean shift){
         ChatMode prev = mode;
 
         do{
-            mode = mode.next();
+            mode = mode.next(shift);
         }while(!mode.isValid());
 
         if(chatfield.getText().startsWith(prev.normalizedPrefix())){
@@ -780,7 +783,10 @@ public class ChatFragment extends Table{
         }
 
         public ChatMode next(){
-            return all[(ordinal() + 1) % all.length];
+            return next(false);
+        }
+        public ChatMode next(boolean shift){
+            return all[(ordinal() + all.length + (shift ? -1 : 1)) % all.length];
         }
 
         public String normalizedPrefix(){
