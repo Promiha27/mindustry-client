@@ -755,7 +755,7 @@ public class ChatFragment extends Table{
     private enum ChatMode{
         normal(""),
         team("/t"),
-        admin("/a", () -> (player.admin || Server.io.b() && ClientVars.rank >= 4) && Groups.player.find(p -> p.admin && p != player)),
+        admin("/a", () -> (player.admin || Server.io.b() && ClientVars.rank >= 4) && Groups.player.find(p -> p.admin && p != player) != null),
         staff("/s", () -> Server.fish.b() && settings.getBool("fish-staff", false)),
         client("!c");
 
