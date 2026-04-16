@@ -156,7 +156,7 @@ public class LogicDialog extends BaseDialog{
 
             dialog.addCloseButton();
             dialog.show();
-        }).name("edit").disabled(t -> executor.team != player.team() && net.client() && !state.isEditor());
+        }).name("edit").disabled(t -> executor != null && executor.team != player.team() && net.client() && !state.isEditor());
 
         buttons.button("@client.setupcomms", () -> {
             ui.showConfirm("@client.setupcomms.confirm", () -> {
@@ -251,7 +251,7 @@ public class LogicDialog extends BaseDialog{
         });
 
         buttons.button("@add", Icon.add, () -> showAddDialog(canvas.statements.getChildren().size))
-            .disabled(t -> (executor.team != player.team() && net.client() && !state.isEditor()) || canvas.statements.getChildren().size >= LExecutor.maxInstructions);
+            .disabled(t -> (executor != null && executor.team != player.team() && net.client() && !state.isEditor()) || canvas.statements.getChildren().size >= LExecutor.maxInstructions);
     }
 
     public boolean shouldShowVariables(){
