@@ -163,7 +163,7 @@ public class LogicDialog extends BaseDialog{
                 canvas.load(BlockCommunicationSystem.LOGIC_PREFIX);
                 hide();
             });
-        }).disabled(t -> executor.team != player.team() && net.client() && !state.isEditor());
+        }).disabled(t -> executor != null && executor.team != player.team() && net.client() && !state.isEditor());
 
         if(Core.graphics.isPortrait()) buttons.row();
 
