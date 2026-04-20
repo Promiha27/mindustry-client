@@ -475,6 +475,7 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("schematicmenuexporttags", true);
         client.checkPref("schematicbrowserimporttags", true);
         client.checkPref("schematicuicarryover", true);
+        client.checkPref("uselocalizedname", true);
 
         if (settings.getBool("client-experimentals") || OS.hasProp("policone")) {
             client.category("experimental");

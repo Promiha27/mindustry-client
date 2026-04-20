@@ -5,6 +5,7 @@ package mindustry.client.utils
 
 import arc.*
 import arc.files.*
+import arc.func.Floatf
 import arc.graphics.*
 import arc.input.*
 import arc.math.*
@@ -468,7 +469,14 @@ fun ChatMessage.findLinks(start: Int = 0): ChatMessage = NetClient.findLinks(thi
 
 fun findItem(arg: String): Item = content.items().min { b -> biasedLevenshtein(arg, b.localizedName) }
 
-fun findUnit(arg: String): UnitType = content.units().min({ u -> !u.internal }) { b -> biasedLevenshtein(arg, b.localizedName) } // Filter out internals as people will try spawning block entities and crash the game otherwise (all internals are filtered since they should likely never be manually spawned)
+fun findUnit(arg: String): UnitType = content.units().min(
+    { u: UnitType -> !u.internal },
+    // Filter out internals as people will try spawning block entities and crash the game otherwise (all internals are filtered since they should likely never be manually spawned)
+    if (Core.settings.getBool("uselocalizedname", true))
+        fun(u: UnitType):Float = biasedLevenshtein(arg, u.localizedName)
+    else
+        fun(u: UnitType):Float = biasedLevenshtein(arg, u.name)
+)
 
 fun findBlock(arg: String): Block = content.blocks().min { b -> biasedLevenshtein(arg, b.localizedName) }
 
