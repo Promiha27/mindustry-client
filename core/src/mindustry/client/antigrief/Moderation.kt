@@ -86,7 +86,17 @@ class Moderation {
             Events.on(EventType.ServerJoinEvent::class.java) {
                 rank = -1 // reset rank on server join
                 if (Server.io() || Server.phoenix()) Call.serverPacketReliable("playerdata_by_id", Vars.player.id.toString()) // Stat trace self to get rank info
+                Time.run(60F) { Groups.player.each(::playerJoin) } // Delay to let players be added
             }
+        }
+
+        /** Called on player join. Also called on every player on first join */
+        fun playerJoin(player: Player?) {
+            if (player == null || player == Vars.player) return
+            if (Core.settings.getBool("seer-enabled")) Seer.registerPlayer(player)
+            if (!Core.settings.getBool("modenabled") || !Server.current.adminui() || player.admin) return
+            silentTrace++
+            Call.adminRequest(player, Packets.AdminAction.trace, null)
         }
     }
 
@@ -100,13 +110,8 @@ class Moderation {
             traces.add(e.player)
         }
 
-        Events.on(EventType.PlayerJoin::class.java) { e -> // Trace players when they join, also traces all players on join
-            if (e.player == null || e.player == Vars.player) return@on
-            if (Core.settings.getBool("seer-enabled")) Seer.registerPlayer(e.player)
-            if (!Core.settings.getBool("modenabled") || !Server.current.adminui() || e.player.admin) return@on
-            silentTrace++
-            Call.adminRequest(e.player, Packets.AdminAction.trace, null)
-
+        Events.on(EventType.PlayerJoin::class.java) { e -> // Trace players when they join
+            playerJoin(e.player)
         }
     }
 
