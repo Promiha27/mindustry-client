@@ -43,7 +43,7 @@ public class SolidPump extends Pump{
 
         if(attribute != null){
             var eff = Math.max((sumAttribute(attribute, x, y)) / size / size + percentSolid(x, y) * baseEfficiency, 0f);
-            var pumpSpeed = " (" + eff * pumpAmount * 60f + Core.bundle.get("unit.persecond") + ")";
+            var pumpSpeed = " (" + Strings.autoFixed(eff * pumpAmount * 60f, 3) + Core.bundle.get("unit.persecond") + ")";
             drawPlaceText(Core.bundle.format("bar.efficiency", Math.round(eff * 100)) + pumpSpeed, x, y, valid);
         }
     }
