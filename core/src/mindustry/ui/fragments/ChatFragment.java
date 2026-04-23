@@ -113,7 +113,7 @@ public class ChatFragment extends Table{
     }
 
     public static void setShownMessages(){
-        messagesShown = Core.settings.getInt("shownmessagescount");;
+        messagesShown = Core.settings.getInt("shownmessagescount");
     }
 
     // FINISHME: Awful.

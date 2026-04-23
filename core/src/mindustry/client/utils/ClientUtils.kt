@@ -515,14 +515,6 @@ fun openJar(vararg extraArgs: String) {
     }
 }
 
-fun ctrlKeyTap() = if (OS.isMac) Core.input.keyTap(KeyCode.sym) else Core.input.keyTap(KeyCode.controlLeft) || Core.input.keyTap(KeyCode.controlRight)
-
-fun ctrlKeyRelease() = if (OS.isMac) Core.input.keyRelease(KeyCode.sym) else Core.input.keyRelease(KeyCode.controlLeft) || Core.input.keyRelease(KeyCode.controlRight)
-
-fun shiftKeyTap() = Core.input.keyTap(KeyCode.shiftLeft) || Core.input.keyTap(KeyCode.shiftRight)
-
-fun shiftKeyRelease() = Core.input.keyRelease(KeyCode.shiftLeft) || Core.input.keyRelease(KeyCode.shiftRight)
-
 @Suppress("NAME_SHADOWING")
 @JvmOverloads
 fun biasedLevenshtein(x: String, y: String, caseSensitive: Boolean = false, lengthIndependent: Boolean = false): Float {
