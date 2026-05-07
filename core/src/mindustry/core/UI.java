@@ -489,7 +489,6 @@ public class UI implements ApplicationListener, Loadable{
     /** Shows a label in the world. This label is behind everything. Does not fade. */
     public void showLabel(@Nullable String info, int id, float duration, float worldx, float worldy){
         if(info == null){ // null info allows deletion of old labels provided they have ids
-            Log.info("Removing label @", id);
             var table = labels.remove(id);
             if(table != null) table.remove();
             return;
@@ -514,8 +513,6 @@ public class UI implements ApplicationListener, Loadable{
         table.act(0f);
         //make sure it's at the back
         Core.scene.root.addChildAt(0, table);
-        Log.info("Adding label @", id);
-
         table.getChildren().first().act(0f);
     }
 
