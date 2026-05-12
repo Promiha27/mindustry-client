@@ -466,7 +466,7 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("realautorestart", true);
         client.checkPref("attemwarfare", false);
         client.checkPref("onjoinfixcode", true);
-        client.checkPref("removeatteminsteadoffixing", true);
+        client.checkPref("removeatteminsteadoffixing", false);
         client.checkPref("downloadmusic", true);
         client.checkPref("downloadsound", true);
         client.checkPref("circleassist", false);
