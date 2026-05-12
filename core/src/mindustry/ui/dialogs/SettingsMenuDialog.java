@@ -463,6 +463,7 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("automega", false, i -> ui.unitPicker.type = i ? UnitTypes.mega : ui.unitPicker.type);
         client.checkPref("processorconfigs", false);
         client.checkPref("autorestart", true);
+        client.checkPref("realautorestart", true);
         client.checkPref("attemwarfare", false);
         client.checkPref("onjoinfixcode", true);
         client.checkPref("removeatteminsteadoffixing", true);
