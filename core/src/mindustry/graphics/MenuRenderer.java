@@ -90,14 +90,37 @@ public class MenuRenderer implements Disposable{
         new Block[]{Blocks.dirt, Blocks.dirtWall},
         new Block[]{Blocks.dacite, Blocks.daciteWall}
         );
-        Block[] selected2 = Structs.random(
-        new Block[]{Blocks.basalt, Blocks.duneWall},
-        new Block[]{Blocks.basalt, Blocks.duneWall},
-        new Block[]{Blocks.stone, Blocks.stoneWall},
-        new Block[]{Blocks.stone, Blocks.stoneWall},
-        new Block[]{Blocks.moss, Blocks.sporeWall},
-        new Block[]{Blocks.salt, Blocks.saltWall}
-        );
+        Block[] selected2 = switch(CursednessLevel.get()){
+            case NORMAL, UHH, OHNO -> Structs.random(
+                new Block[]{Blocks.basalt, Blocks.duneWall},
+                new Block[]{Blocks.basalt, Blocks.duneWall},
+                new Block[]{Blocks.stone, Blocks.stoneWall},
+                new Block[]{Blocks.stone, Blocks.stoneWall},
+                new Block[]{Blocks.moss, Blocks.sporeWall},
+                new Block[]{Blocks.salt, Blocks.saltWall}
+            );
+            case CURSED -> Structs.random(
+                new Block[]{Blocks.basalt, Blocks.duneWall},
+                new Block[]{Blocks.basalt, Blocks.duneWall},
+                new Block[]{Blocks.stone, Blocks.stoneWall},
+                new Block[]{Blocks.stone, Blocks.stoneWall},
+                new Block[]{Blocks.moss, Blocks.sporeWall},
+                new Block[]{Blocks.salt, Blocks.saltWall},
+                new Block[]{Blocks.magmarock, Blocks.router},
+                new Block[]{Blocks.iceSnow, Blocks.titaniumWall}
+            );
+            //craziness
+            case WWWHHHHHYYYY -> Structs.random(
+                new Block[]{Blocks.magmarock, Blocks.router},
+                new Block[]{Blocks.iceSnow, Blocks.titaniumWall},
+                new Block[]{Blocks.arkyicVent, Blocks.duo},
+                new Block[]{Blocks.crystallineVent, Blocks.powerNode},
+                new Block[]{Blocks.arkyciteFloor, Blocks.mechanicalPump},
+                new Block[]{Blocks.oreCopper, Blocks.conveyor},
+                new Block[]{Blocks.slag, Blocks.distributor},
+                new Block[]{Blocks.space, Blocks.air}
+            );
+        };
 
         Block ore1 = ores.random();
         ores.remove(ore1);
@@ -190,7 +213,18 @@ public class MenuRenderer implements Disposable{
                 tile.setFloor(floor.asFloor());
                 tile.setBlock(wall);
                 tile.setOverlay(ore);
+                tile.build = null;
             }
+        }
+
+        if(CursednessLevel.atLeast(CursednessLevel.OHNO)){
+            Tile tile = tiles.get(Mathf.random(width / 3, 2 * width / 3), Mathf.random(height / 3, 2 * height / 3));
+            tile.setBlock(Structs.random(
+                Blocks.foreshadow, Blocks.spectre, Blocks.meltdown, Blocks.fuse,
+                Blocks.tetrativeReconstructor, Blocks.exponentialReconstructor,
+                Blocks.largePayloadMassDriver
+            ));
+            tile.build = null;
         }
 
         //don't fire a world load event, it just causes lag and confusion
@@ -241,6 +275,10 @@ public class MenuRenderer implements Disposable{
     public void render(){
         
         if (Core.input.keyTap(KeyCode.h) && Core.scene.getKeyboardFocus() == null) {
+            if(Core.input.shift()){
+                generate();
+                cache();
+            }
             updateCursedness();
         }
         time += Time.delta;
