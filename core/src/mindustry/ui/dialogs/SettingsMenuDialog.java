@@ -419,7 +419,11 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("showtoasts", true);
         client.checkPref("unloaderview", false, i -> Unloader.drawUnloaderItems = i);
         client.checkPref("customnullunloader", false, i -> Unloader.customNullLoader = i);
-        client.sliderPref("cursednesslevel", 1, 0, 4, s -> CursednessLevel.fromInteger(s).name());
+        client.sliderPref("cursednesslevel", 1, 0, 4, s -> CursednessLevel.fromInteger(s).name(), s -> {
+            if(Vars.ui.menufrag.renderer != null){
+                Vars.ui.menufrag.renderer.refresh();
+            }
+        });
         client.checkPref("logiclinkorder", false);
         client.checkPref("showcutscenes", true);
         client.checkPref("powerinfo", true);

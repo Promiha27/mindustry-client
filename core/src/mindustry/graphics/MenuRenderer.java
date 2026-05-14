@@ -40,6 +40,10 @@ public class MenuRenderer implements Disposable{
     public UnitType flyerType;
 
     public MenuRenderer(){
+        refresh();
+    }
+
+    public void refresh(){
         generate();
         cache();
         updateCursedness();
@@ -69,7 +73,7 @@ public class MenuRenderer implements Disposable{
         blockFlyerSpeed = 2f;
     }
 
-    private void generate(){
+    public void generate(){
         //suppress tile change events.
         world.setGenerating(true);
 
@@ -217,7 +221,12 @@ public class MenuRenderer implements Disposable{
             }
         }
 
-        if(CursednessLevel.atLeast(CursednessLevel.OHNO)){
+        int numBlocks = switch(CursednessLevel.get()){
+            case NORMAL, UHH, OHNO -> 0;
+            case CURSED -> 1;
+            case WWWHHHHHYYYY -> Mathf.random(3, 8);
+        };
+        for(int i = 0; i < numBlocks; i ++){
             Tile tile = tiles.get(Mathf.random(width / 3, 2 * width / 3), Mathf.random(height / 3, 2 * height / 3));
             tile.setBlock(Structs.random(
                 Blocks.foreshadow, Blocks.spectre, Blocks.meltdown, Blocks.fuse,
@@ -231,7 +240,7 @@ public class MenuRenderer implements Disposable{
         world.setGenerating(false);
     }
 
-    private void cache(){
+    public void cache(){
 
         //draw shadows
         Draw.proj().setOrtho(0, 0, shadows.getWidth(), shadows.getHeight());
@@ -276,10 +285,10 @@ public class MenuRenderer implements Disposable{
         
         if (Core.input.keyTap(KeyCode.h) && Core.scene.getKeyboardFocus() == null) {
             if(Core.input.shift()){
-                generate();
-                cache();
+                Core.app.post(this::refresh);
+            } else {
+                updateCursedness();
             }
-            updateCursedness();
         }
         time += Time.delta;
         float scaling = Math.max(Scl.scl(4f), Math.max(Core.graphics.getWidth() / ((width - 1f) * tilesize), Core.graphics.getHeight() / ((height - 1f) * tilesize)));
