@@ -265,14 +265,6 @@ public class SettingsMenuDialog extends BaseDialog{
         addSettings();
     }
 
-    // FIX CURSED MENU SCREEN
-//    public void updateSettings(){
-//        ConstructBlock.updateWarnBlocks();
-//        if(Vars.ui.menufrag.renderer.cursednessLevel != CursednessLevel.fromInteger(Core.settings.getInt("cursednesslevel", 1))){
-//            Vars.ui.menufrag.renderer.updateCursedness();
-//        }
-//    }
-
     String getLogs(){
         Fi log = settings.getDataDirectory().child("last_log.txt");
 
@@ -419,9 +411,11 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("showtoasts", true);
         client.checkPref("unloaderview", false, i -> Unloader.drawUnloaderItems = i);
         client.checkPref("customnullunloader", false, i -> Unloader.customNullLoader = i);
+        int[] lastCursednessLevelI = {Core.settings.getInt("cursednesslevel", 0)};
         client.sliderPref("cursednesslevel", 1, 0, 4, s -> CursednessLevel.fromInteger(s).name(), s -> {
-            if(Vars.ui.menufrag.renderer != null){
+            if(Vars.ui.menufrag.renderer != null && s != lastCursednessLevelI[0]){
                 Vars.ui.menufrag.renderer.refresh();
+                lastCursednessLevelI[0] = s;
             }
         });
         client.checkPref("logiclinkorder", false);
