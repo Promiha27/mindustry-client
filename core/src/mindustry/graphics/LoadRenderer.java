@@ -100,15 +100,11 @@ public class LoadRenderer implements Disposable{
         if(assets.getLoadedAssets() != lastLength){
             assetText.setLength(0);
             for(String name : assets.getAssetNames()){
-                try {
-                    boolean isRed = name.toLowerCase().contains("mod") || assets.getAssetType(name).getSimpleName().toLowerCase().contains("mod") || name.contains("preview");
-                    assetText
-                        .append(isRed ? red : orange)
-                        .append(name.replace(OS.username, "<<host>>").replace("/", "::")).append(red).append("::[]")
-                        .append(assets.getAssetType(name).getSimpleName()).append("\n");
-                } catch (NullPointerException e) {
-                    throw new RuntimeException("Asset " + name + " was removed.", e);
-                }
+                boolean isRed = name.toLowerCase().contains("mod") || assets.getAssetType(name).getSimpleName().toLowerCase().contains("mod") || name.contains("preview");
+                assetText
+                    .append(isRed ? red : orange)
+                    .append(name.replace(OS.username, "<<host>>").replace("/", "::")).append(red).append("::[]")
+                    .append(assets.getAssetType(name).getSimpleName()).append("\n");
             }
 
             lastLength = assets.getLoadedAssets();
