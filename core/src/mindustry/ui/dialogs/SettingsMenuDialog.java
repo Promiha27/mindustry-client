@@ -387,7 +387,7 @@ public class SettingsMenuDialog extends BaseDialog{
         client.sliderPref("traveltime", 10, 0, 60, s -> { ClientVars.travelTime = 60f / s; return s == 0 ? "@off" : String.valueOf(s); });
         client.sliderPref("formationopacity", 30, 10, 100, 5, s -> { UnitType.formationAlpha = s / 100f; return s + "%"; });
         client.sliderPref("hitboxopacity", 0, 0, 100, 5, s -> { UnitType.hitboxAlpha = s / 100f; return s == 0 ? "@off" : s + "%"; });
-        client.sliderPref("transferrangeopacity", 30, 0, 100, 5, s -> s == 0 ? "@off" : s + "%");
+        client.sliderPref("transferrangeopacity", 0, 0, 100, 5, s -> s == 0 ? "@off" : s + "%");
         client.checkPref("tilehud", true);
         client.checkPref("lighting", true);
         client.checkPref("placementfragmentsearch", true);
@@ -426,7 +426,7 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("colorizelogs", false);
         client.checkPref("showmassdriverdistance", false);
         client.checkPref("alwaysfullnumbers", false);
-        client.checkPref("enableunderwaterenv", false);
+        client.checkPref("enableunderwaterenv", true);
         client.checkPref("alwaysshowteams", false);
         client.checkPref("playerliststyle", true);
 
@@ -454,27 +454,28 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("nyduspadpatch", true);
         client.checkPref("forceallowschematics", true);
         client.checkPref("blockfishannoyances", true, i -> Server.fish.blockAnnoyances = i);
+        client.checkPref("autorestart", true);
+        client.checkPref("realautorestart", true);
+        client.checkPref("onjoinfixcode", true);
+        client.checkPref("downloadmusic", true);
+        client.checkPref("downloadsound", true);
+        client.checkPref("schematicmenuexporttags", true);
+        client.checkPref("schematicbrowserimporttags", true);
+        client.checkPref("schematicuicarryover", true);
+        client.checkPref("uselocalizedname", true);
         client.checkPref("hidebannedblocks", false);
         client.checkPref("allowjoinany", false);
         client.checkPref("debug", false, i -> Log.level = i ? Log.LogLevel.debug : Log.LogLevel.info); // Sets the log level to debug
         if (steam) client.checkPref("unlockallachievements", false, i -> { Structs.each(Achievement::complete, Achievement.all); Core.settings.remove("unlockallachievements"); });
         client.checkPref("automega", false, i -> ui.unitPicker.type = i ? UnitTypes.mega : ui.unitPicker.type);
         client.checkPref("processorconfigs", false);
-        client.checkPref("autorestart", true);
-        client.checkPref("realautorestart", true);
         client.checkPref("attemwarfare", false);
-        client.checkPref("onjoinfixcode", true);
         client.checkPref("removeatteminsteadoffixing", false);
-        client.checkPref("downloadmusic", true);
-        client.checkPref("downloadsound", true);
         client.checkPref("circleassist", false);
         client.checkPref("ignoremodminversion", false);
         client.checkPref("betterenemyblocktapping", false);
         client.checkPref("autoohno", false);
-        client.checkPref("schematicmenuexporttags", true);
-        client.checkPref("schematicbrowserimporttags", true);
-        client.checkPref("schematicuicarryover", true);
-        client.checkPref("uselocalizedname", true);
+        client.checkPref("client-experimentals", false);
 
         if (settings.getBool("client-experimentals") || OS.hasProp("policone")) {
             client.category("experimental");
