@@ -237,7 +237,7 @@ public class PlayerListFragment{
             iconTable.tapped(() -> {
                 if(!user.dead()){
                     Spectate.INSTANCE.spectate(user, Core.input.shift());
-                    ui.showInfoToast(Core.bundle.format("viewplayer", user.coloredName()), 1.5f);
+                    ui.showInfoToast(Core.bundle.format(Core.input.shift() ? "viewcursor" : "viewplayer", user.coloredName()), 1.5f);
                     Core.app.post(this::rebuild);
                 }
             });
