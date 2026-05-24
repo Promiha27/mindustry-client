@@ -1143,7 +1143,7 @@ public class HudFragment{
                 }
             });
 
-            float[] maxShield = {0};
+            float[] shieldFrac = {0};
             t.stack(
                 new Table(tt -> // Health
                     tt.add(new SideBar(() -> player.dead() ? 0f : player.unit().healthf(), () -> true, true))
@@ -1159,14 +1159,18 @@ public class HudFragment{
                     .width(bw).growY().padRight(pad)
                 ),
                 new Table(tt -> // Shield
-                    tt.add(new SideBar(() -> player.dead() ? 0 : player.unit().shield / maxShield[0], () -> true, true, 1/4f))
+                    tt.add(new SideBar(() -> player.dead() ? 0 : shieldFrac[0], () -> true, true, 1/4f))
                     .width(bw).growY().padRight(pad).color(Pal.accent)
                     .visible(() -> {
                         if(player.dead()) return false;
-                        var ff = ArraysKt.firstOrNull(player.unit().abilities, a -> a instanceof ForceFieldAbility);
-
-                        maxShield[0] = ff == null ? 0f : ((ForceFieldAbility)ff).max;
-                        return maxShield[0] > 0;
+                        var ab = ArraysKt.firstOrNull(player.unit().abilities, a -> a instanceof ForceFieldAbility || a instanceof ShieldArcAbility);
+                        if(ab instanceof ForceFieldAbility ff){
+                            shieldFrac = player.unit().shield / ff.max;
+                            return ff.max > 0;
+                        } else if(ab instanceof ShieldArcAbility sa){
+                            shieldFrac = sa.data / sa.max;
+                            return sa.max > 0;
+                        } else return false;
                     })
                 )
             ).fillY();
