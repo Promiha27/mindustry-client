@@ -1165,10 +1165,10 @@ public class HudFragment{
                         if(player.dead()) return false;
                         var ab = ArraysKt.firstOrNull(player.unit().abilities, a -> a instanceof ForceFieldAbility || a instanceof ShieldArcAbility);
                         if(ab instanceof ForceFieldAbility ff){
-                            shieldFrac = player.unit().shield / ff.max;
+                            shieldFrac[0] = player.unit().shield / ff.max;
                             return ff.max > 0;
                         } else if(ab instanceof ShieldArcAbility sa){
-                            shieldFrac = sa.data / sa.max;
+                            shieldFrac[0] = sa.data / sa.max;
                             return sa.max > 0;
                         } else return false;
                     })
