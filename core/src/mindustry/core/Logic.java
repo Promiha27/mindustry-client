@@ -573,6 +573,7 @@ public class Logic implements ApplicationListener{
 
                 Events.fire(Trigger.afterGameUpdate);
             }
+            Spectate.INSTANCE.update();
 
             if(runStateCheck){
                 checkGameState();
