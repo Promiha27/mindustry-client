@@ -1288,6 +1288,7 @@ public class SettingsMenuDialog extends BaseDialog{
                             becontrol.setUpdateAvailable(false); // Set this to false as we don't know if this is even a valid URL.
                             urlChanged = true;
                             settings.put(name, text);
+                            if(text.isEmpty()) settings.remove(name);
                         }).width(450).get().setMessageText("mindustry-antigrief/mindustry-client-v8-builds");
                     }).left().expandX().padTop(3).height(32).padBottom(3);
                     table.row();
