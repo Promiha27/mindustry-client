@@ -535,7 +535,7 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("pathnav", true);
         client.checkPref("nyduspadpatch", true);
         client.checkPref("forceallowschematics", true);
-        client.checkPref("blockfishannoyances", true, i -> Server.fish.blockAnnoyances = i);
+        client.checkPref("blockfishannoyances", true, i -> Fish.blockAnnoyances = i);
         client.checkPref("autorestart", true);
         client.checkPref("realautorestart", true);
         client.checkPref("onjoinfixcode", true);

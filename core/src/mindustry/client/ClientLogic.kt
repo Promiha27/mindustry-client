@@ -69,8 +69,6 @@ class ClientLogic {
             lastJoinTime = Time.millis()
             if (!syncing) {
                 AutoTransfer.enabled = settings.getBool("autotransfer") && !(state.rules.pvp && Server.io())
-                Server.ohnoTask?.cancel()
-                Server.ohnoTask = if (Server.fish() && settings.getBool("autoohno", false)) Server.ohno() else null
                 frozenPlans.clear()
                 app.post {
                 when (val vote = settings.getInt("automapvote")) {
@@ -100,7 +98,6 @@ class ClientLogic {
         }
 
         Events.on(MenuReturnEvent::class.java) { // Run when returning to the title screen
-            Server.ohnoTask?.cancel()
             stopFollowing()
             syncing = false // Never syncing when not connected
             ui.join.lastHost = null // Not needed unless connected

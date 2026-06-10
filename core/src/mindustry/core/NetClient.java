@@ -266,7 +266,7 @@ public class NetClient implements ApplicationListener{
         // message is the full formatted message from the server, including the sender
         // unformatted is the message content itself, i.e. "gg", null for server messages
         // playersender is exactly what you think it is, null for server messages
-        if(Server.current.handleMessage(message, unformatted, playersender)) return;
+        if(Server.current.blockMessage(message, unformatted, playersender)) return;
 
         Events.fire(new PlayerChatEvent(playersender, unformatted != null ? unformatted : message != null ? message : "")); // Foo addition, why is this not a vanilla thing?
 
@@ -334,7 +334,7 @@ public class NetClient implements ApplicationListener{
     //equivalent to above method but there's no sender and no console log
     @Remote(called = Loc.server, targets = Loc.server)
     public static void sendMessage(String message){
-        if(Server.current.handleMessage(message, message, null)) return;
+        if(Server.current.blockMessage(message, message, null)) return;
         if(Vars.ui == null) return;
 
         if (Core.settings.getBool("logmsgstoconsole") && net.client()) Log.infoTag("Chat", Strings.stripColors(InvisibleCharCoder.INSTANCE.strip(message)));

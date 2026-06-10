@@ -24,7 +24,7 @@ class Moderation {
         @JvmField var muteState: Boolean = false
         init {
             Vars.netClient.addPacketHandler("playerdata") { // Handles autostats from plugins FINISHME: This is server specific code. Treat it as such.
-                if (Server.io() || Server.phoenix()) {
+                if (Server.io() || Server.phoenix() || Server.corium()) {
                     val json = JsonReader().parse(it)
                     if (Core.settings.getBool("logplayerdata")) Log.debug(json)
 
@@ -50,7 +50,10 @@ class Moderation {
                     }
 
                     val rank = "rank".i() // Server specific rank. 0 is unranked.
-                    if (player == Vars.player) ClientVars.rank = rank // Set rank var accordingly
+                    if (player == Vars.player) { // Set rank accordingly
+                        ClientVars.rank = rank
+                        Server.current.updateRank()
+                    }
                     else if (rank == 0) { // If they're unranked, check if they're new
                         val games = "games".i()
                         val buildings = "buildings".i()
@@ -81,8 +84,7 @@ class Moderation {
 
             Events.on(EventType.ServerJoinEvent::class.java) {
                 rank = -1 // reset rank on server join
-                if (Server.io() || Server.phoenix()) Call.serverPacketReliable("playerdata_by_id", Vars.player.id.toString()) // Stat trace self to get rank info
-                Server.current.getStats(Vars.player)
+                Server.current.getStats(Vars.player, true) // Stat trace self to get rank info
             }
 
             /** We need to pull stats to get server id every time the world is reloaded as players are readded. This is janky but it's easier than the alternative of trying to maintain a cache on our end. */

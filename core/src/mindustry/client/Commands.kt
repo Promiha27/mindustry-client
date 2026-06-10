@@ -714,11 +714,11 @@ fun setupCommands() {
         mutedPlayers.clear()
     }
 
-    register("ohno", "client.command.autoohno.description".bundle()) { _, player -> // FINISHME: This is great and all but it would be nice to run this automatically every minute or so
-        if (!Server.fish()) return@register
+    // FINISHME: Server specific commands would be nice.
+    register("ohno", "client.command.autoohno.description".bundle()) { _, player ->
+        if (!Fish()) return@register
         player.sendMessage("client.command.autoohno.running".bundle())
-        Server.ohnoTask?.cancel()
-        Server.ohnoTask = Server.ohno()
+        Fish.ohno(true)
     }
 
     // Special commands
