@@ -794,7 +794,6 @@ public class DesktopInput extends InputHandler{
                 var u = player.unit();
                 var best = player.bestCore();
                 if(CoreBlock.preferredCoreType == null || // No preferred type
-                    (best != null && best.block == CoreBlock.preferredCoreType) || // Best is preferred, can clear normally
                     (!u.spawnedByCore && // Player is a non core unit
                         ((u.dockedType != null && u.dockedType.coreUnitDock) || // Player has a core unit docked currently
                         (best != null && ((CoreBlock)best.block).unitType != null && ((CoreBlock)best.block).unitType.coreUnitDock)) // Best core spawns a dockable unit FINISHME: Why? This is still going to trigger a full respawn
