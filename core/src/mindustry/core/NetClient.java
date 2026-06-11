@@ -52,8 +52,8 @@ public class NetClient implements ApplicationListener{
         planSyncTime = Timekeeper.ofSeconds(0.5f),
         pingTime = Timekeeper.ofSeconds(1f);
     private static final Reads dataReads = new Reads(null);
-    private static final Pattern wholeCoordPattern = Pattern.compile("[^]\\s]*?(\\d+)(?:\\[[^]]*])*(?:\\s|,)+(?:\\[[^]]*])*(\\d+)[^\\[\\s]*"); // This regex is a mess, it captures the coords into $1 and $2 while $0 contains all surrounding text as well. https://regex101.com is the superior regex tester
-    private static final Pattern coordPattern = Pattern.compile("(\\d+)(?:\\[[^]]*])*(?:\\s|,)+(?:\\[[^]]*])*(\\d+)"); // Same as above, but without the surrounding text and https://regexr.com
+    private static final Pattern wholeCoordPattern = Pattern.compile("[^]\\s]*?(-?\\d+)(?:\\[[^]]*])*[\\s,]+(?:\\[[^]]*])*(-?\\d+)[^\\[\\s]*"); // This regex is a mess, it captures the coords into $1 and $2 while $0 contains all surrounding text as well. https://regex101.com is the superior regex tester
+    private static final Pattern coordPattern = Pattern.compile("(-?\\d+)(?:\\[[^]]*])*[\\s,]+(?:\\[[^]]*])*(-?\\d+)"); // Same as above, but without the surrounding text and https://regexr.com
     private static final Pattern linkPattern = Pattern.compile("(https?://)?[-a-zA-Z0-9@:%._\\\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b[-a-zA-Z0-9()@:%_\\\\+.~#?&/=]*");
     private static final JsonValue tmpJsonMap = new JsonValue(ValueType.object);
 
