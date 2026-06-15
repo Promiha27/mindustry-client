@@ -198,7 +198,7 @@ fun setupCommands() {
     }
 
     register("js <code...>", Core.bundle.get("client.command.js.description")) { args, player: Player ->
-        val out = mods.scripts.runConsole(args[0])
+        val out = mods.scripts.runConsole(ui.consolefrag.injectConsoleVariables() + args[0])
         player.sendMessage("[accent]$out")
         Log.debug(out)
     }
@@ -877,7 +877,7 @@ fun setupCommands() {
                 }
                 sb.setLength(sb.length - 1) // Remove extra appended space
                 val ids = sb.toString().substringAfter(": ")
-                Core.app.post { ui.chatfrag.addMsg(sb.toString()).addButton(0, sb.length) { Core.app.clipboardText = ids } }
+                Core.app.post { ui.chatfrag.addMsg(sb.toString()).addButton(0, sb.length, true) { Core.app.clipboardText = ids } }
             }
         }
 
