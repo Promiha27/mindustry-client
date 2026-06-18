@@ -107,7 +107,7 @@ class ClientLogic {
             handleMenuTasksAsync()
             clientThread.post {
                 val changeHash = files.internal("changelog").readString().replace("\r\n", "\n").hashCode() // Display changelog if the file contents have changed as well as on first run
-                Core.app.post {
+                app.post {
                     if (settings.getInt("changeHash") != changeHash) {
                         ChangelogDialog.show()
                         settings.put("changeHash", changeHash)

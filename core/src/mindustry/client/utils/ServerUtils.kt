@@ -31,10 +31,10 @@ sealed class Server(
     @JvmField val ghost: Boolean = false,
     private val votekickString: String = "Type[orange] /vote <y/n>[] to agree.",
 ) {
-    /** Converts a player to a copyable server specific player identifier. Alt-click in the tab list will copy to clipboard. */
+    /** Converts a player to a copyable server-specific player identifier. Alt-click in the tab list will copy to clipboard. */
     open val playerIDCopy: Func<Player, String?>? = null
 
-    /** Server specific rate limits */
+    /** Server-specific rate limits */
     protected open val ratelimitMax = Core.settings.getInt("ratelimitmax", Administration.Config.interactRateLimit.num()) // The max number of configs per ratelimit window
 
     val name: String get() = this::class.simpleName!!
@@ -53,8 +53,8 @@ sealed class Server(
     /** Converts a player object into a string for use in commands */
     open fun playerString(p: Player) = p.id.toString()
 
-    /** Handle clickable vote buttons */
-    open fun handleVoteButtons(msg: ChatMessage) {
+    /** Handle clickable buttons */
+    open fun handleButtons(msg: ChatMessage) {
         if (rtv.canRun()) msg.addButton(rtv.str, rtv::invoke) // FINISHME: I believe cn has a no option? not too sure
 //        if (kick.canRun()) msg.addButton(kick.str, kick::invoke) FINISHME: Implement votekick buttons here
 //        FINISHME: Add cn excavate buttons
@@ -203,9 +203,8 @@ object IO : Server(
 
     override fun adminui() = player.admin || ClientVars.rank >= 4
 
-    override fun handleVoteButtons(msg: ChatMessage) {
-        super.handleVoteButtons(msg)
-        if (msg.sender !== null) return
+    override fun handleButtons(msg: ChatMessage) {
+        super.handleButtons(msg)
         val message = msg.message
         val playerCodeMatch = ("""(?:has (?:dis)?connected \[#?\w+\]- |last placed by:[\s\S]+\[#?\w+\]ID:\[#?\w+\] )([A-Z0-9]+)""").toRegex().find(message)
         if (playerCodeMatch !== null) {
@@ -286,7 +285,14 @@ object Fish : Server(
 
 object Darkdustry : Server(groupName = "Mindurka")
 
-object Corium : Server() { // FINISHME: Implement everything else specific to corium
+object Corium : Server(
+    whisper = Companion.Cmd("/w"),
+    rtv = Companion.Cmd("/rtv"),
+    freeze = Companion.Cmd("/freeze", 5),
+    thaw = Companion.Cmd("/thaw", 5),
+    mute = Companion.Cmd("/mute", 5),
+    unmute = Companion.Cmd("/unmute", 5)
+) { // FINISHME: Implement everything else specific to corium
     init {
         netClient.addPacketHandler("playerCode") {
             if (corium()) {
@@ -296,10 +302,51 @@ object Corium : Server() { // FINISHME: Implement everything else specific to co
         }
     }
 
+    val codeRegex = Regex("^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$")
+
     override val playerIDCopy = Func { p: Player -> p.serverID }
 
     override val ratelimitMax get() = if (ClientVars.rank < 1) 10 else super.ratelimitMax
 
+    override fun handleBan(p: Player) {
+        ui.showTextInput("@client.banreason.title", "@client.banreason.body", "Griefing.") { reason ->
+            val id = p.trace?.uuid ?: p.serverID
+            if (id != null) {
+                ui.showConfirm("@confirm", "@client.rollback.title") {
+                    Call.sendChatMessage("/rollback $id 5-f")
+                }
+            }
+            Call.adminRequest(p, AdminAction.ban, reason)
+        }
+    }
+
+    override fun handleFreeze(p: Player) {
+        Moderation.freezePlayer = p
+        getStats(p, true)
+    }
+
+    override fun handleMute(p: Player) {
+        Moderation.mutePlayer = p
+        getStats(p, true)
+    }
+
+    override fun adminui() = player.admin || ClientVars.rank >= 5
+
+    override fun handleButtons(msg: ChatMessage) {
+        super.handleButtons(msg)
+        val message = msg.message
+        val playerCodeMatch = codeRegex.find(message)
+        if (playerCodeMatch !== null) {
+            val (code) = playerCodeMatch.destructured
+            msg.addButton(code) { Core.app.setClipboardText(code) }
+        }
+        if (defense() && Core.bundle.get("client.io.shop-vote") in message) { // td upgrade voting
+            val agree = Companion.Cmd("/agree", 0)
+            msg.addButton(agree.str, agree::invoke)
+            val disagree = Companion.Cmd("/disagree", 0)
+            msg.addButton(disagree.str, disagree::invoke)
+        }
+    }
 
     override fun isJoinedServer(group: List<String>?, host: Host?) = host?.name?.contains("Corium") == true
 
