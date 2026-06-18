@@ -313,7 +313,7 @@ public class NetClient implements ApplicationListener{
             } else {
                 // server message, unformatted is ignored
                 output = ui.chatfrag.addMessage(message, null, null, "", "");
-                Server.current.handleVoteButtons(output);
+                Server.current.handleButtons(output);
             }
 
             findCoords(output);
@@ -369,7 +369,7 @@ public class NetClient implements ApplicationListener{
             output.addButton(no, () -> Call.sendChatMessage("/vote n"));
         }
 
-        Server.current.handleVoteButtons(output);
+        Server.current.handleButtons(output);
 
         Sounds.uiChat.play();
     }
