@@ -142,6 +142,7 @@ enum class Server( // FINISHME: This is horrible. Why have I done this?
             val grouped = ui.join.communityHosts.groupBy({ it.group }) { it.address }
             val address = ui.join.lastHost?.address ?: ""
             if (ui.join.lastHost?.name?.contains("nydus") == true) current = nydus
+            else if (ui.join.lastHost?.name?.contains("[white]>|||>[#6a00ff]F[#5400c9]i[#3e0191]s[#0]h.") == true) current = fish
             else entries.forEach {
                 if (it.groupName != null && grouped[it.groupName]?.contains(address) == true) {
                     current = it
