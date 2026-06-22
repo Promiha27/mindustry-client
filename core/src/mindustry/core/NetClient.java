@@ -261,7 +261,7 @@ public class NetClient implements ApplicationListener{
     }
 
     @Remote(targets = Loc.server, variants = Variant.both)
-    public static void sendMessage(String message, @Nullable String unformatted, @Nullable Player playersender){
+    public static void sendMessage(String message, @Nullable String unformatted, @Nullable Player playersender){ // FINISHME: This logic can be cleaned up more by merging the if statements and reordering certain stuff
         // message is the full formatted message from the server, including the sender
         // unformatted is the message content itself, i.e. "gg", null for server messages
         // playersender is exactly what you think it is, null for server messages
@@ -287,7 +287,7 @@ public class NetClient implements ApplicationListener{
 
             // highlight coords and set as the last position
             unformatted = processCoords(unformatted, true);
-            message = processCoords(message, unformatted != null);
+            message = processCoords(message, unformatted == null);
 
             ChatFragment.ChatMessage output;
 
@@ -296,10 +296,7 @@ public class NetClient implements ApplicationListener{
                     return; // Just ignore them
                 }
 
-                // I don't think this even works
-//                var unformatted2 = unformatted == null ? StringsKt.removePrefix(message, "[" + playersender.coloredName() + "]: ") : unformatted;
                 output = ui.chatfrag.addMessage(message, playersender.coloredName(), background, prefix, unformatted);
-//                output.addButton(output.formattedMessage.indexOf(playersender.coloredName()), playersender.coloredName().length() + 16 + output.prefix.length(), () -> Spectate.INSTANCE.spectate(playersender));
                 output.addButton(playersender.plainName(), () -> Spectate.INSTANCE.spectate(playersender)); // FINISHME: Maybe we should only check for this in the first few characters of the message?
             } else {
                 // server message, unformatted is ignored
@@ -308,7 +305,7 @@ public class NetClient implements ApplicationListener{
             }
 
             findCoords(output);
-            findLinks(output, playersender == null ? 0 : Strings.stripColors(output.formattedMessage).indexOf(playersender.plainName()) + playersender.plainName().length());
+            findLinks(output, playersender == null ? 0 : Math.min(Strings.stripColors(output.formattedMessage).indexOf(playersender.plainName()), 0) + playersender.plainName().length());
 
             Sounds.uiChat.play();
         }
@@ -328,8 +325,7 @@ public class NetClient implements ApplicationListener{
         if(Server.current.blockMessage(message, message, null)) return;
         if(Vars.ui == null) return;
 
-        if (Core.settings.getBool("logmsgstoconsole") && net.client()) Log.infoTag("Chat", Strings.stripColors(InvisibleCharCoder.INSTANCE.strip(message)));
-        if (!message.contains("has connected") && !message.contains("has disconnected")) Log.debug("Tell the owner of this server to send messages properly");
+        if (Core.settings.getBool("logmsgstoconsole") && net.client()) Log.infoTag("Chat (Server)", Strings.stripColors(InvisibleCharCoder.INSTANCE.strip(message)));
         message = processCoords(message, true);
         var output = Vars.ui.chatfrag.addMsg(message);
 
