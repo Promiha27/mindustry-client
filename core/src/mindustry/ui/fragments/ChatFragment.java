@@ -729,12 +729,12 @@ public class ChatFragment extends Table{
 
         public ChatMessage addButton(String text, Runnable clicked) {
             var stripped = Strings.stripColors(text);
-            int i = Strings.stripColors(formattedMessage).indexOf(stripped); // Newline characters will offset the index if we don't remove them. FINISHME: Turn run.continuation into an int and just set it to -1 for \n wraps?
+            int i = Strings.stripColors(formattedMessage).indexOf(stripped);
             return i < 0 ? this : addButton(i, i + stripped.length(), clicked);
         }
 
         /** Count how many newlines occur before the target. */
-        private int newlineOffset(String text, int target) {
+        private int newlineOffset(String text, int target) { // FINISHME: Turn run.continuation into an int and just set it to -1 for \n wraps instead of parsing them here?
             int newlines = 0, nonNewlines = 0;
 
             for (int i = 0; i < text.length(); i++) {
