@@ -709,23 +709,18 @@ public class ChatFragment extends Table{
             String stripped = Strings.stripColors(formattedMessage);
             int len = stripped.length();
 
+            start -= newlineOffset(stripped, start);
+            end -= newlineOffset(stripped, end);
+
             if (start < 0 || end > len || start > end) {
                 Log.warn("Trying to add button to @ at indices @ to @; this is invalid!", stripped, start, end);
                 return this;
             }
 
             if (buttons != null) {
-                int offset = 0;
-                for (int i = 0, formattedLen = formattedMessage.length(); i < formattedMessage.length(); i++) { // Adjust start and end for escaped color codes
-                    if (formattedMessage.charAt(i) == '[') {
-                        int first = i;
-                        while (i + 1 < formattedLen && formattedMessage.charAt(i + 1) == '[') i++; // Count consecutive [
-                        int consecutiveBrackets = i - first + 1;
-                        if (consecutiveBrackets % 2 == 0) offset += consecutiveBrackets / 2; // Only add the offset if there's an even number of brackets; otherwise they are used in formatting.
-                    }
-                }
-
-                buttons.add(new ClickableArea(start + offset, end + offset, clicked));
+                start += bracketOffset(formattedMessage, start);
+                end += bracketOffset(formattedMessage, end);
+                buttons.add(new ClickableArea(start, end, clicked));
                 buttons.shrink();
             }
 
@@ -734,8 +729,38 @@ public class ChatFragment extends Table{
 
         public ChatMessage addButton(String text, Runnable clicked) {
             var stripped = Strings.stripColors(text);
-            int i = Strings.stripColors(formattedMessage).indexOf(stripped);
+            int i = Strings.stripColors(formattedMessage).indexOf(stripped); // Newline characters will offset the index if we don't remove them. FINISHME: Turn run.continuation into an int and just set it to -1 for \n wraps?
             return i < 0 ? this : addButton(i, i + stripped.length(), clicked);
+        }
+
+        /** Count how many newlines occur before the target. */
+        private int newlineOffset(String text, int target) {
+            int newlines = 0, nonNewlines = 0;
+
+            for (int i = 0; i < text.length(); i++) {
+                if (nonNewlines == target) break; // Enough good characters
+
+                if (text.charAt(i) == '\n') newlines++; // Newline: increase offset
+                else nonNewlines++; // Normal character: increase normal character count
+            }
+            return newlines;
+        }
+
+        /** We have to work around "[[" by offsetting by 1 for each pair of them as they are transformed to "[" in the message. */
+        private int bracketOffset(String text, int end) {
+            int offset = 0;
+            end = Math.min(end, text.length()); // Make sure it's capped by text length
+
+            for (int i = 0; i < end; i++) {
+                if (text.charAt(i) == '[') {
+                    int first = i;
+
+                    while (i + 1 < end && text.charAt(i + 1) == '[') i++; // Count consecutive [
+                    int consecutiveBrackets = i - first + 1;
+                    if (consecutiveBrackets % 2 == 0) offset += consecutiveBrackets / 2; // Only add the offset if there's an even number of brackets; otherwise they are used in formatting.
+                }
+            }
+            return offset;
         }
 
         public ChatMessage clearButtons() {
