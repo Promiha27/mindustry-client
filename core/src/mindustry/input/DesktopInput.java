@@ -869,7 +869,7 @@ public class DesktopInput extends InputHandler{
         }
 
         if(player.dead() || locked){ // FINISHME: Should we comment out the dead check?
-            cursorType = ui.chatfrag.hasLit ? SystemCursor.hand : SystemCursor.arrow;
+            cursorType = ui.chatfrag.hoveredButton != null ? SystemCursor.hand : SystemCursor.arrow;
             if(!locked){
                 pollInputNoPlayer();
             }
@@ -1245,7 +1245,7 @@ public class DesktopInput extends InputHandler{
 
         cursorType = SystemCursor.arrow;
 
-        if(ui.chatfrag.hasLit){ // Sciffed fpp's addition to ensure clickable chat takes priority
+        if(ui.chatfrag.hoveredButton != null){ // Scuffed foo's addition to ensure clickable chat takes priority
             cursorType = SystemCursor.hand;
         }else if(cursor != null){
             if(cursor.build != null && cursor.build.interactable(player.team())){

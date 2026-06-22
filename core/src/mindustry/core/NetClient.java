@@ -25,7 +25,6 @@ import mindustry.game.EventType.*;
 import mindustry.game.*;
 import mindustry.game.Teams.*;
 import mindustry.gen.*;
-import mindustry.graphics.*;
 import mindustry.io.*;
 import mindustry.io.TypeIO.*;
 import mindustry.logic.*;
@@ -293,31 +292,23 @@ public class NetClient implements ApplicationListener{
             ChatFragment.ChatMessage output;
 
             if (playersender != null) {
-                if (ClientVars.mutedPlayers.contains( p -> p.getSecond() == playersender.id || (p.getFirst() != null && playersender.name.equals(p.getFirst().name)))) {
+                if (ClientVars.mutedPlayers.contains(p -> p.getSecond() == playersender.id || (p.getFirst() != null && playersender.name.equals(p.getFirst().name)))) {
                     return; // Just ignore them
-                }
-                // from a player
-                if (message != null) { // The Korea server breaks the rules of this method and has a null message
-                    // if it's an admin or team message, incorporate that into the prefix because the original formatting will be discarded
-                    if (message.startsWith("[#" + playersender.team().color.toString() + "]<T>")) {
-                        prefix += "[#" + playersender.team().color.toString() + "]<T> ";
-                    } else if (message.startsWith("[#" + Pal.adminChat.toString() + "]<A>")) {
-                        prefix += "[#" + Pal.adminChat.toString() + "]<A> ";
-                    }
                 }
 
                 // I don't think this even works
 //                var unformatted2 = unformatted == null ? StringsKt.removePrefix(message, "[" + playersender.coloredName() + "]: ") : unformatted;
                 output = ui.chatfrag.addMessage(message, playersender.coloredName(), background, prefix, unformatted);
-                output.addButton(output.formattedMessage.indexOf(playersender.coloredName()), playersender.coloredName().length() + 16 + output.prefix.length(), () -> Spectate.INSTANCE.spectate(playersender));
+//                output.addButton(output.formattedMessage.indexOf(playersender.coloredName()), playersender.coloredName().length() + 16 + output.prefix.length(), () -> Spectate.INSTANCE.spectate(playersender));
+                output.addButton(playersender.plainName(), () -> Spectate.INSTANCE.spectate(playersender)); // FINISHME: Maybe we should only check for this in the first few characters of the message?
             } else {
                 // server message, unformatted is ignored
-                output = ui.chatfrag.addMessage(message, null, null, "", "");
+                output = ui.chatfrag.addMsg(message);
                 Server.current.handleButtons(output);
             }
 
             findCoords(output);
-            findLinks(output, playersender == null ? 0 : playersender.coloredName().length() + 16 + output.prefix.length());
+            findLinks(output, playersender == null ? 0 : Strings.stripColors(output.formattedMessage).indexOf(playersender.plainName()) + playersender.plainName().length());
 
             Sounds.uiChat.play();
         }
@@ -340,7 +331,7 @@ public class NetClient implements ApplicationListener{
         if (Core.settings.getBool("logmsgstoconsole") && net.client()) Log.infoTag("Chat", Strings.stripColors(InvisibleCharCoder.INSTANCE.strip(message)));
         if (!message.contains("has connected") && !message.contains("has disconnected")) Log.debug("Tell the owner of this server to send messages properly");
         message = processCoords(message, true);
-        var output = Vars.ui.chatfrag.addMessage(message, null, null, "", message);
+        var output = Vars.ui.chatfrag.addMsg(message);
 
         findCoords(output);
         findLinks(output, 0);
@@ -351,11 +342,13 @@ public class NetClient implements ApplicationListener{
             output.message = output.message + '\n' + yes + "  " + no;
             output.format();
 
+            output.addButton(yes, () -> Call.sendChatMessage("/vote y"));
+            output.addButton(no, () -> Call.sendChatMessage("/vote n"));
+
             Func2<Player, Boolean, String> getName = (p, strip) -> strip ? p.plainName() : p.name();
             for (int j = 0; j < 2; ++j) {
                 boolean strip = j == 1;
-                Seq<Player> names = Groups.player.array.select(p -> msg.contains(getName.get(p, strip)))
-                        .sort(p -> -getName.get(p, strip).length());
+                Seq<Player> names = Groups.player.array.select(p -> msg.contains(getName.get(p, strip))).sort(p -> -getName.get(p, strip).length());
                 if (names.size >= 2) {
                     for (int i = 0; i < 2; ++i) {
                         Player p = names.get(i);
@@ -364,9 +357,6 @@ public class NetClient implements ApplicationListener{
                     break;
                 }
             }
-
-            output.addButton(yes, () -> Call.sendChatMessage("/vote y"));
-            output.addButton(no, () -> Call.sendChatMessage("/vote n"));
         }
 
         Server.current.handleButtons(output);
@@ -403,14 +393,14 @@ public class NetClient implements ApplicationListener{
 
     /** Finds coordinates in a message and makes them clickable */
     public static ChatFragment.ChatMessage findCoords(ChatFragment.ChatMessage msg) {
-        findCoords(InvisibleCharCoder.INSTANCE.strip(msg.formattedMessage))
+        findCoords(Strings.stripColors(InvisibleCharCoder.INSTANCE.strip(msg.formattedMessage)))
             .each(c -> msg.addButton(c.start, c.end, () -> Spectate.INSTANCE.spectate(c.pos)));
         return msg;
     }
 
     /** Finds links in a message and makes them clickable */
     public static ChatFragment.ChatMessage findLinks(ChatFragment.ChatMessage msg, int start) {
-        Matcher matcher = linkPattern.matcher(InvisibleCharCoder.INSTANCE.strip(msg.formattedMessage));
+        Matcher matcher = linkPattern.matcher(Strings.stripColors(InvisibleCharCoder.INSTANCE.strip(msg.formattedMessage)));
         while (matcher.find()) {
             var res = matcher.toMatchResult();
             if(res.start() < start) continue; // .find(start) is cursed
