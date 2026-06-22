@@ -756,7 +756,7 @@ public class ChatFragment extends Table{
         normal(""),
         team("/t"),
         // set disableadminchatifsolo to true if you want to hide admin chat as a solo admin.
-        admin("/a", () -> (player.admin || Server.io.b() && ClientVars.rank >= 4) && (!settings.getBool("disableadminchatifsolo") || Groups.player.count(p -> p.admin) > 1)),
+        admin("/a", () -> (Server.current.adminui()) && (!settings.getBool("disableadminchatifsolo") || Groups.player.count(p -> p.admin) > 1)),
         staff("/s", () -> Server.fish.b() && settings.getBool("fish-staff", false)),
         client("!c");
 

@@ -17,12 +17,12 @@ enum class CustomMode(
 ) {
     none,
     flood {
-        val ioFloodCompatRepo = "mindustry-antigrief/FloodCompat"
+        val floodCompatRepo = "mindustry-antigrief/FloodCompat"
         var hasLoaded = false
 
         override fun enable() {
             super.enable()
-            if (IO() && net.client()) {
+            if ((IO() || Corium()) && net.client()) {
                 var floodMod: Mods.LoadedMod? = mods.getMod("floodcompat")
 
                 fun enable() { // Just enables the mod
@@ -49,7 +49,7 @@ enum class CustomMode(
                 fun download(update: Boolean = false) { // Downloads and enables the mod
                     Toast(3f).add(if (update) "Updating" else "Installing" + " FloodCompat")
                     Log.debug(if (update) "Updating" else "Installing" + " FloodCompat")
-                    ui.mods.githubImportMod(ioFloodCompatRepo, true, null, floodMod?.meta?.version) {
+                    ui.mods.githubImportMod(floodCompatRepo, true, null, floodMod?.meta?.version) {
                         val new = mods.mods.last { it.name == "floodcompat"} // newly downloaded flood compat if any
                         val installed = !update || new != floodMod
                         if (update && installed) { // Delete old flood mod for update. If new == old, there was no update.
@@ -67,14 +67,14 @@ enum class CustomMode(
                 }
 
                 if (floodMod === null) {
-                    ui.showConfirm("[scarlet]FloodCompat mod not found!", "Installing the [accent]${ioFloodCompatRepo}[] mod is recommended for a better game experience. Would you like to install it?\nThis will not require a restart.") {
+                    ui.showConfirm("[scarlet]FloodCompat mod not found!", "Installing the [accent]${floodCompatRepo}[] mod is recommended for a better game experience. Would you like to install it?\nThis will not require a restart.") {
                         Toast(3f).add("Downloading mod")
                         download()
                     }
                 } else if (!floodMod.enabled()) {
                     if (!hasLoaded && Time.timeSinceMillis(Core.settings.getLong("lastfloodcompatupdate")) > 1000 * 60 * 30L) { // Update floodCompat every 30m
                         Core.settings.put("lastfloodcompatupdate", Time.millis())
-                        (floodMod.root as? ZipFi)?.delete() // Close the current flood zip just in case its open somehow (it should not be)
+                        (floodMod.root as? ZipFi)?.delete() // Close the current flood zip just in case it's open somehow (it should not be)
                         download(true)
                     } else enable() // Enable the mod as normal otherwise
                 }
