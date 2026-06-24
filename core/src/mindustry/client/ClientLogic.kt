@@ -210,8 +210,7 @@ class ClientLogic {
 
         Events.on(BlockDestroyEvent::class.java) {
             if (it.tile.block() is PowerVoid) {
-                val message = bundle.format("client.voidwarn", it.tile.x.toString(), it.tile.y.toString()) // FINISHME: Awful way to circumvent arc formatting numerics with commas at thousandth places
-                NetClient.findCoords(ui.chatfrag.addMessage(message, null, null, "", message))
+                NetClient.findCoords(ui.chatfrag.addMsg(bundle.format("client.voidwarn", it.tile.x.toString(), it.tile.y.toString()))) // FINISHME: Awful way to circumvent arc formatting numerics with commas at thousandth places
             }
         }
 
@@ -232,10 +231,8 @@ class ClientLogic {
                         if (event.unit.player != turretVoidWarnPlayer || Time.timeSinceMillis(lastTurretVoidWarn) > 5e3) {
                             turretVoidWarnPlayer = event.unit.player
                             turretVoidWarnCount = 1
-                            val message = bundle.format("client.turretvoidwarn", getName(event.unit),
-                                event.tile.x.toString(), event.tile.y.toString(), void.tileX().toString(), void.tileY().toString() // FINISHME: Awful way to circumvent arc formatting numerics with commas at thousandth places
-                            )
-                            turretVoidWarnMsg = ui.chatfrag.addMessage(message , null, null, "", message)
+                            val message = bundle.format("client.turretvoidwarn", getName(event.unit), event.tile.x.toString(), event.tile.y.toString(), void.tileX().toString(), void.tileY().toString()) // FINISHME: Awful way to circumvent arc formatting numerics with commas at thousandth places
+                            turretVoidWarnMsg = ui.chatfrag.addMsg(message)
                             NetClient.findCoords(turretVoidWarnMsg)
                         } else {
                             ui.chatfrag.messages.remove(turretVoidWarnMsg)
@@ -266,7 +263,7 @@ class ClientLogic {
                 lastWarnPos.set(event.tile.tileX().toFloat(), event.tile.tileY().toFloat())
                 if (event.tile.message == null || ui.chatfrag.messages.indexOf(event.tile.message) > 8) {
                     event.tile.disconnections = count
-                    event.tile.message = ui.chatfrag.addMessage(message, null, null, "", message)
+                    event.tile.message = ui.chatfrag.addMsg(message)
                     NetClient.findCoords(event.tile.message)
                 } else {
                     ui.chatfrag.doFade(2f)

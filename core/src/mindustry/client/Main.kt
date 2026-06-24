@@ -336,13 +336,11 @@ object Main : ApplicationListener {
                 is MessageTransmission -> {
                     ClientVars.lastCertName = system.peer.expectedCert.readableName
                     Vars.ui.chatfrag.addMessage(transmission.content,
-                        "[white]" + keyStorage.aliasOrName(system.peer.expectedCert) + "[accent] -> [coral]" + (keyStorage.cert()?.readableName
-                            ?: "you"),
+                        keyStorage.aliasOrName(system.peer.expectedCert),
                         ClientVars.encrypted,
-                        "",
+                        "${Iconc.ok}[white]${keyStorage.aliasOrName(system.peer.expectedCert)}[accent] -> [coral] ${keyStorage.cert()?.readableName ?: "you"}",
                         transmission.content
-                    )
-                        .run{ prefix = "${Iconc.ok} $prefix " }
+                    ).run { prefix = "${Iconc.ok} $prefix " }
                 }
 
                 is CommandTransmission -> {

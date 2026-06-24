@@ -381,9 +381,9 @@ fun setupCommands() {
             comms.send(MessageTransmission(msg))
             ui.chatfrag.addMessage(
                 msg,
-                "[coral]${Main.keyStorage.cert()?.readableName ?: "you"} [white]-> ${Main.keyStorage.aliasOrName(cert)}",
+                Main.keyStorage.cert()?.readableName ?: "you",
                 encrypted,
-                "",
+                "[coral]${Main.keyStorage.cert()?.readableName ?: "you"} [white]-> ${Main.keyStorage.aliasOrName(cert)}",
                 msg
             )
             lastCertName = cert.readableName
@@ -433,8 +433,7 @@ fun setupCommands() {
             ?.retainAll { it.controller() is LogicAI }
             ?.groupBy { (it.controller() as LogicAI).controller }
             ?.forEach { (build, units) ->
-                val txt = "x${units.size} [accent](${build.tileX()}, ${build.tileY()})"
-                val msg = ui.chatfrag.addMessage(txt, null, null, "", txt)
+                val msg = ui.chatfrag.addMsg("x${units.size} [accent](${build.tileX()}, ${build.tileY()})")
                 NetClient.findCoords(msg)
             }
     }
@@ -877,7 +876,7 @@ fun setupCommands() {
                 }
                 sb.setLength(sb.length - 1) // Remove extra appended space
                 val ids = sb.toString().substringAfter(": ")
-                Core.app.post { ui.chatfrag.addMsg(sb.toString()).addButton(0, sb.length, true) { Core.app.clipboardText = ids } }
+                Core.app.post { ui.chatfrag.addMsg(sb.toString()).addButton(0, sb.length) { Core.app.clipboardText = ids } }
             }
         }
 
