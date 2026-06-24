@@ -736,6 +736,7 @@ public class ChatFragment extends Table{
                 formattedMessage = prefix + (message == null ? "" : message);
             } else {
                 if (Server.darkdustry.b()) formattedMessage = prefix + message; // Hack to allow darkdustry translation as they don't change sender FINISHME: We need to rework this system badly as some servers change the messages significantly
+                else if(Server.fish.b() && message.contains("\n[lightgray]Translated: ")) formattedMessage = message;
                 else formattedMessage = prefix + "[coral][[[white]" + sender + "[coral]]:[white] " + unformatted;
             }
             int shift = formattedMessage.length() - initial;

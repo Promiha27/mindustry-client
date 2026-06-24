@@ -275,6 +275,9 @@ object Fish : Server(
         return blockAnnoyances && rot == 0F && fx == Fx.pointBeam
     }
 
+    /** Support for fish testing server */
+    override fun isJoinedServer(group: List<String>?, host: Host?) = super.isJoinedServer(group, host) || host?.name?.contains("[white]>|||>[#6a00ff]F[#5400c9]i[#3e0191]s[#0]h.") == true
+
     /** Automatically creates enough ohnos to fill the cap */
     fun ohno(force: Boolean = false) {
         if (!force && !Core.settings.getBool("autoohno", false)) return
