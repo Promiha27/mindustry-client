@@ -524,7 +524,7 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("downloadsound", true);
         client.checkPref("schematicmenuexporttags", true);
         client.checkPref("schematicbrowserimporttags", true);
-        client.checkPref("schematicuicarryover", true);
+        client.checkPref("schematicuicarryover", false);
         client.checkPref("uselocalizedname", true);
         client.checkPref("hidebannedblocks", false);
         client.checkPref("allowjoinany", false);
