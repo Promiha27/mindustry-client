@@ -347,18 +347,18 @@ public class SchematicBrowserDialog extends BaseDialog {
                 TextButton.TextButtonStyle style = Styles.flatt;
                 t.defaults().size(280f, 60f).left();
                 if(steam && !s.hasSteamID()){
-                    t.button("@schematic.shareworkshop", Icon.book, style,
+                    t.button("@workshop.share", Icon.book, style,
                             () -> platform.publish(s)).marginLeft(12f);
                     t.row();
                     dialog.hide();
                 }
-                t.button("@schematic.copy", Icon.copy, style, () -> {
+                t.button("@import.clipboard", Icon.copy, style, () -> {
                     dialog.hide();
                     ui.showInfoFade("@copied");
                     Core.app.setClipboardText(schematics.writeBase64(s, Core.settings.getBool("schematicmenuexporttags")));
                 }).marginLeft(12f);
                 t.row();
-                t.button("@schematic.exportfile", Icon.export, style, () -> {
+                t.button("@export.file", Icon.export, style, () -> {
                     dialog.hide();
                     FileChooser.export(s.name(), schematicExtension, file -> Schematics.write(s, file));
                 }).marginLeft(12f);

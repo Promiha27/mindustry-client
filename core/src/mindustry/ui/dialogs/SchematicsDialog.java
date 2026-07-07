@@ -76,7 +76,8 @@ public class SchematicsDialog extends BaseDialog{
         buttons.button("@schematic.import", Icon.download, this::showImport);
         makeButtonOverlay();
         shown(() -> {
-            searchField.setText(search = "");
+            if(!Core.settings.getBool("schematicuicarryover")) search = "";
+            searchField.setText(search);
             setup();
         });
         onResize(this::setup);
@@ -93,30 +94,12 @@ public class SchematicsDialog extends BaseDialog{
         cont.top();
         cont.clear();
 
-        cont.table(s -> {
-            s.left();
-            s.image(Icon.zoom);
-            s.add(searchField).growX();
-        }).fillX().padBottom(4);
-
         cont.table(t -> {
             t.table(s -> {
                 s.setWidth(t.getWidth() / 2);
                 s.left();
                 s.image(Icon.zoom);
-                searchField = s.field(search, res -> {
-                    search = res;
-                    rebuildPane.run();
-                }).growX().get();
-                searchField.setMessageText("@schematic.search");
-                searchField.setSelection(0, search.length());
-                searchField.clicked(KeyCode.mouseRight, () -> {
-                    if(!search.isEmpty()){
-                        search = "";
-                        searchField.clearText();
-                        rebuildPane.run();
-                    }
-                });
+                s.add(searchField).growX();
             }).growX();
             t.table(s -> {
                 s.setWidth(t.getWidth() / 2);
