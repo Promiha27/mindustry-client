@@ -26,7 +26,7 @@ object UploadDialog : BaseDialog("@client.uploadtitle") { // FINISHME: Somehow s
             FileChooser.open("png", "jpg", "jpeg").submitMulti { files ->
                 for (file in files){
                     try {
-                        addImage(Pixmap(it))
+                        addImage(Pixmap(file))
                     } catch (e: Exception) {
                         Vars.ui.showInfoToast(Core.bundle["client.failedtoloadimage"], 3f)
                         Log.err("Error loading image", e)

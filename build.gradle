@@ -390,13 +390,13 @@ project(":core"){
         keepJavacAnnotationProcessors = true
         javacOptions{
             option("-source", "17")
-            option("-target", "8")
+            option("-target", "17")
         }
     }
 
     kotlin.compilerOptions {
-        jvmTarget = JvmTarget.JVM_1_8
-        freeCompilerArgs.add("-Xjdk-release=1.8")
+        jvmTarget = JvmTarget.JVM_17
+        freeCompilerArgs.add("-Xjdk-release=17")
     }
 
     tasks.withType(KaptWithoutKotlincTask.class).configureEach {
@@ -526,8 +526,8 @@ project(":tools"){
     apply plugin: "kotlin"
 
     kotlin.compilerOptions {
-        jvmTarget = JvmTarget.JVM_1_8
-        freeCompilerArgs.add("-Xjdk-release=1.8")
+        jvmTarget = JvmTarget.JVM_17
+        freeCompilerArgs.add("-Xjdk-release=17")
     }
 
     dependencies{
@@ -549,8 +549,8 @@ configure(project(":annotations")){
     apply plugin: "kotlin"
 
     tasks.withType(JavaCompile){
-        targetCompatibility = 8
-        sourceCompatibility = 8
+        targetCompatibility = 17
+        sourceCompatibility = 17
     }
 
     dependencies{
