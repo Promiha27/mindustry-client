@@ -68,6 +68,7 @@ public class HudFragment{
 
     private Seq<Block> blocksOut = new Seq<>();
     private Table hudLabel;
+    private float coreAttackTime;
 
     private static ObjectSet<String> favoriteBlocks = new ObjectSet<>();
     private static String lastFavorited = null;
@@ -676,15 +677,17 @@ public class HudFragment{
                 c.top().collapser(coreItems, () -> Core.settings.getBool("coreitems") && shown).fillX().row();
 
                 float notifDuration = 240f;
-                float[] coreAttackTime = {0};
 
                 Events.on(TeamCoreDamage.class, event -> {
                     if (Time.timeSinceMillis(lastWarn) > 30_000) { // Prevent chat flooding
                         NetClient.findCoords(ui.chatfrag.addMsg(Strings.format("[scarlet]Core under attack: (@, @)", event.core.x, event.core.y)));
                     }
                     lastWarn = Time.millis(); // Reset timer so that it sends 30s after the last core damage rather than every 30s FINISHME: Better way to do this?
-                    coreAttackTime[0] = notifDuration;
+                    coreAttackTime = notifDuration;
                     ClientVars.lastWarnPos.set(event.core.x, event.core.y);
+                });
+                Events.on(ResetEvent.class, e -> {
+                    coreAttackTime = 0f;
                 });
 
                 //'core is under attack' table
@@ -699,13 +702,13 @@ public class HudFragment{
                 })
                 .update(label -> label.color.set(Color.orange).lerp(Color.scarlet, Mathf.absin(Time.time, 2f, 1f))), true,
                 () -> {
-                    if(!shown || state.isPaused()) return false;
                     if(state.isMenu() || !player.team().data().hasCore()){
-                        coreAttackTime[0] = 0f;
+                        coreAttackTime = 0f;
                         return false;
                     }
+                    if(!shown || state.isPaused()) return false;
 
-                    return (coreAttackTime[0] -= Time.delta) > 0;
+                    return (coreAttackTime -= Time.delta) > 0;
                 })
                 .touchable(Touchable.disabled)
                 .fillX()
@@ -1011,6 +1014,7 @@ public class HudFragment{
         enemiesf = new IntFormat("wave.enemies"),
         enemycf = new IntFormat("wave.enemycore"),
         enemycsf = new IntFormat("wave.enemycores"),
+
         waitingf = new IntFormat("wave.waiting", i -> {
             ibuild.setLength(0);
             int m = i/60;
@@ -1145,6 +1149,7 @@ public class HudFragment{
                     Call.unitClear(player);
                     control.input.recentRespawnTimer = 1f;
                     control.input.controlledType = null;
+                    control.input.droppingItem = false;
                 }
             });
 
@@ -1205,7 +1210,6 @@ public class HudFragment{
 //                    lcell[0].padRight(-42f);
 //                }
 //                table.invalidateHierarchy();
-//                table.pack();
 //                couldSkip[0] = can;
 //            }
 
@@ -1236,6 +1240,10 @@ public class HudFragment{
                 if(builder.length() > 0){
                     return builder;
                 }
+            }
+
+            if(!player.team().activateUnitFactories()){
+                builder.append("[lightgray]").append(Core.bundle.format("rules.unitfactoryactivation.objective", "[accent]" + UI.formatTime((float)Math.max(state.rules.unitActivationDelay(player.team()) - state.tick, 0f)))).append("[white]\n");
             }
 
             if(!state.rules.waves && state.rules.attackMode){

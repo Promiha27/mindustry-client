@@ -151,6 +151,19 @@ public class AssetsProcess extends BaseProcessor{
             .addStatement("return (Sound)idToSound.get(id, () -> Sounds.none)").build());
         } else { // Music
             loadBegin.addStatement("if(arc.Core.settings.getInt($S) == 0) return", "musicvol");
+
+            type.addMethod(MethodSpec.methodBuilder("registerSound")
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+            .addParameter(Sound.class, "sound")
+            .addParameter(int.class, "id")
+            .returns(void.class)
+            .addStatement("idToSound.put(id, sound); soundToId.put(sound, id);").build());
+
+            type.addMethod(MethodSpec.methodBuilder("unregisterSound")
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+            .addParameter(Sound.class, "sound")
+            .returns(void.class)
+            .addStatement("int id = soundToId.get(sound); if(id != 0){ soundToId.remove(sound); idToSound.remove(id); }").build());
         }
         loadBegin.addStatement("loaded = true");
 
