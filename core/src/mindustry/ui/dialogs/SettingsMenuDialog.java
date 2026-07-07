@@ -53,6 +53,7 @@ public class SettingsMenuDialog extends BaseDialog{
     public SettingsTable sound;
     public SettingsTable dev;
     public SettingsTable client;
+    public SettingsTable moderation;
     public SettingsTable main;
 
     private Table prefs;
@@ -82,9 +83,9 @@ public class SettingsMenuDialog extends BaseDialog{
                 graphics.rebuild();
                 sound.rebuild();
                 game.rebuild();
+                dev.rebuild();
                 client.rebuild();
                 moderation.rebuild();
-                dev.rebuild();
                 updateScrollFocus();
                 lastRebuildSize[0] = Core.graphics.getWidth();
                 lastRebuildSize[1] = Core.graphics.getHeight();
@@ -100,9 +101,9 @@ public class SettingsMenuDialog extends BaseDialog{
         game = new SettingsTable();
         graphics = new SettingsTable();
         sound = new SettingsTable();
+        dev = new SettingsTable();
         client = new SettingsTable();
         moderation = new SettingsTable();
-        dev = new SettingsTable();
 
         prefs = new Table();
         prefs.top();
@@ -371,14 +372,15 @@ public class SettingsMenuDialog extends BaseDialog{
         menu.button("@settings.game", Icon.settings, style, isize, () -> visible(0)).marginLeft(marg).row();
         menu.button("@settings.graphics", Icon.image, style, isize, () -> visible(1)).marginLeft(marg).row();
         menu.button("@settings.sound", Icon.filters, style, isize, () -> visible(2)).marginLeft(marg).row();
-        menu.button("@settings.client", Icon.wrench, style, isize, () -> visible(3)).marginLeft(marg).row();
+        menu.button("@settings.dev", Icon.fileCode, style, isize, () -> visible(3)).marginLeft(marg).row();
+        menu.button("@settings.client", Icon.wrench, style, isize, () -> visible(4)).marginLeft(marg).row();
+        menu.button("@settings.moderation", Icon.wrench, style, isize, () -> visible(5)).marginLeft(marg).row();
         menu.button("@settings.language", Icon.chat, style, isize, ui.language::show).marginLeft(marg).row();
         if(!mobile || Core.settings.getBool("keyboard")){
             menu.button("@settings.controls", Icon.move, style, isize, ui.controls::show).marginLeft(marg).row();
         }
 
         menu.button("@settings.data", Icon.save, style, isize, () -> dataDialog.show()).marginLeft(marg).row();
-        menu.button("@settings.dev", Icon.fileCode, style, isize, () -> visible(3)).marginLeft(marg).row();
 
         int i = 6;
         for(var cat : categories){
@@ -850,7 +852,7 @@ public class SettingsMenuDialog extends BaseDialog{
     public void visible(int index){
         prefs.clearChildren();
 
-        Seq<Table> tables = Seq.with(game, graphics, sound, client, moderation, dev);
+        Seq<Table> tables = Seq.with(game, graphics, sound, dev, client, moderation);
         categories.each(c -> tables.add(c.table));
 
         prefs.add(tables.get(index));

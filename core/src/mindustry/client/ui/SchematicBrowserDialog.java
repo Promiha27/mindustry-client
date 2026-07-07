@@ -360,7 +360,7 @@ public class SchematicBrowserDialog extends BaseDialog {
                 t.row();
                 t.button("@schematic.exportfile", Icon.export, style, () -> {
                     dialog.hide();
-                    platform.export(s.name(), schematicExtension, file -> Schematics.write(s, file));
+                    FileChooser.export(s.name(), schematicExtension, file -> Schematics.write(s, file));
                 }).marginLeft(12f);
                 t.row();
                 t.button("@client.schematic.chatshare", Icon.bookOpen, style, () -> {

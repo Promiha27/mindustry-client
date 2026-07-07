@@ -13,6 +13,7 @@ import arc.math.geom.*
 import arc.scene.*
 import arc.scene.ui.*
 import arc.scene.ui.layout.*
+import arc.struct.*
 import arc.util.*
 import arc.util.serialization.*
 import mindustry.*
@@ -610,3 +611,5 @@ private fun biasedLevenshteinLengthIndependent(x: String, y: String): Float {
     // contains
     return if (output == 0) 0.5f else output.toFloat() // Prefer startsWith
 }
+operator fun <K, V> ObjectMap.Entry<K, V>.component1(): K = this.key
+operator fun <K, V> ObjectMap.Entry<K, V>.component2(): V = this.value
