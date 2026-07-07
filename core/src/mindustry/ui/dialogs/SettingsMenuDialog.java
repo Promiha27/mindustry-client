@@ -374,7 +374,6 @@ public class SettingsMenuDialog extends BaseDialog{
         menu.button("@settings.sound", Icon.filters, style, isize, () -> visible(2)).marginLeft(marg).row();
         menu.button("@settings.dev", Icon.fileCode, style, isize, () -> visible(3)).marginLeft(marg).row();
         menu.button("@settings.client", Icon.wrench, style, isize, () -> visible(4)).marginLeft(marg).row();
-        menu.button("@settings.moderation", Icon.wrench, style, isize, () -> visible(5)).marginLeft(marg).row();
         menu.button("@settings.language", Icon.chat, style, isize, ui.language::show).marginLeft(marg).row();
         if(!mobile || Core.settings.getBool("keyboard")){
             menu.button("@settings.controls", Icon.move, style, isize, ui.controls::show).marginLeft(marg).row();
