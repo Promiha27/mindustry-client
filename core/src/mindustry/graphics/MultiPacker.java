@@ -75,6 +75,10 @@ public class MultiPacker implements Disposable{
     public boolean isOutlined(String name){
         return outlined.contains(name);
     }
+    
+    public PixmapPacker getPacker(PageType type){
+        return packers[type.ordinal()];
+    }
 
     public boolean has(String name){
         for(var page : PageType.all){
