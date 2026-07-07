@@ -1404,7 +1404,7 @@ public class Mods implements Loadable{
         /** Whether this mod is currently being auto updated. */
         public boolean isAutoUpdating;
 
-        private static final boolean iconLoadingOptimization = Core.settings.getBool("modiconloadingoptimization");
+        private static final boolean iconLoadingOptimization = Core.settings != null ? Core.settings.getBool("modiconloadingoptimization") : false;
         private static final ObjectSet<String> iconDeferralUnsupported = ObjectSet.with("mi2-utilities-java", "olupis");
 
         public LoadedMod(Fi file, Fi root, Mod main, ClassLoader loader, ModMeta meta){
