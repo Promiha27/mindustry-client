@@ -727,6 +727,8 @@ public class BlockRenderer{
             Tile tile = tileview.items[i];
             Block block = tile.block();
 
+            Draw.z(Layer.block);
+
             Building build = tile.build;
 
             boolean visible = (build == null || !build.inFogTo(pteam));
