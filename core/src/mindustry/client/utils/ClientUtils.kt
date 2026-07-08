@@ -468,6 +468,8 @@ fun ChatMessage.findCoords(): ChatMessage = NetClient.findCoords(this)
 
 fun ChatMessage.findLinks(start: Int = 0): ChatMessage = NetClient.findLinks(this, start)
 
+fun ChatMessage.findPlayerName(playerSender: Player): ChatMessage = NetClient.findPlayerName(this, playerSender)
+
 fun findItem(arg: String): Item = content.items().min { b -> biasedLevenshtein(arg, b.localizedName) }
 
 fun findUnit(arg: String): UnitType = content.units().min(

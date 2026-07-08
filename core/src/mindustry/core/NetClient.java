@@ -349,7 +349,7 @@ public class NetClient implements ApplicationListener{
                 }
 
                 output = ui.chatfrag.addMessage(message, playersender.coloredName(), background, prefix, unformatted);
-                output.addButton(playersender.plainName(), () -> Spectate.INSTANCE.spectate(playersender)); // FINISHME: Maybe we should only check for this in the first few characters of the message?
+                findPlayerName(output, playersender);
             } else {
                 // server message, unformatted is ignored
                 output = ui.chatfrag.addMsg(message);
@@ -460,6 +460,11 @@ public class NetClient implements ApplicationListener{
                 } else Menus.openURI(url);
             });
         }
+        return msg;
+    }
+
+    public static ChatFragment.ChatMessage findPlayerName(ChatFragment.ChatMessage msg, Player playerSender){
+        msg.addButton(playerSender.plainName(), () -> Spectate.INSTANCE.spectate(playerSender)); // FINISHME: Maybe we should only check for this in the first few characters of the message?
         return msg;
     }
 
