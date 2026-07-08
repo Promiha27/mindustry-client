@@ -2438,6 +2438,7 @@ public class Blocks{
             underBullets = true;
             health = 250;
             explosivenessScale = flammabilityScale = 20f/120f;
+            floating = true;
 
             ((Conduit)reinforcedConduit).rotBridgeReplacement = this;
         }};
