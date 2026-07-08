@@ -776,7 +776,7 @@ public class ChatFragment extends Table{
                 formattedMessage = prefix + message;
             }
             if (moveButtons && buttons != null) {
-                int shift = formattedMessage.length() - initial;
+                int shift = Strings.stripColors(formattedMessage).length() - initial;
                 for (var b : buttons) { // FINISHME: Store original button texts, reformat message, adjust start, end as needed.
                     b.start += shift;
                     b.end += shift;

@@ -188,7 +188,9 @@ object Main : ApplicationListener {
             Signatures.VerifyResult.VALID -> {
                 msg.sender = output.second?.run { keyStorage.aliasOrName(this) }.plus(if (Core.settings.getBool("showclientmsgsendername")) " (${msg.sender}[white])" else "")
                 msg.backgroundColor = if(keyStorage.builtInCerts.contains(output.second)) ClientVars.developerMsgBackground else ClientVars.verified
-                msg.prefix = "${Iconc.ok} ${msg.prefix} "
+                msg.prefix = "${Iconc.ok} ${msg.prefix}"
+                msg.findCoords()
+                msg.findLinks()
                 msg.format()
                 true
             }
