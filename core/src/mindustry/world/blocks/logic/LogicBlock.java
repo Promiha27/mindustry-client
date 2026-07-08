@@ -871,12 +871,12 @@ public class LogicBlock extends Block{
                         TextButtonStyle style = Styles.flatt;
                         t.defaults().size(280f, 60f).left();
 
-                        t.button("@schematic.copy", Icon.copy, style, () -> {
+                        t.button("@copy.clipboard", Icon.copy, style, () -> {
                             dialog.hide();
                             Core.app.setClipboardText(code);
                         }).marginLeft(12f);
                         t.row();
-                        t.button("@schematic.copy.import", Icon.download, style, () -> {
+                        t.button("@load.clipboard", Icon.download, style, () -> {
                             dialog.hide();
                             importFromClipboard();
                         }).marginLeft(12f);
