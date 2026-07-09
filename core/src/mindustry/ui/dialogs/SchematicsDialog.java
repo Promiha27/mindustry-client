@@ -76,7 +76,7 @@ public class SchematicsDialog extends BaseDialog{
         buttons.button("@schematic.import", Icon.download, this::showImport);
         makeButtonOverlay();
         shown(() -> {
-            if(!Core.settings.getBool("schematicuicarryover")) search = "";
+            if(!Core.settings.getBool("schematicuicarryover")) searchField.selectAll();
             searchField.setText(search);
             setup();
         });
@@ -89,7 +89,7 @@ public class SchematicsDialog extends BaseDialog{
             checkedTags = true;
         }
 
-        if(!Core.settings.getBool("schematicuicarryover")) search = "";
+        if(!Core.settings.getBool("schematicuicarryover")) searchField.selectAll();
 
         cont.top();
         cont.clear();
