@@ -4,9 +4,8 @@ import arc.*;
 import arc.files.*;
 import arc.func.*;
 import arc.graphics.*;
-import arc.graphics.Texture.*;
 import arc.graphics.g2d.*;
-import arc.input.*;
+import arc.scene.*;
 import arc.scene.style.*;
 import arc.scene.ui.TextButton.*;
 import arc.scene.ui.*;
@@ -16,42 +15,48 @@ import arc.util.*;
 import arc.util.Http.*;
 import arc.util.io.*;
 import arc.util.serialization.*;
+<<<<<<< HEAD
 import arc.util.serialization.Jval.*;
 import mindustry.*;
 import mindustry.client.ui.*;
 import mindustry.client.utils.*;
 import mindustry.core.*;
+=======
+>>>>>>> v159.3
 import mindustry.ctype.*;
 import mindustry.game.*;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
-import mindustry.io.*;
 import mindustry.mod.*;
 import mindustry.mod.Mods.*;
 import mindustry.ui.*;
 
-import java.text.*;
 import java.util.*;
 
 import static arc.Core.*;
 import static mindustry.Vars.*;
 
 public class ModsDialog extends BaseDialog{
-    private ObjectMap<String, TextureRegion> textureCache = new ObjectMap<>();
+    public ModBrowserDialog browser;
 
-    private float modImportProgress;
-    private boolean cancelledImport;
-    private String searchtxt = "";
-    private @Nullable Seq<ModListing> modList;
-    private boolean orderDate = true;
-    private BaseDialog currentContent;
+    protected float modImportProgress;
+    protected boolean cancelledImport;
+    protected BaseDialog currentContent;
 
+<<<<<<< HEAD
     private BaseDialog browser;
     private Table browserTable;
     private int prompted, expected;
     private boolean autoUpdating; // Whether mods are currently being auto updated
     private float scroll = 0f;
+=======
+    protected float scroll = 0f;
+    //only records mods that have a valid repo!
+    protected ObjectMap<LoadedMod, ModListing> modToListing = new ObjectMap<>();
+    protected ObjectSet<LoadedMod> withUpdates = new ObjectSet<>();
+    protected @Nullable Element updaterElement;
+>>>>>>> v159.3
 
     private final Runnable autoUpdaterHandler = () -> { // RUN THIS ON THE MAIN THREAD
         if (++prompted == expected) { // FINISHME: Awful
@@ -68,41 +73,24 @@ public class ModsDialog extends BaseDialog{
         super("@mods");
         addCloseButton();
 
-        browser = new BaseDialog("@mods.browser");
-
-        browser.cont.table(table -> {
-            table.left();
-            table.image(Icon.zoom);
-            table.field(searchtxt, res -> {
-                searchtxt = res;
-                rebuildBrowser();
-            }).growX().get();
-            table.button(Icon.list, Styles.emptyi, 32f, () -> {
-                orderDate = !orderDate;
-                rebuildBrowser();
-            }).update(b -> b.getStyle().imageUp = (orderDate ? Icon.list : Icon.star)).size(40f).get()
-            .addListener(new Tooltip(tip -> tip.label(() -> orderDate ? "@mods.browser.sortdate" : "@mods.browser.sortstars").left()));
-        }).fillX().padBottom(4);
-
-        browser.cont.row();
-        browser.cont.pane(tablebrow -> {
-            tablebrow.margin(10f).top();
-            browserTable = tablebrow;
-        }).scrollX(false);
-        browser.addCloseButton();
-        browser.makeButtonOverlay();
-
-        browser.onResize(this::rebuildBrowser);
-
         buttons.button("@mods.guide", Icon.link, () -> Core.app.openURI(modGuideURL)).size(210, 64f);
 
         if(!mobile){
             buttons.button("@mods.openfolder", Icon.link, () -> Core.app.openFolder(modDirectory.absolutePath()));
         }
 
+<<<<<<< HEAD
         buttons.button("@client.mods.updateactive", Icon.download, () -> mods.mods.each(m -> m.state == ModState.enabled && m.getRepo() != null && settings.getBool(m.massUpdateString(), true), m -> githubImportMod(m.getRepo(), m.isJava(), null, null)));
 
         shown(this::setup);
+=======
+        shown(() -> {
+            setup();
+
+            withUpdates.clear();
+            refreshModUpdates();
+        });
+>>>>>>> v159.3
         onResize(this::setup);
 
         Events.on(ResizeEvent.class, event -> {
@@ -116,8 +104,8 @@ public class ModsDialog extends BaseDialog{
             if(mods.requiresReload()){
                 mods.reload();
             }
-        });
 
+<<<<<<< HEAD
         // Client mod auto updater
         Events.on(EventType.ClientLoadEvent.class, event -> {
             long hour = 1000 * 60 * 60;
@@ -194,8 +182,45 @@ public class ModsDialog extends BaseDialog{
                         browser.hide();
                     }
                 });
+=======
+            if(updaterElement != null){
+                updaterElement.remove();
+                updaterElement = null;
+>>>>>>> v159.3
             }
         });
+
+        browser = new ModBrowserDialog();
+    }
+
+    public void refreshModUpdates(){
+        ObjectMap<String, LoadedMod> repoToMod = new ObjectMap<>();
+        for(var mod : mods.getMods()){
+            String repo = mod.getRepo();
+            if(!mod.hasSteamID() && repo != null){
+                repoToMod.put(repo, mod);
+            }
+        }
+
+        browser.getModList(list -> {
+            withUpdates.clear();
+            for(var entry : list){
+                var mod = repoToMod.get(entry.repo);
+                if(mod != null){
+                    Log.info("FOUND: " + mod);
+                    modToListing.put(mod, entry);
+                    if(Strings.checkNewerSemver(entry.version, mod.meta.version)) withUpdates.add(mod);
+                }
+            }
+
+            if(withUpdates.size > 0){
+                setup();
+            }
+        });
+    }
+
+    public boolean hasUpdate(LoadedMod mod){
+        return withUpdates.contains(mod);
     }
 
     void setup(){
@@ -251,7 +276,11 @@ public class ModsDialog extends BaseDialog{
 
                             Core.settings.put("lastmod", text);
                             //there's no good way to know if it's a java mod here, so assume it's not
+<<<<<<< HEAD
                             githubImportMod(text, false, null, null);
+=======
+                            githubImportMod(text, false, null, true);
+>>>>>>> v159.3
                         });
                     }).margin(12f);
                 });
@@ -261,7 +290,7 @@ public class ModsDialog extends BaseDialog{
 
             }).margin(margin);
 
-            buttons.button("@mods.browser", Icon.menu, style, this::showModBrowser).margin(margin);
+            buttons.button("@mods.browser", Icon.menu, style, () -> browser.show()).margin(margin);
         }).width(w);
 
         cont.row();
@@ -271,22 +300,23 @@ public class ModsDialog extends BaseDialog{
             Table[] pane = {null};
 
             Cons<String> rebuild = query -> {
-                pane[0].clear();
+                var cont = pane[0];
+                cont.clear();
                 boolean any = false;
-                for(LoadedMod item : mods.list()){
-                    if(Strings.matches(query, item.meta.displayName)){
+                for(LoadedMod mod : mods.list()){
+                    if(Strings.matches(query, mod.meta.displayName)){
                         any = true;
-                        if(!item.enabled() && !anyDisabled[0] && mods.list().size > 0){
+                        if(!mod.enabled() && !anyDisabled[0] && mods.list().size > 0){
                             anyDisabled[0] = true;
-                            pane[0].row();
-                            pane[0].image().growX().height(4f).pad(6f).color(Pal.gray).row();
+                            cont.row();
+                            cont.image().growX().height(4f).pad(6f).color(Pal.gray).row();
                         }
 
-                        pane[0].button(t -> {
+                        cont.button(t -> {
                             t.top().left();
                             t.margin(12f);
 
-                            String stateDetails = getStateDetails(item);
+                            String stateDetails = getStateDetails(mod);
                             if(stateDetails != null){
                                 t.addListener(new Tooltip(f -> f.background(Styles.black8).margin(4f).add(stateDetails).growX().width(400f).wrap()));
                             }
@@ -296,8 +326,8 @@ public class ModsDialog extends BaseDialog{
                                 title1.left();
 
                                 title1.add(new BorderImage(){{
-                                    if(item.iconTexture != null){
-                                        setDrawable(new TextureRegion(item.iconTexture));
+                                    if(mod.iconTexture != null){
+                                        setDrawable(new TextureRegion(mod.iconTexture));
                                     }else{
                                         setDrawable(Tex.nomap);
                                     }
@@ -305,19 +335,19 @@ public class ModsDialog extends BaseDialog{
                                 }}).size(h - 8f).padTop(-8f).padLeft(-8f).padRight(8f);
 
                                 title1.table(text -> {
-                                    boolean hideDisabled = !item.isSupported() || item.hasUnmetDependencies() || item.hasContentErrors();
-                                    String shortDesc = item.meta.shortDescription();
+                                    boolean hideDisabled = !mod.isSupported() || mod.hasUnmetDependencies() || mod.hasContentErrors();
+                                    String shortDesc = mod.meta.shortDescription();
 
-                                    text.add("[accent]" + Strings.stripColors(item.meta.displayName) + "\n" +
+                                    text.add("[accent]" + Strings.stripColors(mod.meta.displayName) + "\n" +
                                         (shortDesc.length() > 0 ? "[lightgray]" + shortDesc + "\n" : "")
                                         //so does anybody care about version?
                                         //+ "[gray]v" + Strings.stripColors(trimText(item.meta.version)) + "\n"
-                                        + (item.enabled() || hideDisabled ? "" : Core.bundle.get("mod.disabled") + ""))
+                                        + (mod.enabled() || hideDisabled ? "" : Core.bundle.get("mod.disabled") + ""))
                                     .wrap().top().width(300f).growX().left();
 
                                     text.row();
 
-                                    String state = getStateText(item);
+                                    String state = getStateText(mod);
                                     if(state != null){
                                         text.labelWrap(state).growX().row();
                                     }
@@ -328,36 +358,48 @@ public class ModsDialog extends BaseDialog{
 
                             t.table(right -> {
                                 right.right();
-                                right.button(item.enabled() ? Icon.downOpen : Icon.upOpen, Styles.clearNonei, () -> {
-                                    mods.setEnabled(item, !item.enabled());
+                                right.button(mod.enabled() ? Icon.downOpen : Icon.upOpen, Styles.clearNonei, () -> {
+                                    mods.setEnabled(mod, !mod.enabled());
                                     setup();
-                                }).size(50f).disabled(!item.isSupported());
+                                }).size(50f).disabled(!mod.isSupported());
 
-                                right.button(item.hasSteamID() ? Icon.link : Icon.trash, Styles.clearNonei, () -> {
-                                    if(!item.hasSteamID()){
+                                right.button(mod.hasSteamID() ? Icon.link : Icon.trash, Styles.clearNonei, () -> {
+                                    if(!mod.hasSteamID()){
                                         ui.showConfirm("@confirm", "@mod.remove.confirm", () -> {
-                                            mods.removeMod(item);
+                                            mods.removeMod(mod);
+                                            withUpdates.remove(mod);
                                             setup();
                                         });
                                     }else{
-                                        platform.viewListing(item);
+                                        platform.viewListing(mod);
                                     }
                                 }).size(50f);
 
-                                if(steam && !item.hasSteamID()){
+                                if(steam && !mod.hasSteamID()){
                                     right.row();
                                     right.button(Icon.export, Styles.clearNonei, () -> {
-                                        platform.publish(item);
+                                        platform.publish(mod);
                                     }).size(50f);
                                 }
                             }).growX().right().padRight(-8f).padTop(-8f);
-                        }, Styles.grayt, () -> showMod(item)).size(w, h).growX().pad(4f);
-                        pane[0].row();
+                        }, Styles.grayt, () -> showMod(mod)).size(w, h).growX().pad(4f).padTop(8f).row();
+
+                        if(hasUpdate(mod)){
+                            cont.button(b -> {
+                                b.margin(6f);
+                                b.left();
+                                b.image(Icon.download).color(Color.lightGray).size(iconMed).padRight(8f);
+                                var list = modToListing.get(mod);
+                                b.add(Core.bundle.format("mods.update.available", list == null ? "<unknown>" : list.version));
+                            }, Styles.grayt, () -> {
+                                githubImportMod(mod.getRepo(), mod.isJava(), null, false);
+                            }).width(w).height(48f).padTop(-4f).row();
+                        }
                     }
                 }
 
                 if(!any){
-                    pane[0].add("@none.found").color(Color.lightGray).pad(4);
+                    cont.add("@none.found").color(Color.lightGray).pad(4);
                 }
             };
 
@@ -373,6 +415,38 @@ public class ModsDialog extends BaseDialog{
                 pane[0] = table1.margin(10f).top();
                 rebuild.get("");
             }).scrollX(false).update(s -> scroll = s.getScrollY()).get().setScrollYForce(scroll);
+
+            cont.row();
+
+            if(withUpdates.size > 1){
+                cont.button(b -> {
+                    b.margin(6f);
+                    b.image(Icon.download).size(iconMed).padRight(8f);
+                    b.add("@mods.update.all");
+                    b.image(Icon.download).size(iconMed).padLeft(8f);
+                }, Styles.grayt, () -> {
+                    var queue = withUpdates.toSeq();
+
+                    int[] index = {0};
+
+                    //TODO: this is an awful hack that forces mods to be downloaded in sequence
+                    //handling callbacks in the functions is extremely tedious, so this is the cleanest method I could find
+                    cancelledImport = false;
+                    if(updaterElement != null) updaterElement.remove();
+                    updaterElement = new Element();
+
+                    updaterElement.update(() -> {
+                        if(index[0] >= queue.size || cancelledImport){
+                            updaterElement.remove();
+                        }else if(!ui.loadfrag.shown()){ //loading not shown, queue next one
+                            var next = queue.get(index[0] ++);
+
+                            githubImportMod(next.getRepo(), next.isJava(), null, false);
+                        }
+                    });
+                    addChild(updaterElement);
+                }).padTop(8f).width(w).height(60f).padTop(12f).row();
+            }
         }else{
             cont.table(Styles.black6, t -> t.add("@mods.none")).height(80f);
         }
@@ -454,7 +528,11 @@ public class ModsDialog extends BaseDialog{
             boolean showImport = !mod.hasSteamID();
             dialog.buttons.button("@mods.github.open", Icon.link, () -> Core.app.openURI("https://github.com/" + mod.getRepo())).wrapLabel(false);
             if(mobile && showImport) dialog.buttons.row();
+<<<<<<< HEAD
             if(showImport) dialog.buttons.button("@mods.browser.reinstall", Icon.download, () -> githubImportMod(mod.getRepo(), mod.isJava(), null, null)).wrapLabel(false);
+=======
+            if(showImport) dialog.buttons.button("@mods.browser.reinstall", Icon.download, () -> githubImportMod(mod.getRepo(), mod.isJava(), null, false));
+>>>>>>> v159.3
         }
 
         dialog.cont.pane(desc -> {
@@ -521,6 +599,7 @@ public class ModsDialog extends BaseDialog{
         dialog.show();
     }
 
+<<<<<<< HEAD
     private void showModBrowser(){
         rebuildBrowser();
         browser.show();
@@ -697,6 +776,10 @@ public class ModsDialog extends BaseDialog{
 
     private void handleMod(String repo, HttpResponse result, @Nullable String prevVersion){
          try{
+=======
+    protected void handleMod(String repo, HttpResponse result, boolean forceEnable){
+        try{
+>>>>>>> v159.3
             Fi file = tmpDirectory.child(repo.replace("/", "") + ".zip");
             long len = result.getContentLength();
             Floatc cons = len <= 0 ? f -> {} : p -> modImportProgress = p;
@@ -710,6 +793,7 @@ public class ModsDialog extends BaseDialog{
 
             if(cancelledImport) return;
 
+<<<<<<< HEAD
             Fi zip = file.isDirectory() ? file : new ZipFi(file);
             if(OS.isMac) zip.child(".DS_Store").delete(); //macOS loves adding garbage files that break everything
             if(zip.list().length == 1 && zip.list()[0].isDirectory()) zip = zip.list()[0]; // FINISHME: This should be a method in the ZipFi class as its used thrice and the current impl is awful as it calls list thrice for no reason
@@ -722,8 +806,14 @@ public class ModsDialog extends BaseDialog{
                 mod.setRepo(repo);
             }
 
+=======
+            var mod = mods.importMod(file, forceEnable);
+            mod.setRepo(repo);
+>>>>>>> v159.3
             file.delete();
             Core.app.post(() -> {
+                var same = withUpdates.toSeq().find(l -> Structs.eq(l.getRepo(), repo));
+                if(same != null) withUpdates.remove(same);
 
                 try{
                     setup();
@@ -734,7 +824,7 @@ public class ModsDialog extends BaseDialog{
             });
         }catch(Throwable e){
             if(cancelledImport) return;
-            modError(e);
+            showModError(e);
         }
 
         importSuccess(repo);
@@ -746,15 +836,31 @@ public class ModsDialog extends BaseDialog{
         Core.app.post(func);
     }
 
+<<<<<<< HEAD
     private void importFail(Throwable t){
         if (!autoUpdating) Core.app.post(() -> modError(t));
         else Log.err("Mod Auto Update Error", t);
+=======
+    protected void importFail(Throwable t){
+        Core.app.post(() -> showModError(t));
+>>>>>>> v159.3
     }
 
-    public void githubImportMod(String repo, boolean isJava){
-        githubImportMod(repo, isJava, null);
+    public void showModError(Throwable error){
+        ui.loadfrag.hide();
+
+        if(error instanceof NoSuchMethodError || Strings.getCauses(error).contains(t -> t.getMessage() != null && (t.getMessage().contains("trust anchor") || t.getMessage().contains("SSL") || t.getMessage().contains("protocol")))){
+            ui.showErrorMessage("@feature.unsupported");
+        }else if(error instanceof HttpStatusException st){
+            ui.showErrorMessage(Core.bundle.format("connectfail", Strings.capitalize(st.status.toString().toLowerCase())));
+        }else if(error.getMessage() != null && error.getMessage().toLowerCase(Locale.ROOT).contains("writable dex")){
+            ui.showException("@error.moddex", error);
+        }else{
+            ui.showException(error);
+        }
     }
 
+<<<<<<< HEAD
     private void githubImportMod(String repo, boolean isJava, @Nullable String release){
         githubImportMod(repo, isJava, release, null);
     }
@@ -768,6 +874,16 @@ public class ModsDialog extends BaseDialog{
         modImportProgress = 0f;
         cancelledImport = false;
         if(prevVersion == null) ui.loadfrag.show("@downloading");
+=======
+    public void githubImportMod(String repo, boolean isJava, boolean forceEnable){
+        githubImportMod(repo, isJava, null, forceEnable);
+    }
+
+    public void githubImportMod(String repo, boolean isJava, @Nullable String release, boolean forceEnable){
+        modImportProgress = 0f;
+        cancelledImport = false;
+        ui.loadfrag.show(Core.bundle.format("mods.downloading", repo));
+>>>>>>> v159.3
         ui.loadfrag.setProgress(() -> modImportProgress);
         ui.loadfrag.setButton(() -> {
             ui.loadfrag.hide();
@@ -775,7 +891,11 @@ public class ModsDialog extends BaseDialog{
         });
 
         if(isJava){
+<<<<<<< HEAD
             githubImportJavaMod(repo, release, prevVersion);
+=======
+            githubImportJavaMod(repo, release, forceEnable);
+>>>>>>> v159.3
         }else{
             Http.get(ghApi + "/repos/" + repo, res -> {
                 if(cancelledImport) return;
@@ -786,14 +906,21 @@ public class ModsDialog extends BaseDialog{
                 //this is a crude heuristic for class mods; only required for direct github import
                 //TODO make a more reliable way to distinguish java mod repos
                 if(language.equals("Java") || language.equals("Kotlin") || language.equals("Groovy") || language.equals("Scala")){
+<<<<<<< HEAD
                     githubImportJavaMod(repo, release, prevVersion);
                 }else{
                     githubImportBranch(mainBranch, repo, release, prevVersion);
+=======
+                    githubImportJavaMod(repo, release, forceEnable);
+                }else{
+                    githubImportBranch(mainBranch, repo, release, forceEnable);
+>>>>>>> v159.3
                 }
             }, this::importFail);
         }
     }
 
+<<<<<<< HEAD
     public void importDependencies(Seq<String> dependencies, Runnable done){
         getModList(listings -> {
             listings.each(l -> dependencies.contains(l.internalName), l -> {
@@ -805,6 +932,9 @@ public class ModsDialog extends BaseDialog{
     }
 
     private void githubImportJavaMod(String repo, @Nullable String release, @Nullable String prevVersion){
+=======
+    public void githubImportJavaMod(String repo, @Nullable String release, boolean forceEnable){
+>>>>>>> v159.3
         //grab latest release
         Http.get(ghApi + "/repos/" + repo + "/releases/" + (release == null ? "latest" : release), res -> {
             if(cancelledImport) return;
@@ -821,7 +951,11 @@ public class ModsDialog extends BaseDialog{
 
                 Http.get(url, result -> {
                     if(cancelledImport) return;
+<<<<<<< HEAD
                     handleMod(repo, result, prevVersion);
+=======
+                    handleMod(repo, result, forceEnable);
+>>>>>>> v159.3
                 }, this::importFail);
             }else{
                 throw new ArcRuntimeException("No JAR file found in releases. Make sure you have a valid jar file in the mod's latest Github Release.");
@@ -829,7 +963,11 @@ public class ModsDialog extends BaseDialog{
         }, this::importFail);
     }
 
+<<<<<<< HEAD
     private void githubImportBranch(String branch, String repo, @Nullable String release, @Nullable String prevVersion){
+=======
+    public void githubImportBranch(String branch, String repo, @Nullable String release, boolean forceEnable){
+>>>>>>> v159.3
         if(release != null) {
             Http.get(ghApi + "/repos/" + repo + "/releases/" + release, res -> {
                 if(cancelledImport) return;
@@ -840,9 +978,16 @@ public class ModsDialog extends BaseDialog{
                         Http.get(loc.getHeader("Location"), result -> {
                             handleMod(repo, result, prevVersion);
                             if(cancelledImport) return;
+<<<<<<< HEAD
                         }, this::importFail);
                     }else{
                         handleMod(repo, loc, prevVersion);
+=======
+                            handleMod(repo, result, forceEnable);
+                        }, this::importFail);
+                    }else{
+                        handleMod(repo, loc, forceEnable);
+>>>>>>> v159.3
                     }
                 }, this::importFail);
             });
@@ -852,10 +997,17 @@ public class ModsDialog extends BaseDialog{
                 if(loc.getHeader("Location") != null){
                     Http.get(loc.getHeader("Location"), result -> {
                         if(cancelledImport) return;
+<<<<<<< HEAD
                         handleMod(repo, result, prevVersion);
                     }, this::importFail);
                 }else{
                     handleMod(repo, loc, prevVersion);
+=======
+                        handleMod(repo, result, forceEnable);
+                    }, this::importFail);
+                }else{
+                    handleMod(repo, loc, forceEnable);
+>>>>>>> v159.3
                 }
             }, this::importFail);
         }

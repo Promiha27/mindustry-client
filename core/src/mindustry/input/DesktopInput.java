@@ -466,7 +466,7 @@ public class DesktopInput extends InputHandler{
         if(!scene.hasField() && !scene.hasDialog()){
             if(input.keyTap(Binding.debugHitboxes)) Core.settings.toggle("drawhitboxes");
 
-            if(input.keyTap(Binding.teleportCursor) && (state.rules.editor || state.rules.infiniteResources)){
+            if(input.keyTap(Binding.teleportCursor) && (state.rules.editor || state.rules.infiniteResources) && !net.client()){
                 if(player.dead()){
                     camera.position.set(input.mouseWorld());
                 }else{
@@ -838,7 +838,13 @@ public class DesktopInput extends InputHandler{
             }
         }
 
-        if(state.isMenu() || Core.scene.hasDialog()) return;
+        if(state.isMenu() || Core.scene.hasDialog()){
+            if(!Core.input.keyDown(Binding.select)) player.shooting = false;
+            if(mode == breaking && !Core.input.keyDown(Binding.breakBlock)) mode = none;
+            if(mode == placing && !Core.input.keyDown(Binding.select)) mode = none;
+
+            return;
+        }
 
         if(input.keyTap(Binding.resetCamera) && scene.getKeyboardFocus() == null && (cursor == null || cursor.build == null || !(cursor.build.block.rotate && cursor.build.block.quickRotate && cursor.build.interactable(player.team()))) && !input.alt()){
             panning = false;
