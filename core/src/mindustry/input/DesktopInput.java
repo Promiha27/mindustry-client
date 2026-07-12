@@ -1272,18 +1272,21 @@ public class DesktopInput extends InputHandler{
             }
 
             if(commandMode && selectedUnits.any()){
-                boolean canAttack = (cursor.build != null && !cursor.build.inFogTo(player.team()) && cursor.build.team != player.team());
+                if(!Core.input.shift()){
+                    boolean canAttack = !Core.input.alt() && cursor.build != null && !cursor.build.inFogTo(player.team()) && cursor.build.team != player.team();
 
-                if(!canAttack){
-                    var unit = selectedEnemyUnit(input.mouseWorldX(), input.mouseWorldY());
-                    if(unit != null){
-                        canAttack = selectedUnits.contains(u -> u.canTarget(unit));
+                    if(!canAttack){
+                        var unit = selectedEnemyUnit(input.mouseWorldX(), input.mouseWorldY());
+                        if(unit != null){
+                            canAttack = selectedUnits.contains(u -> u.canTarget(unit));
+                        }
+                    }
+
+                    if(canAttack){
+                        cursorType = ui.targetCursor;
                     }
                 }
 
-                if(canAttack){
-                    cursorType = ui.targetCursor;
-                }
 
                 if(input.keyTap(Binding.commandQueue) && Binding.commandQueue.value.key.type != KeyType.mouse){
                     commandTap(input.mouseX(), input.mouseY(), true);
