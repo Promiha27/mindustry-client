@@ -321,6 +321,7 @@ public class ModBrowserDialog extends BaseDialog{
                     (installed.contains(mod.repo) ? "\n[lightgray]" + Core.bundle.get("mod.installed") : "") +
                     "\n[lightgray]\uE809 " + mod.stars +
 
+                    "\n" + Strings.truncate(mod.description, 30, "...") +
                     (!Version.isAtLeast(mod.minGameVersion) ? "\n" + Core.bundle.format("mod.requiresversion", mod.minGameVersion) :
                     ((mod.hasJava && Strings.parseDouble(mod.minGameVersion, 0) < minJavaModGameVersion && !mod.legacyCompatible) ? "\n" + Core.bundle.get("mod.incompatiblemod") : ""));
 

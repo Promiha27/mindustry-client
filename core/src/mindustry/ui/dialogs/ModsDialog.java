@@ -15,14 +15,9 @@ import arc.util.*;
 import arc.util.Http.*;
 import arc.util.io.*;
 import arc.util.serialization.*;
-<<<<<<< HEAD
-import arc.util.serialization.Jval.*;
-import mindustry.*;
-import mindustry.client.ui.*;
-import mindustry.client.utils.*;
 import mindustry.core.*;
-=======
->>>>>>> v159.3
+import mindustry.client.*;
+import mindustry.client.ui.*;
 import mindustry.ctype.*;
 import mindustry.game.*;
 import mindustry.game.EventType.*;
@@ -44,29 +39,12 @@ public class ModsDialog extends BaseDialog{
     protected boolean cancelledImport;
     protected BaseDialog currentContent;
 
-<<<<<<< HEAD
-    private BaseDialog browser;
-    private Table browserTable;
-    private int prompted, expected;
-    private boolean autoUpdating; // Whether mods are currently being auto updated
-    private float scroll = 0f;
-=======
     protected float scroll = 0f;
     //only records mods that have a valid repo!
     protected ObjectMap<LoadedMod, ModListing> modToListing = new ObjectMap<>();
     protected ObjectSet<LoadedMod> withUpdates = new ObjectSet<>();
     protected @Nullable Element updaterElement;
->>>>>>> v159.3
 
-    private final Runnable autoUpdaterHandler = () -> { // RUN THIS ON THE MAIN THREAD
-        if (++prompted == expected) { // FINISHME: Awful
-            autoUpdating = false;
-            if (mods.requiresReload()){
-                if (Core.settings.getInt("modautoupdate") == 2) reload();
-                new Toast(5f).add("[accent]Mod updates found, they will be installed after restart.");
-            } else new Toast(5f).add("[accent]No mod updates found.");
-        }
-    };
     private final ObjectMap<String, Runnable> onSuccess = new ObjectMap<>();
 
     public ModsDialog(){
@@ -79,18 +57,12 @@ public class ModsDialog extends BaseDialog{
             buttons.button("@mods.openfolder", Icon.link, () -> Core.app.openFolder(modDirectory.absolutePath()));
         }
 
-<<<<<<< HEAD
-        buttons.button("@client.mods.updateactive", Icon.download, () -> mods.mods.each(m -> m.state == ModState.enabled && m.getRepo() != null && settings.getBool(m.massUpdateString(), true), m -> githubImportMod(m.getRepo(), m.isJava(), null, null)));
-
-        shown(this::setup);
-=======
         shown(() -> {
             setup();
 
             withUpdates.clear();
             refreshModUpdates();
         });
->>>>>>> v159.3
         onResize(this::setup);
 
         Events.on(ResizeEvent.class, event -> {
@@ -105,88 +77,9 @@ public class ModsDialog extends BaseDialog{
                 mods.reload();
             }
 
-<<<<<<< HEAD
-        // Client mod auto updater
-        Events.on(EventType.ClientLoadEvent.class, event -> {
-            long hour = 1000 * 60 * 60;
-            if (mods.mods.contains(LoadedMod::enabled) && Core.settings.getInt("modautoupdate") != 0 && (Time.timeSinceMillis(settings.getLong("lastmodupdate", hour + 1)) > hour)) {
-                autoUpdating = true;
-                Log.debug("Checking for mod updates @", Time.timeSinceMillis(settings.getLong("lastmodupdate", hour + 1)) / (60*1000f));
-                Core.settings.put("lastmodupdate", Time.millis());
-                for (Mods.LoadedMod mod : mods.mods.copy().shuffle()) { // Use shuffled mod list, if the user has more than 30 active mods, this will ensure that each is checked at least somewhat frequently FINISHME: This should take dependencies and requirements into account which we don't do currently
-                    if (!mod.enabled() || mod.getRepo() == null || !settings.getBool(mod.autoUpdateString(), true)) continue;
-                    if (expected++ >= 30) continue; // Only make up to 30 api requests
-                    mod.isAutoUpdating = true;
-                    githubImportMod(mod.getRepo(), mod.isJava(), null, mod.meta.version, autoUpdaterHandler);
-                }
-            } else Log.debug("Not updating mods, updated too recently / auto update is disabled / no enabled mods.");
-        });
-    }
-
-    void modError(Throwable error){
-        ui.loadfrag.hide();
-
-        if(error instanceof NoSuchMethodError || Strings.getCauses(error).contains(t -> t.getMessage() != null && (t.getMessage().contains("trust anchor") || t.getMessage().contains("SSL") || t.getMessage().contains("protocol")))){
-            ui.showErrorMessage("@feature.unsupported");
-        }else if(error instanceof HttpStatusException st){
-            ui.showErrorMessage(Core.bundle.format("connectfail", Strings.capitalize(st.status.toString().toLowerCase())));
-        }else if(error.getMessage() != null && error.getMessage().toLowerCase(Locale.ROOT).contains("writable dex")){
-            ui.showException("@error.moddex", error);
-        }else{
-            ui.showException(error);
-        }
-    }
-
-    void getModList(Cons<Seq<ModListing>> listener){
-        getModList(0, listener);
-    }
-
-    void getModList(int index, Cons<Seq<ModListing>> listener){
-        if(index >= modJsonURLs.length) return;
-
-        if(modList != null){
-            listener.get(modList);
-            return;
-        }
-
-        Http.get(modJsonURLs[index], response -> {
-            String strResult = response.getResultAsString();
-
-            Core.app.post(() -> {
-                try{
-                    modList = JsonIO.json.fromJson(Seq.class, ModListing.class, strResult);
-
-                    var d = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-                    Func<String, Date> parser = text -> {
-                        try{
-                            return d.parse(text);
-                        }catch(Exception e){
-                            return new Date();
-                        }
-                    };
-
-                    modList.sortComparing(m -> parser.get(m.lastUpdated)).reverse();
-                    listener.get(modList);
-                }catch(Exception e){
-                    Log.err(e);
-                    ui.showException(e);
-                }
-            });
-        }, error -> {
-            if(index < modJsonURLs.length - 1){
-                getModList(index + 1, listener);
-            }else{
-                Core.app.post(() -> {
-                    modError(error);
-                    if(browser != null){
-                        browser.hide();
-                    }
-                });
-=======
             if(updaterElement != null){
                 updaterElement.remove();
                 updaterElement = null;
->>>>>>> v159.3
             }
         });
 
@@ -276,11 +169,7 @@ public class ModsDialog extends BaseDialog{
 
                             Core.settings.put("lastmod", text);
                             //there's no good way to know if it's a java mod here, so assume it's not
-<<<<<<< HEAD
-                            githubImportMod(text, false, null, null);
-=======
                             githubImportMod(text, false, null, true);
->>>>>>> v159.3
                         });
                     }).margin(12f);
                 });
@@ -498,27 +387,12 @@ public class ModsDialog extends BaseDialog{
         return null;
     }
 
-    private void reload(){
-        ui.showInfoOnHidden("@mods.reloadexit", () -> {
-            ClientUtils.restartGame();
-        });
-    }
-
     private void showMod(LoadedMod mod){
         BaseDialog dialog = new BaseDialog(mod.meta.displayName);
 
-        // Manually add a close button/listener and set the default height as we don't want to set a default width which addCloseButton() does
         dialog.buttons.defaults().height(64).minWidth(210);
         dialog.buttons.button("@back", Icon.left, dialog::hide).wrapLabel(false);
         dialog.addCloseListener();
-
-        // Foo's client mod auto/mass update toggles
-        dialog.buttons.table(Tex.button, t ->
-            t.check("@client.mod.autoupdate", settings.getBool(mod.autoUpdateString(), true), b -> { if(b) settings.remove(mod.autoUpdateString()); else settings.put(mod.autoUpdateString(), false); }).fill().get().getLabelCell().fillX()
-        );
-        dialog.buttons.table(Tex.button, t ->
-            t.check("@client.mod.massupdate", settings.getBool(mod.massUpdateString(), true), b -> { if(b) settings.remove(mod.massUpdateString()); else settings.put(mod.massUpdateString(), false); }).fill().padTop(4f).padBottom(4f).get().getLabelCell().fillX()
-        );
 
         if(!mobile){
             dialog.buttons.button("@mods.openfolder", Icon.link, () -> Core.app.openFolder(mod.file.absolutePath())).wrapLabel(false);
@@ -528,11 +402,7 @@ public class ModsDialog extends BaseDialog{
             boolean showImport = !mod.hasSteamID();
             dialog.buttons.button("@mods.github.open", Icon.link, () -> Core.app.openURI("https://github.com/" + mod.getRepo())).wrapLabel(false);
             if(mobile && showImport) dialog.buttons.row();
-<<<<<<< HEAD
-            if(showImport) dialog.buttons.button("@mods.browser.reinstall", Icon.download, () -> githubImportMod(mod.getRepo(), mod.isJava(), null, null)).wrapLabel(false);
-=======
-            if(showImport) dialog.buttons.button("@mods.browser.reinstall", Icon.download, () -> githubImportMod(mod.getRepo(), mod.isJava(), null, false));
->>>>>>> v159.3
+            if(showImport) dialog.buttons.button("@mods.browser.reinstall", Icon.download, () -> githubImportMod(mod.getRepo(), mod.isJava(), null, false)).wrapLabel(false);
         }
 
         dialog.cont.pane(desc -> {
@@ -599,187 +469,12 @@ public class ModsDialog extends BaseDialog{
         dialog.show();
     }
 
-<<<<<<< HEAD
-    private void showModBrowser(){
-        rebuildBrowser();
-        browser.show();
-    }
-
-    private void rebuildBrowser(){
-        ObjectSet<String> installed = mods.list().map(m -> m.getRepo()).asSet();
-
-        browserTable.clear();
-        browserTable.add("@loading");
-
-        int cols = (int)Math.max(Core.graphics.getWidth() / Scl.scl(480), 1);
-
-        getModList(0, rlistings -> {
-            browserTable.clear();
-            int i = 0;
-
-            var listings = rlistings;
-            if(!orderDate){
-                listings = rlistings.copy();
-                listings.sortComparing(m1 -> -m1.stars);
-            }
-
-            for(ModListing mod : listings){
-                if(((mod.hasJava || mod.hasScripts && !mod.iosCompatible) && Vars.ios) ||
-                    (!Strings.matches(searchtxt, mod.name) && !Strings.matches(searchtxt, mod.repo))
-                ) continue;
-
-                float s = 64f;
-
-                browserTable.button(con -> {
-                    con.margin(0f);
-                    con.left();
-
-                    String repo = mod.repo;
-                    con.add(new BorderImage(){
-                        TextureRegion last;
-
-                        {
-                            border(installed.contains(repo) ? Pal.accent : Color.lightGray);
-                            setDrawable(Tex.nomap);
-                            pad = Scl.scl(4f);
-                        }
-
-                        @Override
-                        public void draw(){
-                            super.draw();
-
-                            //textures are only requested when the rendering happens; this assists with culling
-                            if(!textureCache.containsKey(repo)){
-                                textureCache.put(repo, last = Core.atlas.find("nomap"));
-                                Http.get("https://raw.githubusercontent.com/Anuken/MindustryMods/master/icons/" + repo.replace("/", "_"), res -> {
-                                    Pixmap pix = new Pixmap(res.getResult());
-                                    Core.app.post(() -> {
-                                        try{
-                                            var tex = new Texture(pix);
-                                            tex.setFilter(TextureFilter.linear);
-                                            textureCache.put(repo, new TextureRegion(tex));
-                                            pix.dispose();
-                                        }catch(Exception e){
-                                            Log.err(e);
-                                        }
-                                    });
-                                }, err -> {});
-                            }
-
-                            var next = textureCache.get(repo);
-                            if(last != next){
-                                last = next;
-                                setDrawable(next);
-                            }
-                        }
-                    }).size(s).pad(4f * 2f);
-
-                    String infoText =
-                    "[accent]" + mod.name.replace("\n", "") +
-
-                    (installed.contains(mod.repo) ? "\n[lightgray]" + Core.bundle.get("mod.installed") : "") +
-                    "\n[lightgray]\uE809 " + mod.stars +
-                    "\n" + Strings.truncate(mod.description, 30, "...") +
-                    (!Version.isAtLeast(mod.minGameVersion) ? "\n" + Core.bundle.format("mod.requiresversion", mod.minGameVersion) :
-                    ((mod.hasJava && Strings.parseDouble(mod.minGameVersion, 0) < minJavaModGameVersion && !mod.legacyCompatible) ? "\n" + Core.bundle.get("mod.incompatiblemod") : ""));
-
-                    con.add(infoText).width(358f).wrap().grow().pad(4f, 2f, 4f, 6f).top().left().labelAlign(Align.topLeft);
-
-                }, Styles.grayt, () -> {
-                    var sel = new BaseDialog(mod.name);
-                    sel.cont.pane(p -> p.add(mod.description + "\n\n[accent]" + Core.bundle.get("editor.author") + "[lightgray] " + mod.author)
-                        .width(mobile ? 400f : 500f).wrap().pad(4f).labelAlign(Align.center, Align.left)).grow();
-                    sel.buttons.defaults().size(150f, 54f).pad(2f);
-                    sel.buttons.button("@back", Icon.left, () -> {
-                        sel.clear();
-                        sel.hide();
-                    });
-
-                    var found = mods.list().find(l -> mod.repo != null && mod.repo.equals(l.getRepo()));
-                    sel.buttons.button(found == null ? "@mods.browser.add" : "@mods.browser.reinstall", Icon.download, () -> {
-                        sel.hide();
-                        githubImportMod(mod.repo, mod.hasJava, null, null);
-                    });
-
-                    if(Core.graphics.isPortrait()){
-                        sel.buttons.row();
-                    }
-
-                    sel.buttons.button("@mods.github.open", Icon.link, () -> {
-                        Core.app.openURI("https://github.com/" + mod.repo);
-                    });
-
-                    sel.buttons.button("@mods.browser.view-releases", Icon.zoom, () -> {
-                        BaseDialog load = new BaseDialog("");
-                        load.cont.add("[accent]" + Core.bundle.get("mods.browser.fetching"));
-                        load.show();
-                        Http.get(ghApi + "/repos/" + mod.repo + "/releases", res -> {
-                            var json = Jval.read(res.getResultAsString());
-                            JsonArray releases = json.asArray();
-
-                            Core.app.post(() -> {
-                                load.hide();
-
-                                if(releases.size == 0){
-                                    ui.showInfo("@mods.browser.noreleases");
-                                }else{
-                                    sel.hide();
-                                    var downloads = new BaseDialog("@mods.browser.releases");
-                                    downloads.cont.pane(p -> {
-                                        for(int j = 0; j < releases.size; j++){
-                                            var release = releases.get(j);
-
-                                            int index = j;
-                                            p.table(((TextureRegionDrawable)Tex.whiteui).tint(Pal.darkestGray), t -> {
-                                                t.add("[accent]" + release.getString("name") + (index == 0 ? " " + Core.bundle.get("mods.browser.latest") : "")).top().left().growX().wrap().pad(5f);
-                                                t.row();
-                                                t.add((release.getString("published_at")).substring(0, 10).replaceAll("-", "/")).top().left().growX().wrap().pad(5f).color(Color.gray);
-                                                t.row();
-                                                t.table(b -> {
-                                                    b.defaults().size(150f, 54f).pad(2f);
-                                                    b.button("@mods.github.open-release", Icon.link, () -> Core.app.openURI(release.getString("html_url")));
-                                                    b.button("@mods.browser.add", Icon.download, () -> {
-                                                        String releaseUrl = release.getString("url");
-                                                        githubImportMod(mod.repo, mod.hasJava, releaseUrl.substring(releaseUrl.lastIndexOf("/") + 1));
-                                                    });
-                                                }).right();
-                                            }).margin(5f).growX().pad(5f);
-
-                                            if(j < releases.size - 1) p.row();
-                                        }
-                                    }).width(500f).scrollX(false).fillY();
-                                    downloads.buttons.button("@back", Icon.left, () -> {
-                                        downloads.clear();
-                                        downloads.hide();
-                                        sel.show();
-                                    }).size(150f, 54f).pad(2f);
-                                    downloads.keyDown(KeyCode.escape, downloads::hide);
-                                    downloads.keyDown(KeyCode.back, downloads::hide);
-                                    downloads.hidden(sel::show);
-                                    downloads.show();
-                                }
-                            });
-                        }, t -> Core.app.post(() -> {
-                            modError(t);
-                            load.hide();
-                        }));
-                    });
-                    sel.keyDown(KeyCode.escape, sel::hide);
-                    sel.keyDown(KeyCode.back, sel::hide);
-                    sel.show();
-                }).width(438f).pad(4).growX().left().height(s + 8*2f).fillY();
-
-                if(++i % cols == 0) browserTable.row();
-            }
-        });
-    }
-
-    private void handleMod(String repo, HttpResponse result, @Nullable String prevVersion){
-         try{
-=======
     protected void handleMod(String repo, HttpResponse result, boolean forceEnable){
+        handleMod(repo, result, forceEnable, null);
+    }
+
+    protected void handleMod(String repo, HttpResponse result, boolean forceEnable, @Nullable String prevVersion){
         try{
->>>>>>> v159.3
             Fi file = tmpDirectory.child(repo.replace("/", "") + ".zip");
             long len = result.getContentLength();
             Floatc cons = len <= 0 ? f -> {} : p -> modImportProgress = p;
@@ -793,7 +488,6 @@ public class ModsDialog extends BaseDialog{
 
             if(cancelledImport) return;
 
-<<<<<<< HEAD
             Fi zip = file.isDirectory() ? file : new ZipFi(file);
             if(OS.isMac) zip.child(".DS_Store").delete(); //macOS loves adding garbage files that break everything
             if(zip.list().length == 1 && zip.list()[0].isDirectory()) zip = zip.list()[0]; // FINISHME: This should be a method in the ZipFi class as its used thrice and the current impl is awful as it calls list thrice for no reason
@@ -802,14 +496,10 @@ public class ModsDialog extends BaseDialog{
             if(meta == null) Log.warn("Mod @ doesn't have a '[mod/plugin].[h]json' file, skipping.", file);
 
             if (meta == null || meta.version == null || !meta.version.equals(prevVersion)) {
-                var mod = mods.importMod(file);
+                var mod = mods.importMod(file, forceEnable);
                 mod.setRepo(repo);
             }
 
-=======
-            var mod = mods.importMod(file, forceEnable);
-            mod.setRepo(repo);
->>>>>>> v159.3
             file.delete();
             Core.app.post(() -> {
                 var same = withUpdates.toSeq().find(l -> Structs.eq(l.getRepo(), repo));
@@ -836,14 +526,8 @@ public class ModsDialog extends BaseDialog{
         Core.app.post(func);
     }
 
-<<<<<<< HEAD
-    private void importFail(Throwable t){
-        if (!autoUpdating) Core.app.post(() -> modError(t));
-        else Log.err("Mod Auto Update Error", t);
-=======
     protected void importFail(Throwable t){
         Core.app.post(() -> showModError(t));
->>>>>>> v159.3
     }
 
     public void showModError(Throwable error){
@@ -860,30 +544,23 @@ public class ModsDialog extends BaseDialog{
         }
     }
 
-<<<<<<< HEAD
-    private void githubImportMod(String repo, boolean isJava, @Nullable String release){
-        githubImportMod(repo, isJava, release, null);
-    }
-
-    public void githubImportMod(String repo, boolean isJava, @Nullable String release, @Nullable String prevVersion, Runnable onSuccessRunnable){
-        onSuccess.put(repo, onSuccessRunnable);
-        githubImportMod(repo, isJava, release, prevVersion);
-    }
-
-    public void githubImportMod(String repo, boolean isJava, @Nullable String release, @Nullable String prevVersion){
-        modImportProgress = 0f;
-        cancelledImport = false;
-        if(prevVersion == null) ui.loadfrag.show("@downloading");
-=======
     public void githubImportMod(String repo, boolean isJava, boolean forceEnable){
         githubImportMod(repo, isJava, null, forceEnable);
     }
 
     public void githubImportMod(String repo, boolean isJava, @Nullable String release, boolean forceEnable){
+        githubImportMod(repo, isJava, release, forceEnable, null, null);
+    }
+
+    public void githubImportMod(String repo, boolean isJava, @Nullable String release, boolean forceEnable, @Nullable String prevVersion, Runnable onSuccessRunnable){
+        onSuccess.put(repo, onSuccessRunnable);
+        githubImportMod(repo, isJava, release, forceEnable, prevVersion);
+    }
+
+    public void githubImportMod(String repo, boolean isJava, @Nullable String release, boolean forceEnable, @Nullable String prevVersion){
         modImportProgress = 0f;
         cancelledImport = false;
         ui.loadfrag.show(Core.bundle.format("mods.downloading", repo));
->>>>>>> v159.3
         ui.loadfrag.setProgress(() -> modImportProgress);
         ui.loadfrag.setButton(() -> {
             ui.loadfrag.hide();
@@ -891,11 +568,7 @@ public class ModsDialog extends BaseDialog{
         });
 
         if(isJava){
-<<<<<<< HEAD
-            githubImportJavaMod(repo, release, prevVersion);
-=======
-            githubImportJavaMod(repo, release, forceEnable);
->>>>>>> v159.3
+            githubImportJavaMod(repo, release, forceEnable, prevVersion);
         }else{
             Http.get(ghApi + "/repos/" + repo, res -> {
                 if(cancelledImport) return;
@@ -906,35 +579,19 @@ public class ModsDialog extends BaseDialog{
                 //this is a crude heuristic for class mods; only required for direct github import
                 //TODO make a more reliable way to distinguish java mod repos
                 if(language.equals("Java") || language.equals("Kotlin") || language.equals("Groovy") || language.equals("Scala")){
-<<<<<<< HEAD
-                    githubImportJavaMod(repo, release, prevVersion);
+                    githubImportJavaMod(repo, release, forceEnable, prevVersion);
                 }else{
-                    githubImportBranch(mainBranch, repo, release, prevVersion);
-=======
-                    githubImportJavaMod(repo, release, forceEnable);
-                }else{
-                    githubImportBranch(mainBranch, repo, release, forceEnable);
->>>>>>> v159.3
+                    githubImportBranch(mainBranch, repo, release, forceEnable, prevVersion);
                 }
             }, this::importFail);
         }
     }
 
-<<<<<<< HEAD
-    public void importDependencies(Seq<String> dependencies, Runnable done){
-        getModList(listings -> {
-            listings.each(l -> dependencies.contains(l.internalName), l -> {
-                dependencies.remove(l.internalName);
-                githubImportMod(l.repo, l.hasJava);
-            });
-            done.run();
-        });
+    public void githubImportJavaMod(String repo, @Nullable String release, boolean forceEnable){
+        githubImportJavaMod(repo, release, forceEnable, null);
     }
 
-    private void githubImportJavaMod(String repo, @Nullable String release, @Nullable String prevVersion){
-=======
-    public void githubImportJavaMod(String repo, @Nullable String release, boolean forceEnable){
->>>>>>> v159.3
+    public void githubImportJavaMod(String repo, @Nullable String release, boolean forceEnable, @Nullable String prevVersion){
         //grab latest release
         Http.get(ghApi + "/repos/" + repo + "/releases/" + (release == null ? "latest" : release), res -> {
             if(cancelledImport) return;
@@ -951,11 +608,7 @@ public class ModsDialog extends BaseDialog{
 
                 Http.get(url, result -> {
                     if(cancelledImport) return;
-<<<<<<< HEAD
-                    handleMod(repo, result, prevVersion);
-=======
-                    handleMod(repo, result, forceEnable);
->>>>>>> v159.3
+                    handleMod(repo, result, forceEnable, prevVersion);
                 }, this::importFail);
             }else{
                 throw new ArcRuntimeException("No JAR file found in releases. Make sure you have a valid jar file in the mod's latest Github Release.");
@@ -963,11 +616,11 @@ public class ModsDialog extends BaseDialog{
         }, this::importFail);
     }
 
-<<<<<<< HEAD
-    private void githubImportBranch(String branch, String repo, @Nullable String release, @Nullable String prevVersion){
-=======
     public void githubImportBranch(String branch, String repo, @Nullable String release, boolean forceEnable){
->>>>>>> v159.3
+        githubImportBranch(branch, repo, release, forceEnable);
+    }
+
+    public void githubImportBranch(String branch, String repo, @Nullable String release, boolean forceEnable, @Nullable String prevVersion){
         if(release != null) {
             Http.get(ghApi + "/repos/" + repo + "/releases/" + release, res -> {
                 if(cancelledImport) return;
@@ -976,18 +629,11 @@ public class ModsDialog extends BaseDialog{
                     if(cancelledImport) return;
                     if(loc.getHeader("Location") != null){
                         Http.get(loc.getHeader("Location"), result -> {
-                            handleMod(repo, result, prevVersion);
                             if(cancelledImport) return;
-<<<<<<< HEAD
+                            handleMod(repo, result, forceEnable, prevVersion);
                         }, this::importFail);
                     }else{
-                        handleMod(repo, loc, prevVersion);
-=======
-                            handleMod(repo, result, forceEnable);
-                        }, this::importFail);
-                    }else{
-                        handleMod(repo, loc, forceEnable);
->>>>>>> v159.3
+                        handleMod(repo, loc, forceEnable, prevVersion);
                     }
                 }, this::importFail);
             });
@@ -997,17 +643,10 @@ public class ModsDialog extends BaseDialog{
                 if(loc.getHeader("Location") != null){
                     Http.get(loc.getHeader("Location"), result -> {
                         if(cancelledImport) return;
-<<<<<<< HEAD
-                        handleMod(repo, result, prevVersion);
+                        handleMod(repo, result, forceEnable, prevVersion);
                     }, this::importFail);
                 }else{
-                    handleMod(repo, loc, prevVersion);
-=======
-                        handleMod(repo, result, forceEnable);
-                    }, this::importFail);
-                }else{
-                    handleMod(repo, loc, forceEnable);
->>>>>>> v159.3
+                    handleMod(repo, loc, forceEnable, prevVersion);
                 }
             }, this::importFail);
         }
