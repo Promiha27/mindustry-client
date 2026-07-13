@@ -40,7 +40,7 @@ public class Junction extends Block{
         group = BlockGroup.transportation;
         unloadable = false;
         noUpdateDisabled = true;
-        drawCached = true;
+        // drawCached = true;
         drawDynamic = false;
     }
 
