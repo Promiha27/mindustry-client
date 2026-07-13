@@ -59,7 +59,7 @@ public class SNet implements SteamNetworkingSocketsCallback, SteamMatchmakingCal
         Events.on(WaveEvent.class, e -> updateWave());
         Events.run(Trigger.newGame, this::updateWave);
 
-        Timer.schedule(() -> {
+        Events.on(ClientLoadEvent.class, () -> Timer.schedule(() -> {
             if (currentLobby != null){
                 for (int member = 0 ; member < smat.getNumLobbyMembers(currentLobby) ; member++) {
                     for (long idiot : alertIDs) {
@@ -70,7 +70,7 @@ public class SNet implements SteamNetworkingSocketsCallback, SteamMatchmakingCal
                     }
                 }
             }
-        }, 1, 1);
+        }, 1, 1));
 
         Events.on(PlayerIpBanEvent.class, e -> updateBans(e.ip));
         Events.on(PlayerUnbanEvent.class, e -> {
