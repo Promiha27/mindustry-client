@@ -1261,7 +1261,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
                 Teamc attack = null;
                 
-                if(!Core.input.shift()){
+                if(!Core.input.ctrl()){
                     if(!Core.input.alt()) attack = world.buildWorld(target.x, target.y);
 
                     if(attack == null || attack.team() == player.team()){

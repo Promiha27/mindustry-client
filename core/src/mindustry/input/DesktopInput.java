@@ -1278,7 +1278,7 @@ public class DesktopInput extends InputHandler{
             }
 
             if(commandMode && selectedUnits.any()){
-                if(!Core.input.shift()){
+                if(!Core.input.ctrl()){
                     boolean canAttack = !Core.input.alt() && cursor.build != null && !cursor.build.inFogTo(player.team()) && cursor.build.team != player.team();
 
                     if(!canAttack){
