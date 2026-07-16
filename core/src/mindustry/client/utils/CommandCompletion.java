@@ -58,7 +58,7 @@ public class CommandCompletion implements Autocompleter {
         public float matches(String input) {
             if (input == null) return 0f;
             if (input.split("\\s", -1).length > 1){
-                if(input.startsWith(command)) return 0.8f; //this should be low priority so the user can see the args, but also autocomplete other things
+                if(input.startsWith(command + " ")) return 0.8f; //this should be low priority so the user can see the args, but also autocomplete other things
                 return 0f;
             }
             if (!input.startsWith(String.valueOf(command.charAt(0)))) return 0f;
