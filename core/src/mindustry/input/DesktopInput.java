@@ -442,7 +442,7 @@ public class DesktopInput extends InputHandler{
         boolean detached = settings.getBool("detach-camera", false);
 
         if(input.keyTap(Binding.navigateToCursor) && scene.getKeyboardFocus() == null){
-            if(selectPlans.any() == input.shift() && !input.ctrl()) Navigation.navigateTo(input.mouseWorld()); // Z to nav to cursor (SHIFT + Z when placing schem)
+            if(selectPlans.any() == input.shift() && !input.ctrl()) Navigation.navigateTo(input.mouseWorld(), Core.input.alt()); // Z to nav to cursor (SHIFT + Z when placing schem)
             else if (selectPlans.isEmpty()){ // SHIFT + Z to view lastSentPos, double tap to nav there, special case for logic viruses as well (does nothing when placing schem)
                 if(input.shift()) {
                     if (Time.timeSinceMillis(lastShiftZ) < 400) Navigation.navigateTo(lastSentPos.cpy().scl(tilesize));
