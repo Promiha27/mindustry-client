@@ -766,6 +766,7 @@ public class MapEditorDialog extends Dialog implements Disposable{
                     else view.getTool().mode = i;
                 }
             }
+            if(Core.input.keyTap(KeyCode.num0)) view.getTool().mode = -1;
         }else{
             for(EditorTool tool : EditorTool.all){
                 if(Core.input.keyTap(tool.key)){
