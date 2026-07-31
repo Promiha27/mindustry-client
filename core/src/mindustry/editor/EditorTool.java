@@ -94,7 +94,7 @@ public enum EditorTool{
             });
         }
     },
-    fill(KeyCode.g, "replaceall", "fillteams", "fillerase", "fillcliffs", "fillunderliquid"){
+    fill(KeyCode.g, "replaceall", "fillteams", "fillerase", "fillcliffs", "fillunderliquid", "fillotherlayer"){
         {
             edit = true;
         }
@@ -115,35 +115,55 @@ public enum EditorTool{
             }
 
             //mode 0 or standard, fill everything with the floor/tile or replace it
-            if(mode == 0 || mode == -1){
+            if(mode == 0 || mode == -1 || mode == 5){
                 //can't fill parts or multiblocks
                 if(tile.block().isMultiblock()){
                     return;
                 }
 
+                boolean invertMatch = mode == 5;
+
                 Boolf<Tile> tester;
                 Cons<Tile> setter;
 
                 if(editor.drawBlock.isOverlay()){
-                    Block dest = tile.overlay();
-                    if(dest == editor.drawBlock) return;
-                    tester = t -> t.overlay() == dest && (t.floor().hasSurface() || !t.floor().needsSurface);
+                    if(tile.overlay() == editor.drawBlock) return;
                     setter = t -> t.setOverlay(editor.drawBlock);
                 }else if(editor.drawBlock.isFloor()){
-                    Block dest = tile.floor();
-                    if(dest == editor.drawBlock) return;
-                    tester = t -> t.floor() == dest;
+                    if(tile.floor() == editor.drawBlock) return;
                     setter = t -> {
                         t.setFloor(editor.drawBlock.asFloor());
                         if(!(t.overlay() instanceof OverlayFloor) && !t.floor().supportsOverlay){
                             t.setOverlay(Blocks.air);
                         }
                     };
-                }else{
-                    Block dest = tile.block();
-                    if(dest == editor.drawBlock) return;
-                    tester = t -> t.block() == dest;
+                }else{ //block
+                    if(tile.block() == editor.drawBlock) return;
                     setter = t -> t.setBlock(editor.drawBlock, editor.drawTeam);
+                }
+
+                if(invertMatch){
+                    if(editor.drawBlock.isOverlay()){
+                        Block dest = tile.floor();
+                        tester = t -> t.floor() == dest && t.overlay() != editor.drawBlock;
+                    }else if(editor.drawBlock.isFloor()){
+                        Block dest = tile.block();
+                        tester = t -> t.block() == dest && t.floor() != editor.drawBlock;
+                    }else{ //block
+                        Block dest = tile.floor();
+                        tester = t -> t.floor() == dest && t.block() != editor.drawBlock;
+                    }
+                } else {
+                    if(editor.drawBlock.isOverlay()){
+                        Block dest = tile.overlay();
+                        tester = t -> t.overlay() == dest && (t.floor().hasSurface() || !t.floor().needsSurface);
+                    }else if(editor.drawBlock.isFloor()){
+                        Block dest = tile.floor();
+                        tester = t -> t.floor() == dest;
+                    }else{ //block
+                        Block dest = tile.block();
+                        tester = t -> t.block() == dest;
+                    }
                 }
 
                 var oldSetter = setter;
