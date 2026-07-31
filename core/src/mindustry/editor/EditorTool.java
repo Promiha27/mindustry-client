@@ -94,7 +94,7 @@ public enum EditorTool{
             });
         }
     },
-    fill(KeyCode.g, "replaceall", "fillteams", "fillerase", "fillcliffs", "fillunderliquid", "fillotherlayer"){
+    fill(KeyCode.g, "replaceall", "fillteams", "fillerase", "fillcliffs", "fillunderliquid", "fillotherlayer", "fillcliffsfloor"){
         {
             edit = true;
         }
@@ -213,26 +213,7 @@ public enum EditorTool{
                     fill(x, y, false, tester, setter);
                 }
             }else if(mode == 3){ //cliff fill
-                if(!tile.block().isStatic() || tile.block() == Blocks.cliff) return;
-                Bits wasStatic = new Bits(editor.width() * editor.height());
-                fill(x, y, false, t -> t.block().isStatic() && t.block() != Blocks.cliff, t -> {
-                    int rotation = 0;
-                    for(int i = 0; i < 8; i++){
-                        Tile other = world.tiles.get(t.x + Geometry.d8[i].x, t.y + Geometry.d8[i].y);
-                        if(other != null && !other.block().isStatic() && !wasStatic.get(other.array())){
-                            rotation |= (1 << i);
-                        }
-                    }
-
-                    if(rotation != 0){
-                        t.setBlock(Blocks.cliff);
-                    }else{
-                        t.setBlock(Blocks.air);
-                        wasStatic.set(t.array());
-                    }
-
-                    t.data = (byte)rotation;
-                });
+                fillCliffs(x, y, tile, t -> t.block().isStatic());
             }else if(mode == 4){ //fill under liquid
                 if(editor.drawBlock instanceof Floor f && !f.isLiquid){
                     if(!tile.floor().isLiquid) return;
@@ -250,6 +231,9 @@ public enum EditorTool{
                     
                     fill(x, y, false, tester, setter);
                 }
+            }else if(mode == 6){
+                Block target = tile.floor();
+                fillCliffs(x, y, tile, t -> t.floor() == target);
             }
         }
 
@@ -312,6 +296,31 @@ public enum EditorTool{
                     stack = new IntSeq();
                 }
             }
+        }
+
+        void fillCliffs(int x, int y, Tile tile, Boolf<Tile> tester){
+            if(!tester.get(tile) || tile.block() == Blocks.cliff) return;
+            Bits wasMatched = new Bits(editor.width() * editor.height());
+            Bits wasProcessed = new Bits(editor.width() * editor.height());
+            fill(x, y, false, t -> tester.get(t) && t.block() != Blocks.cliff && !wasProcessed.get(t.array()), t -> {
+                int rotation = 0;
+                for(int i = 0; i < 8; i++){
+                    Tile other = world.tiles.get(t.x + Geometry.d8[i].x, t.y + Geometry.d8[i].y);
+                    if(other != null && !tester.get(other) && !wasMatched.get(other.array())){
+                        rotation |= (1 << i);
+                    }
+                }
+
+                if(rotation != 0){
+                    t.setBlock(Blocks.cliff);
+                }else{
+                    t.setBlock(Blocks.air);
+                    wasMatched.set(t.array());
+                }
+                wasProcessed.set(t.array());
+
+                t.data = (byte)rotation;
+            });
         }
     },
     spray(KeyCode.r, "replace"){
