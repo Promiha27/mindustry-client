@@ -505,19 +505,28 @@ public class PlacementFragment{
                     commandTable.image().color(Pal.accent).growX().pad(20f).padTop(0f).padBottom(4f).row();
                     commandTable.table(u -> {
 
+                        /** All commands that are active on at least one of the selected units. */
                         Bits activeCommands = new Bits(content.unitCommands().size);
+                        /** All stances that are active on at least one of the selected units. */
                         Bits activeStances = new Bits(content.unitStances().size);
+                        /** All stances that are active on all of the selected units. */
+                        Bits activeCommonStances = new Bits(content.unitStances().size);
 
+                        /** All commands that are available on at least one of the selected units. */
                         Bits availableCommands = new Bits(content.unitCommands().size);
+                        /** All stances that are available on at least one of the selected units. */
                         Bits availableStances = new Bits(content.unitStances().size);
                         Bits activeTypes = new Bits(content.units().size), prevActiveTypes = new Bits(content.units().size);
 
                         u.left();
                         Bits usedCommands = new Bits(content.unitCommands().size);
+                        /** All commands that are available on at least one of the selected units. */
                         var commands = new Seq<UnitCommand>();
 
                         Bits usedStances = new Bits(content.unitStances().size);
+                        /** All stances that are available on at least one of the selected units. */
                         var stances = new Seq<UnitStance>();
+                        /** Temporary seq used to prevent allocations */
                         var stancesOut = new Seq<UnitStance>();
 
                         UnitCommand[] hoveredCommand = {null};
@@ -645,9 +654,13 @@ public class PlacementFragment{
                                         int scol = 0;
                                         for(var stance : stances){
 
-                                            coms.button(stance.getIcon(), Styles.clearNoneTogglei, () -> {
-                                                Call.setUnitStance(player, units.mapInt(un -> un.id, un -> un.type.allowStance(un, stance)).toArray(), stance, !activeStances.get(stance.id));
-                                            }).checked(i -> activeStances.get(stance.id)).size(50f).tooltip(stance.localized(), true);
+                                            var button = coms.button(stance.getIcon(), Styles.clearNoneTogglei, () -> {
+                                                Call.setUnitStance(player, units.mapInt(un -> un.id, un -> un.type.allowStance(un, stance)).toArray(), stance, Core.input.ctrl() || !activeStances.get(stance.id));
+                                            }).size(50f).tooltip(stance.localized(), true).get();
+                                            button.update(() -> {
+                                                button.setColor(activeCommonStances.get(stance.id) ? Color.white : Pal.accentBack);
+                                                button.setChecked(activeStances.get(stance.id));
+                                            });
 
                                             if(++scol % 6 == 0) coms.row();
                                         }
@@ -664,6 +677,7 @@ public class PlacementFragment{
                                 int[] counts = countBox[0];
                                 activeCommands.clear();
                                 activeStances.clear();
+                                activeCommonStances.set(0, content.unitStances().size);
                                 availableCommands.clear();
                                 availableStances.clear();
                                 activeTypes.clear();
@@ -674,7 +688,8 @@ public class PlacementFragment{
                                 for(var unit : control.input.selectedUnits){
                                     if(unit.controller() instanceof CommandAI cmd){
                                         activeCommands.set(cmd.command.id);
-                                        activeStances.set(cmd.stances);
+                                        activeStances.or(cmd.stances);
+                                        activeCommonStances.and(cmd.stances);
                                     }
 
                                     counts[unit.type.id] ++;
@@ -702,7 +717,7 @@ public class PlacementFragment{
                                 for(UnitStance stance : stances){
                                     //first stance must always be the stop stance
                                     if(stance.keybind != null && Core.input.keyTap(stance.keybind)){
-                                        Call.setUnitStance(player, control.input.selectedUnits.mapInt(un -> un.id, un -> un.type.allowStance(un, stance)).toArray(), stance, !activeStances.get(stance.id));
+                                        Call.setUnitStance(player, control.input.selectedUnits.mapInt(un -> un.id, un -> un.type.allowStance(un, stance)).toArray(), stance, Core.input.ctrl() || !activeStances.get(stance.id));
                                     }
                                 }
 
