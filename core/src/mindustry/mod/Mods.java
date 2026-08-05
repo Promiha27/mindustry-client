@@ -45,7 +45,7 @@ public class Mods implements Loadable{
     );
     private static final ObjectSet<String> blacklistedRepos = ObjectSet.with(
     "anthropiccom/lithium4mindustry"
-    )
+    );
 
     private Json json = new Json();
     private @Nullable Scripts scripts;
