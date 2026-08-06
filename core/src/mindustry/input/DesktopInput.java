@@ -791,10 +791,10 @@ public class DesktopInput extends InputHandler{
             }
         }
 
-        if(!player.dead() && !state.isPaused() && !scene.hasField() && !locked){
-            updateMovement(player.unit());
-
-            if(Core.input.keyTap(Binding.respawn) && !scene.hasDialog()){
+        if(!player.dead() && !state.isPaused() && !locked){
+            boolean ignoreKeys = scene.hasField();
+            updateMovement(player.unit(), ignoreKeys);
+            if(!ignoreKeys && Core.input.keyTap(Binding.respawn) && !scene.hasDialog()){
                 controlledType = null;
                 recentRespawnTimer = 1f;
                 droppingItem = false;
@@ -1384,13 +1384,17 @@ public class DesktopInput extends InputHandler{
         }
     }
 
-    protected void updateMovement(Unit unit){ // Heavily modified to support navigation
+    protected void updateMovement(Unit unit){
+        updateMovement(unit, false);
+    }
+
+    protected void updateMovement(Unit unit, boolean ignoreKeys){ // Heavily modified to support navigation
         boolean omni = unit.type.omniMovement;
 
         float speed = unit.speed();
         float xa = Core.input.axis(Binding.moveX);
         float ya = Core.input.axis(Binding.moveY);
-        if(input.keyDown(Binding.freecamModifier)){
+        if(input.keyDown(Binding.freecamModifier) || ignoreKeys){
             xa = ya = 0f;
         }
         boolean boosted = (unit instanceof Mechc && unit.isFlying());
@@ -1425,11 +1429,13 @@ public class DesktopInput extends InputHandler{
 
             unit.aim(Core.input.mouseWorld());
 
-            if(settings.getBool("unitboosthold", true)){
-                // If auto-boost, invert the behavior of the boost key
-                player.boosting = unit.type.canBoost && Core.settings.getBool("autoboost") ^ input.keyDown(Binding.boost);
-            }else if(input.keyTap(Binding.boost)){
-                player.boosting = unit.type.canBoost && !player.boosting;
+            if(!ignoreKeys){
+                if(settings.getBool("unitboosthold", true)){
+                    // If auto-boost, invert the behavior of the boost key
+                    player.boosting = unit.type.canBoost && Core.settings.getBool("autoboost") ^ input.keyDown(Binding.boost);
+                }else if(input.keyTap(Binding.boost)){
+                    player.boosting = unit.type.canBoost && !player.boosting;
+                }
             }
 
             if ((!Core.input.keyDown(Binding.select) || block != null) && shouldShoot) AutoShootKt.autoShoot();
@@ -1440,7 +1446,7 @@ public class DesktopInput extends InputHandler{
         player.mouseY = unit.aimY();
 
         //update payload input
-        if(unit instanceof Payloadc){
+        if(unit instanceof Payloadc && !ignoreKeys){
             if(Core.input.keyTap(Binding.pickupCargo)){
                 tryPickupPayload();
                 lastPayloadKeyTapMillis = Time.millis();
