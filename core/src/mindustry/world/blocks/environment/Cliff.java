@@ -24,8 +24,8 @@ public class Cliff extends Block{
 
     @Override
     public void flipRotation(BuildPlan req, boolean x){ //Foo's addition, we need to recompute the packed field.
-        if(req.config != null && req.config instanceof Byte original){
-            byte out = 0;
+        if(req.config != null && req.config instanceof Integer original){
+            int out = 0;
             // 3  2  1
             //
             // 4  c  0
@@ -48,8 +48,8 @@ public class Cliff extends Block{
 
     @Override
     public void rotatePlan(BuildPlan req, int direction){
-        if(req.config != null && req.config instanceof Byte original){
-            byte out = 0;
+        if(req.config != null && req.config instanceof Integer original){
+            int out = 0;
             int offset = direction * 2;
             for(int i = 0; i < 8; i ++){
                 if((original & (1 << i)) != 0) out |= (1 << Mathf.mod((i + offset), 8));

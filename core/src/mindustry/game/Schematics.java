@@ -475,7 +475,7 @@ public class Schematics implements Loadable{
                     }
                     Block block = tile.block();
                     if(block != null && (block.isStatic() || block instanceof Prop)){
-                        Object config = block instanceof Cliff ? tile.data : null;
+                        Object config = block instanceof Cliff ? (int)tile.data : null;
                         tiles.add(new Stile(block, cx + offsetX, cy + offsetY, config, (byte)0));
                     }
                     //Add overlay last to support wall ores

@@ -157,7 +157,7 @@ public class Build{
         });
 
         tile.setBlock(sub, team, rotation);
-        if(result instanceof Cliff && placeConfig != null && placeConfig instanceof Byte b) tile.data = b;
+        if(result instanceof Cliff && placeConfig != null && placeConfig instanceof Integer i) tile.data = i.byteValue();
 
         var build = (ConstructBuild)tile.build;
 
