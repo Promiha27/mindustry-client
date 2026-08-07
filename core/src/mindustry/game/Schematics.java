@@ -31,6 +31,7 @@ import mindustry.type.*;
 import mindustry.world.*;
 import mindustry.world.blocks.ConstructBlock.*;
 import mindustry.world.blocks.distribution.*;
+import mindustry.world.blocks.environment.*;
 import mindustry.world.blocks.legacy.*;
 import mindustry.world.blocks.power.*;
 import mindustry.world.blocks.sandbox.*;
@@ -409,7 +410,7 @@ public class Schematics implements Loadable{
     }
 
     /** Creates a schematic from a world selection. */
-    public Schematic create(int x, int y, int x2, int y2, boolean useFloorTiles){
+    public Schematic create(int x, int y, int x2, int y2, boolean useEnvThings){
         Team team = headless ? null : Vars.player.team();
         NormalizeResult result = Placement.normalizeArea(x, y, x2, y2, 0, false, maxSchematicSize);
         x = result.x;
@@ -421,7 +422,7 @@ public class Schematics implements Loadable{
 
         Seq<Stile> tiles = new Seq<>();
 
-        if(!useFloorTiles){ //otherwise, all tiles will be selected no matter what
+        if(!useEnvThings){ //otherwise, all tiles will be selected no matter what
             int minx = x2, miny = y2, maxx = x, maxy = y;
             boolean found = false;
             for(int cx = x; cx <= x2; cx++){
@@ -458,11 +459,21 @@ public class Schematics implements Loadable{
         IntSet counted = new IntSet();
         for(int cx = ox; cx <= ox2; cx++){
             for(int cy = oy; cy <= oy2; cy++){
-                if(useFloorTiles){
-                    Block floor = world.floor(cx, cy);
+                if(useEnvThings){
+                    Tile tile = world.tile(cx, cy);
+                    Floor floor = tile.floor();
                     if(floor != null){ //i dont think this check is necessary
-                        Object config = null; //can we copy the tile data somehow?
-                        tiles.add(new Stile(floor, cx + offsetX, cy + offsetY, config, (byte)0));
+                        //config is null, can we copy the tile data somehow?
+                        tiles.add(new Stile(floor, cx + offsetX, cy + offsetY, null, (byte)0));
+                    }
+                    Floor overlay = tile.overlay();
+                    if(overlay != null && overlay != Blocks.air){
+                        tiles.add(new Stile(overlay, cx + offsetX, cy + offsetY, null, (byte)0));
+                    }
+                    Block block = tile.block();
+                    if(block instanceof Prop){
+                        //this also includes static walls
+                        tiles.add(new Stile(block, cx + offsetX, cy + offsetY, null, (byte)0));
                     }
                 } else {
                     Building tile = world.build(cx, cy);

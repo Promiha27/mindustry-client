@@ -294,7 +294,7 @@ abstract class BuilderComp implements Posc, Statusc, Teamc, Rotc{
         boolean isLocalPlayer = isLocal();
         if(!isLocalPlayer || plans.size < 10){
             for(BuildPlan plan : plans){
-                if(plan.x == place.x && plan.y == place.y){
+                if(plan.x == place.x && plan.y == place.y && !(state.rules.editor && plan.block != place.block)){ //to support terrain copying
                     replace = plan;
                     break;
                 }
@@ -302,7 +302,7 @@ abstract class BuilderComp implements Posc, Statusc, Teamc, Rotc{
         }else{
             control.input.playerPlanTree.intersect(place.bounds(Tmp.r3), planSeq);
             for(BuildPlan plan : planSeq){
-                if(plan.x == place.x && plan.y == place.y){
+                if(plan.x == place.x && plan.y == place.y && !(state.rules.editor && plan.block != place.block)){ //to support terrain copying
                     replace = plan;
                     break;
                 }
