@@ -425,9 +425,8 @@ public class MapEditorDialog extends Dialog implements Disposable{
         player.clearUnit();
 
         //remove player unit
-        Unit unit = Groups.unit.find(u -> u.spawnedByCore);
-        if(unit != null){
-            unit.remove();
+        if(playerUnit != null && playerUnit.spawnedByCore){
+            playerUnit.remove();
         }
 
         Map returned = null;
@@ -466,6 +465,10 @@ public class MapEditorDialog extends Dialog implements Disposable{
         saved = true;
         state.rules.editor = isEditor;
         if(net.client()) Call.unitClear(player);
+        else if(playerUnit != null){
+            playerUnit.add(); //surely re-adding a removed unit won't break anything?
+            player.unit(playerUnit);
+        }
         return returned;
     }
 
