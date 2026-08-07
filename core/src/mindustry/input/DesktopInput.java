@@ -1016,8 +1016,8 @@ public class DesktopInput extends InputHandler{
 
         if(!Core.scene.hasKeyboard() && selectX == -1 && selectY == -1 && schemX != -1 && schemY != -1){
             if(Core.input.keyRelease(Binding.schematicSelect)){
-                lastSchematic = schematics.create(schemX, schemY, rawCursorX, rawCursorY);
-                useSchematic(lastSchematic);
+                lastSchematic = schematics.create(schemX, schemY, rawCursorX, rawCursorY, Core.input.alt() && state.rules.editor);
+                useSchematic(lastSchematic, !state.rules.editor); //Ignore hidden blocks in editor mode
                 if(selectPlans.isEmpty()){
                     lastSchematic = null;
                 }
@@ -1098,7 +1098,7 @@ public class DesktopInput extends InputHandler{
                 mode = none;
             }else if(selectPlans.any()){
                 flushPlans(
-                    temp.selectFrom(selectPlans, s -> s.block.isVisible() || s.block instanceof CoreBlock),
+                    temp.selectFrom(selectPlans, s -> (state.rules.editor || s.block.isVisible()) || s.block instanceof CoreBlock),
                     isFreezeQueueing, Core.input.keyDown(Binding.forcePlaceModifier), isFreezeQueueing);
                 temp.clear();
                 movedPlan = true;
