@@ -185,7 +185,7 @@ abstract class BuilderComp implements Posc, Statusc, Teamc, Rotc{
                     !Structs.contains(current.block.requirements, i -> !core.items.has(i.item, Math.min(Mathf.round(i.amount * state.rules.buildCostMultiplier), 1)));
 
                     if(hasAll){
-                        Call.beginPlace(self(), current.block, team, current.x, current.y, current.rotation, current.block.instantBuild ? current.config : null);
+                        Call.beginPlace(self(), current.block, team, current.x, current.y, current.rotation, (current.block.instantBuild || !net.client()) ? current.config : null); //no need to save bandwidth if there is no network
 
                         if(!net.client() && current.block.instantBuild){
                             if(plans.size > 0){

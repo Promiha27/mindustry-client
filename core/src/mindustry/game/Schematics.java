@@ -422,7 +422,13 @@ public class Schematics implements Loadable{
 
         Seq<Stile> tiles = new Seq<>();
 
-        if(!useEnvThings){ //otherwise, all tiles will be selected no matter what
+        if(useEnvThings){
+            //all tiles in the world have a valid floor, so the entire selection will be included
+            x = Math.max(0, x);
+            y = Math.max(0, y);
+            x2 = Math.min(Vars.world.width(), x2);
+            y2 = Math.min(Vars.world.height(), y2);
+        } else {
             int minx = x2, miny = y2, maxx = x, maxy = y;
             boolean found = false;
             for(int cx = x; cx <= x2; cx++){
@@ -461,19 +467,21 @@ public class Schematics implements Loadable{
             for(int cy = oy; cy <= oy2; cy++){
                 if(useEnvThings){
                     Tile tile = world.tile(cx, cy);
+                    if(tile == null) continue;
                     Floor floor = tile.floor();
                     if(floor != null){ //i dont think this check is necessary
                         //config is null, can we copy the tile data somehow?
                         tiles.add(new Stile(floor, cx + offsetX, cy + offsetY, null, (byte)0));
                     }
+                    Block block = tile.block();
+                    if(block != null && (block.isStatic() || block instanceof Prop)){
+                        Object config = block instanceof Cliff ? tile.data : null;
+                        tiles.add(new Stile(block, cx + offsetX, cy + offsetY, config, (byte)0));
+                    }
+                    //Add overlay last to support wall ores
                     Floor overlay = tile.overlay();
                     if(overlay != null && overlay != Blocks.air){
                         tiles.add(new Stile(overlay, cx + offsetX, cy + offsetY, null, (byte)0));
-                    }
-                    Block block = tile.block();
-                    if(block instanceof Prop){
-                        //this also includes static walls
-                        tiles.add(new Stile(block, cx + offsetX, cy + offsetY, null, (byte)0));
                     }
                 } else {
                     Building tile = world.build(cx, cy);

@@ -42,6 +42,7 @@ import mindustry.ui.*;
 import mindustry.ui.fragments.*;
 import mindustry.world.*;
 import mindustry.world.blocks.*;
+import mindustry.world.blocks.environment.*;
 import mindustry.world.blocks.ConstructBlock.*;
 import mindustry.world.blocks.distribution.*;
 import mindustry.world.blocks.logic.*;
@@ -1690,7 +1691,8 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
             }
             plan.x = World.toTile(wx - plan.block.offset) + ox;
             plan.y = World.toTile(wy - plan.block.offset) + oy;
-            plan.rotation = plan.block.planRotation(Mathf.mod(plan.rotation + direction, 4));
+            
+            plan.block.rotatePlan(plan, direction); //Foo's change, code moved to Block.rotatePlan to allow overriding it for cliffs
         });
     }
 
@@ -2000,7 +2002,8 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
                 }
             }
 
-            boolean valid = validPlace(plan.x, plan.y, plan.block, plan.rotation, null, true);
+            boolean valid = validPlace(plan.x, plan.y, plan.block, plan.rotation, null, true)
+                || (state.rules.editor && plan.block instanceof OreBlock o && o.wallOre); //Always allow placing wall ores in editor mode, because there might be a wall in the plans that makes it valid
             if(freeze || (force && world.tile(plan.x, plan.y) != null) || valid){
                 BuildPlan copy = plan.copy();
                 if(configLogic && copy.block instanceof LogicBlock && copy.config != null) { // Store the configs for logic blocks locally, they cause issues when sent to the server
