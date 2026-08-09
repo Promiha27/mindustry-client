@@ -1628,7 +1628,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     }
 
     public void useSchematic(Schematic schem){
-        useSchematic(schem, true);
+        useSchematic(schem, !state.rules.editor);
     }
 
     public abstract void useSchematic(Schematic schem, boolean checkHidden);
