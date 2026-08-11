@@ -1418,7 +1418,7 @@ public class DesktopInput extends InputHandler{
 
         if(!Navigation.isFollowing()){
             float mouseAngle = Angles.mouseAngle(unit.x, unit.y);
-            boolean aimCursor = omni && player.shooting && unit.type.hasWeapons() && unit.type.faceTarget && !boosted;
+            boolean aimCursor = omni && player.shooting && unit.type.hasWeapons() && unit.type.faceTarget/* && !boosted*/;
 
             if(aimCursor) unit.lookAt(mouseAngle);
             else unit.lookAt(unit.prefRotation());

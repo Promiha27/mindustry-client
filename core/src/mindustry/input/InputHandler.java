@@ -2901,7 +2901,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
             movement.add(input.mouseWorld().sub(player).scl(1f / 25f * speed)).limit(speed);
         }
 
-        boolean aimCursor = omni && player.shooting && unit.type().hasWeapons() && unit.type().faceTarget && !boosted;
+        boolean aimCursor = omni && player.shooting && unit.type().hasWeapons() && unit.type().faceTarget /*&& !boosted*/;
 
         if(aimCursor){
             unit.lookAt(direction);
