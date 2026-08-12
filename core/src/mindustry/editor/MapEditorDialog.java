@@ -766,7 +766,7 @@ public class MapEditorDialog extends Dialog implements Disposable{
     private void doInput(){
         //TODO use bindings more
 
-        if(Core.input.modifierDown(Binding.editorAltModeModifier)){
+        if(Core.input.modifierDown(Binding.editorAltModeModifier, true)){
             //alt mode select
             for(int i = 0; i < view.getTool().altModes.length; i++){
                 if(i + 1 < KeyCode.numbers.length && Core.input.keyTap(KeyCode.numbers[i + 1])){
