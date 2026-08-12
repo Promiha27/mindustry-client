@@ -511,7 +511,7 @@ public class DesktopInput extends InputHandler{
             mode = none;
         }
 
-        if (input.keyDown(Binding.findModifier) && input.keyRelease(Binding.find)) {
+        if (input.keyRelease(Binding.find)) {
             FindDialog.INSTANCE.show();
         }
 
