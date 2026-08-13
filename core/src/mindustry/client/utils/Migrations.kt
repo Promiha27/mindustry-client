@@ -180,4 +180,12 @@ class Migrations {
             }
         }
     }
+    private fun migration13(){
+        if(prevMigration > 1){
+            settings.getInt("keybind-default-keyboard-find_modifier-key", KeyCode.controlLeft.ordinal).let {
+                Binding.find.value.modifiers = arrayOf(KeyCode.byOrdinal(it))
+                Binding.find.save()
+            }
+        }
+    }
 }

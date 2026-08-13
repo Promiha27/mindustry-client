@@ -514,7 +514,7 @@ public class DesktopInput extends InputHandler{
             mode = none;
         }
 
-        if (input.keyRelease(Binding.find) && !(commandMode && input.keyDown(Binding.selectUnitTypeModifier) && selectedUnits.any())) {
+        if (input.keyRelease(Binding.find) && scene.getKeyboardFocus() == null && !(commandMode && input.keyDown(Binding.selectUnitTypeModifier) && selectedUnits.any())) {
             FindDialog.INSTANCE.show();
         }
 
