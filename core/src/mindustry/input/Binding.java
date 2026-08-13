@@ -53,6 +53,8 @@ public class Binding{
     selectAllUnitFactories = KeyBind.add("select_all_unit_factories", KeyCode.h),
     selectAllUnitTransport = KeyBind.add("select_all_unit_transport", KeyCode.unset),
     selectAcrossScreen = KeyBind.add("select_across_screen", KeyCode.altLeft),
+    selectUnitTypeModifier = KeyBind.add("select_unit_type_modifier", KeyCode.controlLeft),
+    delete = KeyBind.add("delete", KeyCode.backspace),
 
     cancelOrders = KeyBind.add("cancel_orders", KeyCode.unset),
 
