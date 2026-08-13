@@ -44,6 +44,7 @@ public class Binding{
     commandMode = KeyBind.add("command_mode", KeyCode.shiftLeft, "command"),
     commandQueue = KeyBind.add("command_queue", KeyCode.mouseMiddle),
     createControlGroup = KeyBind.add("create_control_group", KeyCode.controlLeft),
+    enableStance = KeyBind.add("enable_stance", KeyCode.controlLeft),
 
     selectAllUnits = KeyBind.add("select_all_units", KeyCode.g),
     selectReallyAllUnits = KeyBind.add("select_really_all_units", KeyCode.g, KeyCode.controlLeft),
