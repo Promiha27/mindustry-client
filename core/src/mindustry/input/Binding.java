@@ -163,7 +163,7 @@ public class Binding{
     find = KeyBind.add("find", KeyCode.f, KeyCode.controlLeft),
     sendBuildQueue = KeyBind.add("send_build_queue", KeyCode.apostrophe),
     toggleAutoTarget = KeyBind.add("toggle_auto_target", KeyCode.x),
-    autoShoot = KeyBind.add("auto_shoot", KeyCode.x, KeyCode.shiftLeft),
+    autoTransfer = KeyBind.add("auto_transfer", KeyCode.x, KeyCode.shiftLeft),
     showMassdriverConfigs = KeyBind.add("show_massdriver_configs", KeyCode.f3),
     forcePlaceModifier = KeyBind.add("force_place_modifier", KeyCode.altLeft),
     clearFrozenPlans = KeyBind.add("clear_frozen_plans", KeyCode.q, KeyCode.shiftLeft),

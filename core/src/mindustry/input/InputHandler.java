@@ -1263,7 +1263,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
                 
                 if(!Core.input.modifierDown(Binding.commandNoTargetBuilding)){
                     attack = world.buildWorld(target.x, target.y);
-                    if(attack.team() == player.team()) attack = null;
+                    if(attack != null && attack.team() == player.team()) attack = null;
                 }
                 if(attack == null && !Core.input.modifierDown(Binding.commandNoTargetUnit)){
                     attack = selectedEnemyUnit(target.x, target.y);

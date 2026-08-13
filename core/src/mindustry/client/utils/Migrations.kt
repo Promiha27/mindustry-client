@@ -159,9 +159,9 @@ class Migrations {
                 settings.put("keybind-default-keyboard-sort_build_plans-key", key)
             }
             settings.get("keybind-default-keyboard-toggle_auto_target-key", null)?.let {
-                Binding.autoShoot.save()
+                Binding.autoTransfer.save()
                 val key = it as Int
-                settings.put("keybind-default-keyboard-auto_shoot-key", key)
+                settings.put("keybind-default-keyboard-auto_transfer-key", key)
             }
             settings.get("keybind-default-keyboard-pause_building-key", null)?.let {
                 Binding.toggleFreezeQueueing.save()

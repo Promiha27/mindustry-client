@@ -420,7 +420,7 @@ public class DesktopInput extends InputHandler{
                 settings.put("assumeunstrict", !settings.getBool("assumeunstrict"));
             }
 
-            if (input.keyTap(Binding.autoShoot)) {
+            if (input.keyTap(Binding.autoTransfer)) {
                 AutoTransfer.enabled ^= true;
                 settings.put("autotransfer", AutoTransfer.enabled);
                 new Toast(1).add(bundle.get("client.autotransfer") + ": " + bundle.get(AutoTransfer.enabled ? "mod.enabled" : "mod.disabled"));
@@ -1031,7 +1031,7 @@ public class DesktopInput extends InputHandler{
                 flipPlans(selectPlans, true);
             }
 
-            if(Core.input.keyTap(Binding.schematicFlipY)){
+            if(Core.input.keyTap(Binding.schematicFlipY) && !(input.shift() && input.keyTap(Binding.autoTransfer))){
                 flipPlans(selectPlans, false);
             }
         }
