@@ -368,23 +368,6 @@ public class DesktopInput extends InputHandler{
         boolean detached = settings.getBool("detach-camera", false);
 
         if(scene.getKeyboardFocus() == null){
-            if(input.keyTap(Binding.invisibleAirUnits)) hidingAirUnits ^= true;
-            else if(input.keyTap(Binding.invisibleUnits)) hidingUnits ^= true;
-
-            if(input.keyTap(Binding.runJS)){
-                boolean ran = false;
-                for(var opt : JSBindingOption.values()){
-                    if(opt.check.get() && !ran){
-                        if(!settings.getString(opt.settingsKey, "").isEmpty()){
-                            ChatFragment.handleClientCommand(Core.settings.getString(opt.settingsKey));
-                            ran = true;
-                        } else {
-                            Vars.player.sendMessage(Strings.format(opt.message, Binding.runJS.value.key.toString()));
-                        }
-                    }
-                }
-            }
-
             if(input.keyTap(Binding.showInvertedTurretRanges)) showingInvTurrets = !showingInvTurrets;
             else if(input.keyTap(Binding.showAlliedTurretRanges)) showingAllyTurrets = !showingAllyTurrets;
             else if(input.keyTap(Binding.showOverdriveRanges)) showingOverdrives = !showingOverdrives;
@@ -392,63 +375,83 @@ public class DesktopInput extends InputHandler{
 
             if(input.keyTap(Binding.showMassdriverConfigs)) showingMassDrivers = !showingMassDrivers;
 
-            if(input.keyTap(Binding.hidePlans)) hidingPlans = !hidingPlans;
-            else if(input.keyTap(Binding.hideBlocks)) hidingBlocks = !hidingBlocks;
-
             if(input.keyTap(Binding.stopFollowingPath)) Navigation.stopFollowing();
-
-            if(input.keyTap(Binding.sortBuildPlans) && !player.dead()){
-                var plans = player.unit().plans;
-                var arr = plans.toArray(BuildPlan.class); // FINISHME: Add an overload that takes an array param to avoid making a new one every time, make it use arraycopy twice instead of running get() in a loop
-                Sort.instance().sort(arr, Structs.comparingFloat(p -> p.dst2(player)));
-                plans.clear();
-                Structs.each(plans::add, arr);
-                new Toast(3).add("@client.sortedplans");
-            } else if(input.keyTap(Binding.autoBuild) && !player.dead()){
-                Navigation.follow(new BuildPath());
-            }
-
-            if(input.keyTap(Binding.autoRepair) && (input.shift() || (player != null && player.unit() != null && player.unit().type.canHeal))){
-                Navigation.follow(new RepairPath());
-            }
-
-            if(input.keyTap(Binding.autoMine) && (input.shift() || (player != null && player.unit() != null && player.unit().type.mineTier > 0))){
-                Navigation.follow(new MinePath());
-            }
 
             if(input.keyTap(Binding.toggleStrictMode)){
                 settings.put("assumeunstrict", !settings.getBool("assumeunstrict"));
             }
 
-            if (input.keyTap(Binding.autoTransfer)) {
-                AutoTransfer.enabled ^= true;
-                settings.put("autotransfer", AutoTransfer.enabled);
-                new Toast(1).add(bundle.get("client.autotransfer") + ": " + bundle.get(AutoTransfer.enabled ? "mod.enabled" : "mod.disabled"));
-            } else if(input.keyTap(Binding.toggleAutoTarget) && (selectPlans.isEmpty() || !input.keyTap(Binding.schematicFlipY))){
-                player.shooting = false;
-                settings.put("autotarget", !settings.getBool("autotarget"));
-                new Toast(1).add(bundle.get("setting.autotarget.name") + ": " + bundle.get((settings.getBool("autotarget") ? "mod.enabled" : "mod.disabled")));
-            }
+            if(!(commandMode && (Core.input.keyDown(Binding.selectUnitTypeModifier) || Core.input.alt()) && selectedUnits.any())){
 
-            boolean schematicFlip = selectPlans.any() && input.keyTap(Binding.schematicFlipX);
-            if(input.keyTap(Binding.viewChatPosition) && !schematicFlip) {
-                if (Time.timeSinceMillis(lastShiftZ) < 400) Navigation.navigateTo(lastSentPos.cpy().scl(tilesize));
-                else Spectate.INSTANCE.spectate(lastSentPos.cpy().scl(tilesize));
-            } else if(input.keyTap(Binding.viewWarnPosition)) {
-                if (Time.timeSinceMillis(lastShiftZ) < 400) Navigation.navigateTo(lastWarnPos.cpy().scl(tilesize));
-                else Spectate.INSTANCE.spectate(lastWarnPos.cpy().scl(tilesize)); // reusing lastShiftZ should be fine since its a small interval welp
-            } else if(input.keyTap(Binding.navigateToCursor) && (!schematicFlip || Core.input.shift())){ //this is bad UX design to move bindings around based on state, too late to change it
-                Navigation.navigateTo(input.mouseWorld(), Core.input.alt()); // Z to nav to cursor
-            }
-            if(input.keyTap(Binding.navigateToCursor) && selectPlans.isEmpty()){
-                lastShiftZ = Time.millis();
+                if(input.keyTap(Binding.invisibleAirUnits)) hidingAirUnits ^= true;
+                else if(input.keyTap(Binding.invisibleUnits)) hidingUnits ^= true;
 
-                if(Time.timeSinceMillis(lastVirusWarnTime) < 3000 && lastVirusWarning != null && world.tile(lastVirusWarning.pos()).build == lastVirusWarning){ // Logic virus
-                    virusBuild = lastVirusWarning; // Store this build in its own var so it isn't overwritten
-                    lastVirusWarning = null;
+                if(input.keyTap(Binding.runJS)){
+                    boolean ran = false;
+                    for(var opt : JSBindingOption.values()){
+                        if(opt.check.get() && !ran){
+                            if(!settings.getString(opt.settingsKey, "").isEmpty()){
+                                ChatFragment.handleClientCommand(Core.settings.getString(opt.settingsKey));
+                                ran = true;
+                            } else {
+                                Vars.player.sendMessage(Strings.format(opt.message, Binding.runJS.value.key.toString()));
+                            }
+                        }
+                    }
+                }
 
-                    virusBuild.configure(LogicBlock.compress("end\n" + virusBuild.code, virusBuild.relativeConnections())); // Disable the block while we look into it
-                    try{Vars.ui.logic.show(virusBuild.code, virusBuild.executor, virusBuild.block.privileged, code -> virusBuild.configure(LogicBlock.compress(code, virusBuild.relativeConnections())));}catch(Exception ignored){} // Inspect the code
+                if(input.keyTap(Binding.hidePlans)) hidingPlans = !hidingPlans;
+                else if(input.keyTap(Binding.hideBlocks)) hidingBlocks = !hidingBlocks;
+
+                if(input.keyTap(Binding.sortBuildPlans) && !player.dead()){
+                    var plans = player.unit().plans;
+                    var arr = plans.toArray(BuildPlan.class); // FINISHME: Add an overload that takes an array param to avoid making a new one every time, make it use arraycopy twice instead of running get() in a loop
+                    Sort.instance().sort(arr, Structs.comparingFloat(p -> p.dst2(player)));
+                    plans.clear();
+                    Structs.each(plans::add, arr);
+                    new Toast(3).add("@client.sortedplans");
+                } else if(input.keyTap(Binding.autoBuild) && !player.dead()){
+                    Navigation.follow(new BuildPath());
+                }
+
+                if(input.keyTap(Binding.autoRepair) && (input.shift() || (player != null && player.unit() != null && player.unit().type.canHeal))){
+                    Navigation.follow(new RepairPath());
+                }
+
+                if(input.keyTap(Binding.autoMine) && (input.shift() || (player != null && player.unit() != null && player.unit().type.mineTier > 0))){
+                    Navigation.follow(new MinePath());
+                }
+
+                if (input.keyTap(Binding.autoTransfer)) {
+                    AutoTransfer.enabled ^= true;
+                    settings.put("autotransfer", AutoTransfer.enabled);
+                    new Toast(1).add(bundle.get("client.autotransfer") + ": " + bundle.get(AutoTransfer.enabled ? "mod.enabled" : "mod.disabled"));
+                } else if(input.keyTap(Binding.toggleAutoTarget) && (selectPlans.isEmpty() || !input.keyTap(Binding.schematicFlipY))){
+                    player.shooting = false;
+                    settings.put("autotarget", !settings.getBool("autotarget"));
+                    new Toast(1).add(bundle.get("setting.autotarget.name") + ": " + bundle.get((settings.getBool("autotarget") ? "mod.enabled" : "mod.disabled")));
+                }
+
+                boolean schematicFlip = selectPlans.any() && input.keyTap(Binding.schematicFlipX);
+                if(input.keyTap(Binding.viewChatPosition) && !schematicFlip) {
+                    if (Time.timeSinceMillis(lastShiftZ) < 400) Navigation.navigateTo(lastSentPos.cpy().scl(tilesize));
+                    else Spectate.INSTANCE.spectate(lastSentPos.cpy().scl(tilesize));
+                } else if(input.keyTap(Binding.viewWarnPosition)) {
+                    if (Time.timeSinceMillis(lastShiftZ) < 400) Navigation.navigateTo(lastWarnPos.cpy().scl(tilesize));
+                    else Spectate.INSTANCE.spectate(lastWarnPos.cpy().scl(tilesize)); // reusing lastShiftZ should be fine since its a small interval welp
+                } else if(input.keyTap(Binding.navigateToCursor) && (!schematicFlip || Core.input.shift())){ //this is bad UX design to move bindings around based on state, too late to change it
+                    Navigation.navigateTo(input.mouseWorld(), Core.input.alt()); // Z to nav to cursor
+                }
+                if(input.keyTap(Binding.navigateToCursor) && selectPlans.isEmpty()){
+                    lastShiftZ = Time.millis();
+
+                    if(Time.timeSinceMillis(lastVirusWarnTime) < 3000 && lastVirusWarning != null && world.tile(lastVirusWarning.pos()).build == lastVirusWarning){ // Logic virus
+                        virusBuild = lastVirusWarning; // Store this build in its own var so it isn't overwritten
+                        lastVirusWarning = null;
+
+                        virusBuild.configure(LogicBlock.compress("end\n" + virusBuild.code, virusBuild.relativeConnections())); // Disable the block while we look into it
+                        try{Vars.ui.logic.show(virusBuild.code, virusBuild.executor, virusBuild.block.privileged, code -> virusBuild.configure(LogicBlock.compress(code, virusBuild.relativeConnections())));}catch(Exception ignored){} // Inspect the code
+                    }
                 }
             }
         }
@@ -511,7 +514,7 @@ public class DesktopInput extends InputHandler{
             mode = none;
         }
 
-        if (input.keyRelease(Binding.find)) {
+        if (input.keyRelease(Binding.find) && !(commandMode && input.keyDown(Binding.selectUnitTypeModifier) && selectedUnits.any())) {
             FindDialog.INSTANCE.show();
         }
 
@@ -545,7 +548,7 @@ public class DesktopInput extends InputHandler{
                 !(!player.dead() && player.unit().type.canBoost && Binding.commandMode.value.key == Binding.boost.value.key)){
             if(settings.getBool("commandmodehold")){
                 commandMode = input.keyDown(Binding.commandMode);
-            }else if(input.keyTap(Binding.commandMode)){
+            }else if(input.keyTap(Binding.commandMode) && !(input.keyDown(Binding.selectUnitTypeModifier) && selectedUnits.any() && Binding.commandMode.value != null && Binding.commandMode.value.key != null && Character.isAlphabetic(Binding.commandMode.value.key.value.charAt(0)))){
                 commandMode = !commandMode;
             }
         }else{
@@ -556,47 +559,49 @@ public class DesktopInput extends InputHandler{
         selectedUnits.removeAll(u -> !u.allowCommand() || !u.isValid() || u.team != player.team());
 
         if(commandMode && !scene.hasField() && !scene.hasDialog()){
-            if(input.keyTap(Binding.selectAllUnits) || input.keyTap(Binding.selectReallyAllUnits)){
-                selectedUnits.clear();
-                commandBuildings.clear();
-                if(input.keyDown(Binding.selectAcrossScreen)){
-                    camera.bounds(Tmp.r1);
-                    selectedUnits.set(selectedCommandUnits(Tmp.r1.x, Tmp.r1.y, Tmp.r1.width, Tmp.r1.height).retainAll(u -> u.type.controlSelectGlobal || input.keyTap(Binding.selectReallyAllUnits)));
-                }else{
-                    for(var unit : player.team().data().units){
-                        if(unit.isCommandable() && (unit.type.controlSelectGlobal || input.keyTap(Binding.selectReallyAllUnits))){
-                            selectedUnits.add(unit);
+            if(!(input.keyDown(Binding.selectUnitTypeModifier) && selectedUnits.any())){
+                if(input.keyTap(Binding.selectAllUnits) || input.keyTap(Binding.selectReallyAllUnits)){
+                    selectedUnits.clear();
+                    commandBuildings.clear();
+                    if(input.keyDown(Binding.selectAcrossScreen)){
+                        camera.bounds(Tmp.r1);
+                        selectedUnits.set(selectedCommandUnits(Tmp.r1.x, Tmp.r1.y, Tmp.r1.width, Tmp.r1.height).retainAll(u -> u.type.controlSelectGlobal || input.keyTap(Binding.selectReallyAllUnits)));
+                    }else{
+                        for(var unit : player.team().data().units){
+                            if(unit.isCommandable() && (unit.type.controlSelectGlobal || input.keyTap(Binding.selectReallyAllUnits))){
+                                selectedUnits.add(unit);
+                            }
                         }
                     }
                 }
-            }
 
-            if(input.keyTap(Binding.selectAllUnitTransport)){
-                selectedUnits.clear();
-                commandBuildings.clear();
-                if(input.keyDown(Binding.selectAcrossScreen)){
-                    camera.bounds(Tmp.r1);
-                    selectedUnits.set(selectedCommandUnits(Tmp.r1.x, Tmp.r1.y, Tmp.r1.width, Tmp.r1.height, u -> u instanceof Payloadc));
-                }else{
-                    for(var unit : player.team().data().units){
-                        if(unit.isCommandable() && unit instanceof Payloadc){
-                            selectedUnits.add(unit);
+                if(input.keyTap(Binding.selectAllUnitTransport)){
+                    selectedUnits.clear();
+                    commandBuildings.clear();
+                    if(input.keyDown(Binding.selectAcrossScreen)){
+                        camera.bounds(Tmp.r1);
+                        selectedUnits.set(selectedCommandUnits(Tmp.r1.x, Tmp.r1.y, Tmp.r1.width, Tmp.r1.height, u -> u instanceof Payloadc));
+                    }else{
+                        for(var unit : player.team().data().units){
+                            if(unit.isCommandable() && unit instanceof Payloadc){
+                                selectedUnits.add(unit);
+                            }
                         }
                     }
                 }
-            }
 
-            if(input.keyTap(Binding.selectAllUnitFactories)){
-                selectedUnits.clear();
-                commandBuildings.clear();
-                for(var build : player.team().data().buildings){
-                    if(build.isCommandable()){
-                        commandBuildings.add(build);
+                if(input.keyTap(Binding.selectAllUnitFactories)){
+                    selectedUnits.clear();
+                    commandBuildings.clear();
+                    for(var build : player.team().data().buildings){
+                        if(build.isCommandable()){
+                            commandBuildings.add(build);
+                        }
                     }
-                }
-                if(input.keyDown(Binding.selectAcrossScreen)){
-                    camera.bounds(Tmp.r1);
-                    commandBuildings.retainAll(b -> Tmp.r1.overlaps(b.x - (b.hitSize() /2), b.y - (b.hitSize() /2), b.hitSize(), b.hitSize()));
+                    if(input.keyDown(Binding.selectAcrossScreen)){
+                        camera.bounds(Tmp.r1);
+                        commandBuildings.retainAll(b -> Tmp.r1.overlaps(b.x - (b.hitSize() /2), b.y - (b.hitSize() /2), b.hitSize(), b.hitSize()));
+                    }
                 }
             }
 
@@ -791,7 +796,7 @@ public class DesktopInput extends InputHandler{
         }
 
         if(!player.dead() && !state.isPaused() && !locked){
-            boolean ignoreKeys = scene.hasField();
+            boolean ignoreKeys = scene.hasField() || (commandMode && selectedUnits.any() && input.keyDown(Binding.selectUnitTypeModifier));
             updateMovement(player.unit(), ignoreKeys);
             if(!ignoreKeys && Core.input.keyTap(Binding.respawn) && !scene.hasDialog()){
                 controlledType = null;
@@ -814,7 +819,7 @@ public class DesktopInput extends InputHandler{
             }
         }
 
-        if(state.isGame() && !scene.hasDialog() && !scene.hasField()){
+        if(state.isGame() && !scene.hasDialog() && !scene.hasField() && !(commandMode && (input.keyDown(Binding.selectUnitTypeModifier) || input.alt()) && selectedUnits.any())){
             if(Core.input.keyTap(Binding.minimap)) ui.minimapfrag.toggle();
             if(Core.input.keyTap(Binding.planetMap) && state.isCampaign()) ui.planet.toggle();
             if(Core.input.keyTap(Binding.research) && state.isCampaign()) ui.research.toggle();

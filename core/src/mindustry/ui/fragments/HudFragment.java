@@ -463,7 +463,7 @@ public class HudFragment{
             }
 
             cont.update(() -> {
-                if(Core.input.keyTap(Binding.toggleMenus) && !ui.chatfrag.shown() && !Core.scene.hasDialog() && !Core.scene.hasField()){
+                if(Core.input.keyTap(Binding.toggleMenus) && !ui.chatfrag.shown() && !Core.scene.hasDialog() && !Core.scene.hasField() && !Core.input.alt() && !Core.input.shift() && !Core.input.ctrl()){
                     Core.settings.getBoolOnce("ui-hidden", () -> {
                         ui.announce(Core.bundle.format("showui",  Binding.toggleMenus.value.key.toString(), 11));
                     });
