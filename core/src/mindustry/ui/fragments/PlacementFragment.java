@@ -907,9 +907,9 @@ public class PlacementFragment{
         //if the mouse intersects the table or the UI has the mouse, no hovering can occur
         if(Core.scene.hasMouse(Core.input.mouseX(), Core.input.mouseY()) || topTable.hit(v.x, v.y, false) != null) return null;
 
-        if (!ClientVars.hidingUnits) { // FINISHME: respect hidingAirUnits setting
+        if (!ClientVars.hidingUnits) {
             //check for a unit
-            Unit unit = Units.closestOverlap(Core.input.mouseWorldX(), Core.input.mouseWorldY(), Core.input.shift() ? tilesize * 6 : 5f, u -> !u.isLocal() && u.displayable());
+            Unit unit = Units.closestOverlap(Core.input.mouseWorldX(), Core.input.mouseWorldY(), Core.input.shift() ? tilesize * 6 : 5f, u -> !u.isLocal() && u.displayable() && !(ClientVars.hidingAirUnits && u.isFlying()));
             //if cursor has a unit, display it
             if (unit != null) return unit;
         }
