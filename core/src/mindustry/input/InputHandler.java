@@ -2739,11 +2739,16 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         && !plan.breaking
         && !(vpBlock.canReplace(plan.block) && plan.x == vpX && plan.y == vpY);
 
+    private static final Boolf<BuildPlan> spPredicate = plan ->
+        plan.x == vpX && plan.y == vpY && plan.block == vpBlock;
+
     public boolean validPlace(int x, int y, Block type, int rotation, @Nullable BuildPlan ignore, boolean ignoreUnits){
+        vpBlock = type;
+        vpX = x;
+        vpY = y;
         if(!(ignoreUnits ? Build.validPlaceIgnoreUnits(type, player.team(), x, y, rotation, true, true) : Build.validPlace(type, player.team(), x, y, rotation))){
-            Tile tile = world.tile(x, y);
-            if(tile != null && tile.block() == type) return true;
-            return false;
+            var samePlan = playerPlanTree.find(x * tilesize, y * tilesize, 1, 1, spPredicate);
+            return samePlan != null; //Always allow overriding existing plans, otherwise return false if invalid
         }
 
         if(!player.dead() && player.unit().plans.size > 0){
@@ -2753,9 +2758,6 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
             float s = type.size * tilesize;
             vpIgnore = ignore;
-            vpBlock = type;
-            vpX = x;
-            vpY = y;
 
             return playerPlanTree.find(x * tilesize + type.offset - s / 2f, y * tilesize + type.offset - s / 2f, s, s, vpPredicate) == null;
         }
