@@ -79,18 +79,17 @@ public class SectorStatsDialog{
 
         String planetLabel = selectedPlanet == null ? Core.bundle.get("campaignutils.all-planets") :
             (selectedPlanet.localizedName != null ? selectedPlanet.localizedName : selectedPlanet.name);
-        Seq<Planet> planetsForCycle = planets;
         dialog.cont.button(Core.bundle.format("campaignutils.planet-prefix", planetLabel), () -> {
             //cycles: all -> planet[0] -> planet[1] -> ... -> all again
             int idx = -1;
-            for(int pi = 0; pi < planetsForCycle.size; pi++){
-                if(planetsForCycle.get(pi).name.equals(selectedPlanetName)){
+            for(int pi = 0; pi < planets.size; pi++){
+                if(planets.get(pi).name.equals(selectedPlanetName)){
                     idx = pi;
                     break;
                 }
             }
             idx++;
-            selectedPlanetName = idx >= planetsForCycle.size ? null : planetsForCycle.get(idx).name;
+            selectedPlanetName = idx >= planets.size ? null : planets.get(idx).name;
             rebuild();
         }).width(410).height(56).left().padBottom(14).row();
 
