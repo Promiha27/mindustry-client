@@ -20,6 +20,13 @@ import static mindustry.Vars.player;
  * same block type there via {@link ConveyorPathfind} (bridging over obstacles automatically), previewed
  * live and queued as build plans on release. Gated by the "eui-DragPathfind" setting. Ported from
  * input/conveyor.js.
+ * <p>
+ * COLLISION: this engine already routes around obstacles automatically on an ordinary drag-place of a
+ * conveyor/rail block ({@code mindustry.input.Placement#pathfindLine}, gated by the native
+ * "conveyorpathfinding" setting, called from {@code InputHandler.java} on every normal drag-placement) -
+ * no separate armed tool needed there at all. Ported anyway for behavioural parity with the source (see
+ * {@code eui.EUIMod}'s javadoc), but expect this to feel largely redundant with what already happens by
+ * default.
  */
 public class ConveyorDrag implements Drag.Listener{
     private boolean listening = false;

@@ -18,6 +18,13 @@ import static mindustry.Vars.control;
  * the dragged rectangle into an ad-hoc {@link Schematic} ({@link Schematics#create}) and immediately arms
  * it for placement via {@code control.input.useSchematic}, instead of requiring the player to have saved
  * one beforehand. Ported from interact/schematic-selector.js.
+ * <p>
+ * COLLISION: this engine already ships the same tool natively, bound to {@code Binding.schematicSelect}
+ * (hold "F" and drag over built tiles - see {@code DesktopInput.java}'s handling of it). The one
+ * difference is that the native gesture requires a controllable unit (same limitation qol-suite's own
+ * {@code CopyAnywhereFeature} exists to lift for spectators); this port has no such requirement, so for a
+ * player who does have a unit the two are close to fully redundant. Ported anyway for behavioural parity
+ * with the source - see {@code eui.EUIMod}'s javadoc.
  */
 public class SchematicSelector implements Drag.Listener{
     private static final SchematicSelector INSTANCE = new SchematicSelector();

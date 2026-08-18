@@ -45,9 +45,10 @@ import static mindustry.Vars.ui;
  * Ported from the "extended-ui" Rhino mod's {@code scripts/main.js}, which loaded every feature module
  * through a single-point-of-failure-tolerant {@code require()} chain (see {@link eui.input.Drag}'s
  * javadoc for why that indirection isn't needed here) - this constructor is the direct Java equivalent of
- * that file's {@code coreModules} loop, minus the try/catch-per-module wrapper Rhino needed. Features are
- * added here incrementally, phase by phase (see the task history) - not every JS module is ported yet;
- * each phase's features are wired in as they land.
+ * that file's {@code coreModules} loop, minus the try/catch-per-module wrapper Rhino needed. Every
+ * feature module from the source is ported and wired in below, grouped by the three porting phases they
+ * landed in (input/automation, HUD/overlays, schematics-table/settings/bottom-panel) - see each feature's
+ * own class javadoc for what it does and any behavioural notes from the port.
  * <p>
  * The settings category is likewise simpler than the source: {@code ui/other/settings-ui.js} hid almost
  * all of its prefs behind a separate custom dialog opened from a single button, purely to work around
@@ -65,6 +66,22 @@ import static mindustry.Vars.ui;
  * ("autotransfer" vs "eui-auto-fill"). See {@link AutoFill}'s own javadoc.</li>
  * <li>{@link ExtendZoom} vs. this fork's native "Min Zoom" settings slider (Settings > Client, key
  * "minzoom") - see {@link ExtendZoom}'s own javadoc; this port is largely inert here.</li>
+ * <li>{@link SchematicSelector} (bottom-panel toggle + drag) vs. this engine's own native
+ * {@code Binding.schematicSelect} (hold "F", drag over built tiles - see
+ * {@code DesktopInput.java}'s handling of it) - both do the exact same "select an area, capture it as a
+ * schematic, arm it for placement" job. The native one only works while the player has a controllable
+ * unit (same limitation qol-suite's own {@code CopyAnywhereFeature} exists to lift for spectators); this
+ * port's version has no such requirement either, so the two are close to fully redundant for a player
+ * who does have a unit.</li>
+ * <li>{@link ConveyorDrag} ("eui-DragPathfind") vs. this engine's own native conveyor drag-placement,
+ * which already routes around obstacles automatically ({@code Placement.pathfindLine(...)}, gated by the
+ * native "conveyorpathfinding" setting, called from {@code InputHandler.java} whenever a conveyor/rail is
+ * drag-placed normally) - no separate armed tool needed there at all. {@link CoreDrag} ("eui-DragBlock",
+ * drag from a core to auto-place a vault) has no such native equivalent found, so it isn't redundant.</li>
+ * <li>{@code eui-showMinimap} vs. the native Settings > Graphics "Minimap" checkbox
+ * ({@code SettingsMenuDialog.java}'s {@code graphics.checkPref("minimap", ...)}) - both write the exact
+ * same {@code Core.settings} key ("minimap"), so this is a second toggle for the same switch rather than
+ * a functional collision; whichever was flipped most recently wins, harmlessly.</li>
  * </ul>
  */
 public class EUIMod{
