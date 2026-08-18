@@ -7,7 +7,6 @@ import arc.struct.*
 import arc.util.*
 import mindustry.Vars.*
 import mindustry.client.ClientVars.*
-import mindustry.client.antigrief.*
 import mindustry.client.navigation.*
 import mindustry.client.navigation.Navigation.stopFollowing
 import mindustry.client.ui.*
@@ -55,13 +54,6 @@ class ClientLogic {
                     executeOrSendText(settings.getString("gamejointext"))
                 }
             }, .1F)
-
-            if (settings.getBool("onjoinfixcode")) { // FINISHME: Make this also work for singleplayer worlds
-                ProcessorPatcher.fixCode(ProcessorPatcher.FixCodeMode.Fix)
-            }
-
-            Seer.players.clear()
-            Groups.player.each(Seer::registerPlayer)
         }
 
         Events.on(WorldLoadEvent::class.java) { // Run when the world finishes loading (also when the main menu loads and on syncs)

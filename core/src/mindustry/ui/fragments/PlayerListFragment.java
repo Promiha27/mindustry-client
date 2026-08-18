@@ -45,7 +45,6 @@ public class PlayerListFragment{
     teamIcon = new TextureRegionDrawable(Fonts.getLargeIcon("redo")),
     assistIcon = new TextureRegionDrawable(Fonts.getLargeIcon("copy")),
     muteIcon = new TextureRegionDrawable(Fonts.getLargeIcon("lock")),
-    blockBuildingIcon = new TextureRegionDrawable(Fonts.getLargeIcon("cancel")),
     moveIcon = new TextureRegionDrawable(Fonts.getLargeIcon("move")),
     clientIcon = new TextureRegionDrawable(Fonts.getLargeIcon("wrench"));
 
@@ -131,11 +130,11 @@ public class PlayerListFragment{
 
     public void rebuild(){
         content.clear();
-        boolean adminui = net.server() || Server.current.adminui();
+        boolean adminui = net.server() || player.admin;
 
         float h = 80f;
         float bs = h / 2;
-        float width = 700f + (Server.current.freeze.canRun() ? 20f : 0) + (Server.current.mute.canRun() ? 20f : 0);
+        float width = 700f;
         boolean found = false;
 
         players.clear();
@@ -143,7 +142,6 @@ public class PlayerListFragment{
 
         var target = Spectate.INSTANCE.getPos() instanceof Player p ? p :
             Navigation.currentlyFollowing instanceof AssistPath p && p.getAssisting() != null ? p.getAssisting() :
-            Navigation.currentlyFollowing instanceof UnAssistPath p ? p.target :
             null;
         players.sort(
             Structs.comps(Structs.comparingBool(p -> p != target),
@@ -335,19 +333,6 @@ public class PlayerListFragment{
                         teamSelect.show();
                     }).tooltip("@player.team").get().resizeImage(h/2.2f);
 
-                    // Server-integrated buttons
-                    if(Server.current.freeze.canRun()){
-                        t.button(new TextureRegionDrawable(StatusEffects.freezing.uiIcon).tint(Color.cyan), ustyle, () ->
-                        Server.current.handleFreeze(user)
-                        ).tooltip("@client.freeze");
-                    }
-
-                    if(user == player && Server.current.mute.canRun()){ // If the player is local, the mute button won't be drawn on a new row, otherwise it will be drawn on a new row
-                        t.button(new TextureRegionDrawable(StatusEffects.disarmed.uiIcon).tint(Color.gray), ustyle, () ->
-                        Server.current.handleMute(user)
-                        ).tooltip("@client.modmute");
-                    }
-
                     t.row();
                 }
 
@@ -355,10 +340,6 @@ public class PlayerListFragment{
                     button.button(hammerIcon, ustyle,
                         () -> ui.showTextInput("@votekick.reason", Core.bundle.format("votekick.reason.message", user.name()), "", reason -> {
                             Call.sendChatMessage("/votekick #" + user.id() + " " + reason);
-                            if(Server.io.b() && (user.trace != null || user.serverID != null))
-                                ui.showConfirm("@confirm", "Do you want to rollback this player's actions?", () ->
-                                    Call.sendChatMessage(Strings.format("/rollback @ 5", user.trace != null ? user.trace.uuid : user.serverID))
-                                );
                         })).size(h/2).tooltip("@player.kick").get().resizeImage(h/2.2f);
                 }
                 if(user != player){
@@ -374,19 +355,9 @@ public class PlayerListFragment{
                             Type.Regular, Core.settings.getBool("circleassist")))
                     ).size(h / 2).tooltip("@client.assist").get().resizeImage(h/2.2f);
 
-                    t.button(blockBuildingIcon, ustyle, // Unassist/block
-                        () -> Navigation.follow(new UnAssistPath(user, !Core.input.shift()))
-                    ).size(h / 2).tooltip("@client.unassist").get().resizeImage(h/2.3f);
-
                     t.button(moveIcon, ustyle, // Goto
                         () -> Navigation.navigateTo(user)
                     ).size(h / 2).tooltip("@client.goto").get().resizeImage(h/2.2f);
-
-                    if(Server.current.mute.canRun()){ // Server-integrated mute
-                        t.button(new TextureRegionDrawable(StatusEffects.disarmed.uiIcon).tint(Color.gray), ustyle, () ->
-                        Server.current.handleMute(user)
-                        ).tooltip("@client.modmute");
-                    }
                 }
             }).height(bs);
 

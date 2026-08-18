@@ -10,7 +10,6 @@ import arc.util.*
 import mindustry.Vars.*
 import mindustry.ai.*
 import mindustry.client.ClientVars.*
-import mindustry.client.antigrief.*
 import mindustry.client.claj.*
 import mindustry.client.crypto.*
 import mindustry.client.navigation.*
@@ -31,7 +30,6 @@ import org.bouncycastle.jsse.provider.*
 import java.security.*
 
 object Client {
-    var leaves: Moderation? = Moderation()
     val tiles = Seq<Tile>()
     /** Not actually tiles, instead Float pairs */
     val tilesFlying = FloatSeq()
@@ -65,7 +63,6 @@ object Client {
 
     fun update() {
         autoTransfer.update()
-        Seer.update()
         Navigation.update()
         PowerInfo.update()
 

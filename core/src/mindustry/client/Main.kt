@@ -6,7 +6,6 @@ import arc.math.geom.*
 import arc.struct.*
 import arc.util.*
 import mindustry.*
-import mindustry.client.antigrief.*
 import mindustry.client.communication.*
 import mindustry.client.crypto.*
 import mindustry.client.navigation.*
@@ -47,8 +46,6 @@ object Main : ApplicationListener {
 
             keyStorage = KeyStorage(Core.settings.dataDirectory.file())
             signatures = Signatures(keyStorage, ntp.clock)
-
-            TileRecords.init()
         } else {
             keyStorage = KeyStorage(Files.createTempDirectory("keystorage").toFile())
             communicationSystem = SwitchableCommunicationSystem(DummyCommunicationSystem(mutableListOf()))

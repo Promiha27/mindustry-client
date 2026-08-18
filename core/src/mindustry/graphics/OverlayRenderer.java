@@ -11,7 +11,6 @@ import arc.util.*;
 import mindustry.*;
 import mindustry.ai.types.*;
 import mindustry.client.ClientVars;
-import mindustry.client.utils.ProcessorFinder;
 import mindustry.entities.*;
 import mindustry.entities.units.BuildPlan;
 import mindustry.game.EventType.*;
@@ -317,8 +316,6 @@ public class OverlayRenderer{
                 }
             }
         }
-
-        ProcessorFinder.INSTANCE.draw();
     }
 
     public void checkApplySelection(Unit u){

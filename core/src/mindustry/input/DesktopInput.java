@@ -20,7 +20,6 @@ import arc.util.pooling.*;
 import mindustry.*;
 import mindustry.ai.types.*;
 import mindustry.client.*;
-import mindustry.client.antigrief.*;
 import mindustry.client.communication.*;
 import mindustry.client.navigation.*;
 import mindustry.client.navigation.waypoints.*;
@@ -682,12 +681,6 @@ public class DesktopInput extends InputHandler{
                 try {
                     table.add(cursor.block().localizedName + ": (" + cursor.x + ", " + cursor.y + ")").height(itemHeight).left().growX().fillY().padTop(-5);
                 } catch (Exception e) { ui.chatfrag.addMessage(e.getMessage(), null, Color.scarlet, "", e.getMessage()); }
-
-                table.row().fill();
-                table.button("@client.log", () -> { // Tile Logs
-                    TileRecords.INSTANCE.show(cursor);
-                    table.remove();
-                });
 
                 table.row().fill();
                 table.button("@client.autotransfer", () -> { // Auto transfer

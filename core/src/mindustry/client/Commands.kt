@@ -13,7 +13,6 @@ import arc.util.serialization.*
 import mindustry.Vars.*
 import mindustry.ai.types.*
 import mindustry.client.ClientVars.*
-import mindustry.client.antigrief.*
 import mindustry.client.communication.*
 import mindustry.client.communication.Packets
 import mindustry.client.navigation.*
@@ -232,37 +231,6 @@ fun setupCommands() {
         sendMessage("/js ${args[0]}")
     }
 
-    register("scanprocs [showslightlysus]", Core.bundle.get("client.command.scanprocs.description")) { args, player ->
-        val showslightlysus = args.size == 1
-        player.sendMessage("[yellow]Scanning all processors...")
-        //Getting the list of processors must be done on the main thread
-        val procs = player.team().data().buildings.filterIsInstance<LogicBlock.LogicBuild>()
-        //The scanning is expensive so we run it on the client thread
-        clientThread.post {
-            val results:MutableMap<LogicBlock.LogicBuild, LogicDetectionLevel> = mutableMapOf()
-            for(proc in procs){
-                results[proc] = isMalicious(proc)
-            }
-            Core.app.post {
-                var noDetections = true
-                for((block, result) in results){
-                    if(result != LogicDetectionLevel.Safe && (showslightlysus || result != LogicDetectionLevel.SlightlySus)){
-                        val color = when(result){
-                            LogicDetectionLevel.Safe -> "white"
-                            LogicDetectionLevel.SlightlySus -> "white"
-                            LogicDetectionLevel.Sus -> "yellow"
-                            LogicDetectionLevel.Malicious -> "scarlet"
-                        }
-                        ui.chatfrag.addMsg("[$color]Processor at (${block.tileX()}, ${block.tileY()}): $result").findCoords()
-                        noDetections = false
-                    }
-                }
-                if(noDetections) player.sendMessage("[green]No suspicious processors found.")
-                else player.sendMessage("Scan complete.")
-            }
-        }
-    }
-
     register("networking", Core.bundle.get("client.command.networking.description")) { _, player ->
         ui.chatfrag.addMsg(
             if (pluginVersion != -1F) (Core.bundle.get("client.networking.plugin") as String) else
@@ -326,10 +294,6 @@ fun setupCommands() {
         msg.format()
 
         Log.debug("Ran fixpower in @ms", Time.millisSinceNanos(start))
-    }
-
-    register("fixcode [c/r/l]", Core.bundle.get("client.command.fixcode.description")) { args, _ ->
-        ProcessorPatcher.fixCode(args.firstOrNull())
     }
 
     register("distance [distance]", Core.bundle.get("client.command.distance.description")) { args, player ->
@@ -537,34 +501,6 @@ fun setupCommands() {
         }
     }
 
-    register("procfind [option] [argument...]", Core.bundle.get("client.command.procfind.description")) { args, player ->
-        if(args.isEmpty()) player.sendMessage(Core.bundle.get("client.command.procfind.help")) // This one looks long and cursed on the bundle
-        else when (args[0]) {
-            "query" -> {
-                if (args.size < 2) {
-                    player.sendMessage(Core.bundle.get("client.command.procfind.query.empty"))
-                    return@register
-                }
-                try {
-                    ProcessorFinder.search((if (args[1] == "*") ".*" else args[1]).toRegex())
-                } catch(e:PatternSyntaxException){
-                    player.sendMessage(Core.bundle.format("client.command.procfind.query.invalid", args[1]))
-                }
-            }
-            "queries" -> {
-                val sb = StringBuilder(Core.bundle.get("client.command.procfind.queries")).append("\n")
-                ProcessorFinder.queries.forEach { r -> sb.append("\n").append(r.toPattern().pattern()) }
-                player.sendMessage(sb.toString())
-            }
-            "searchall" -> ProcessorFinder.searchAll()
-            "clear" -> {
-                player.sendMessage(Core.bundle.format("client.command.procfind.clear", ProcessorFinder.getCount()))
-                ProcessorFinder.clear()
-            }
-            "list" -> ProcessorFinder.list()
-        }
-    }
-
     register("voids [count]", Core.bundle.get("client.command.voids.description")) { args, player ->
         var count = 1
         if (args.isNotEmpty()) {
@@ -722,14 +658,6 @@ fun setupCommands() {
 
     // Special commands
 
-    register("seer", "client.command.seer.description".bundle()) { _, player ->
-        if (!Core.settings.getBool("seer-enabled")) {
-            player.sendMessage(Core.bundle.get("client.command.seer.disabled"))
-            return@register
-        }
-        SeerDialog.show()
-    }
-
     register("admin [option]", Core.bundle.get("client.command.admin.description")) { args, player ->
         val arg = if (args.isEmpty()) "" else args[0]
         when (arg.lowercase()) {
@@ -737,8 +665,7 @@ fun setupCommands() {
                 ui.settings.show()
                 ui.settings.visible(4)
             }
-            "l", "leaves" -> Client.leaves?.leftList() ?: player.sendMessage("[scarlet]Leave logs are disabled")
-            else -> player.sendMessage("[scarlet]Invalid option specified, options are:\nSettings, Leaves")
+            else -> player.sendMessage("[scarlet]Invalid option specified, options are:\nSettings")
         }
     }
 
@@ -777,69 +704,6 @@ fun setupCommands() {
             switchTo = ui.join.communityHosts.filterTo(arrayListOf<Any>()) { it.group == current.group && it != current && (it.version == Version.build || Version.build == -1) }.apply { add(current); add(u) }
             val first = switchTo!!.removeAt(0) as Host
             NetClient.connect(first.address, first.port)
-        }
-
-        register("rollback <time> <buildrange>", """
-            Retrieves blocks from tile logs and places them into buildplan.
-                [white]time[] How long ago to rollback to, in minutes before now
-                [white]buildrange[] Radius within which buildings are rebuilt
-        """.trimIndent()) { args, player ->
-            var time: Instant
-            val range: Float
-            try {
-                time = Instant.now().minus(args[0].toLong(), ChronoUnit.MINUTES)
-                range = args[1].toFloat() * tilesize
-            } catch (_: Exception) {
-                player.sendMessage("[scarlet]Invalid arguments! Please specify 2 numbers (time and range)!")
-                return@register
-            }
-            Tmp.r1.set(player.x - range, player.y - range, range * 2, range * 2)
-            rollbackTiles(world.tiles.filter { it.getBounds(Tmp.r2).overlaps(Tmp.r1) && it.within(player.x, player.y, range) }, time)
-        }
-
-        register("rebuild <start> <end> <buildrange>", """
-            Rebuilds the last building for each tile over a time range, by using tile logs and placing them into buildplan.
-                [white]start[] Start of time interval to rebuild, in minutes before now
-                [white]end[] End of time interval to rebuild, in minutes before now
-                [white]buildrange[] Radius within which buildings are rebuilt
-        """.trimIndent()) { args, player ->
-            val timeStart: Instant
-            val timeEnd: Instant
-            val range: Float
-            try {
-                timeStart = Instant.now().minus(args[0].toLong(), ChronoUnit.MINUTES)
-                timeEnd = Instant.now().minus(args[1].toLong(), ChronoUnit.MINUTES)
-                range = args[2].toFloat() * tilesize
-            }
-            catch (_: Exception) {
-                player.sendMessage("[scarlet]Invalid arguments!")
-                return@register
-            }
-            if (timeStart >= timeEnd) { // I hate dealing with people
-                player.sendMessage("[scarlet]Invalid time interval! Start must be before end.")
-                return@register
-            }
-
-            // FINISHME: Add some filter for team. And optionally omit the collision code
-            Tmp.r1.set(player.x - range, player.y - range, range * 2, range * 2)
-            rebuildBroken(world.tiles.filter { it.getBounds(Tmp.r2).overlaps(Tmp.r1) && it.within(player.x, player.y, range) && it.block() === Blocks.air },
-                timeStart, timeEnd, range)
-        }
-
-        register("undo <player> [range]", "Undo Configs from a specific player (get rekt griefers)") { args, player ->
-            val range: Float
-            val id: Int
-            try { // FINISHME: Strings.parseInt/Float
-                id = args[0].toInt()
-                range = if (args.size >= 2) args[1].toFloat() * tilesize else Float.MAX_VALUE
-            }
-            catch (_: Exception) {
-                player.sendMessage("[scarlet]Invalid args! Please specify a player id number and (optionally) a range number")
-                return@register
-            }
-
-            Tmp.r1.set(player.x - range, player.y - range, range * 2, range * 2)
-            undoPlayer(world.tiles.filter { it.getBounds(Tmp.r2).overlaps(Tmp.r1) && it.within(player.x, player.y, range) }, id)
         }
 
         register("upload", "This is a terrible idea") { _, player -> // FINISHME: This is a super lazy implementation

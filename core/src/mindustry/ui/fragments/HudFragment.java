@@ -19,7 +19,6 @@ import kotlin.collections.*;
 import mindustry.*;
 import mindustry.annotations.Annotations.*;
 import mindustry.client.*;
-import mindustry.client.antigrief.*;
 import mindustry.client.navigation.*;
 import mindustry.client.ui.*;
 import mindustry.client.utils.*;
@@ -348,8 +347,6 @@ public class HudFragment{
         parent.fill(t -> {
             t.visible(() -> shown && Core.settings.getBool(("minimap"))); // FINISHME: Only hide minimap when doing so, use a collapser to shrink it maybe? Idk
             t.name = "minimap/position";
-            //tile hud
-            t.add(new TileInfoFragment()).name("tilehud").top();
             //minimap
             t.add(new Minimap()).name("minimap").top();
             t.row();
@@ -511,7 +508,7 @@ public class HudFragment{
                 // button to skip wave
                 s.button(Icon.play, rightStyle, 30f, () -> {
                     if(!canSkipWave()) new Toast(1f).add("You tried and that's all that matters.");
-                    else if(net.client() && Server.current.adminui()){
+                    else if(net.client() && player.admin){
                         Call.adminRequest(player, AdminAction.wave, null);
                     }else{
                         logic.skipWave();
@@ -1375,7 +1372,7 @@ public class HudFragment{
     }
 
     private boolean canSkipWave(){
-        return state.rules.waves && (state.rules.winWave <= 0 || state.wave < state.rules.winWave) && (net.server() || !net.active() || Server.current.adminui()) /* && state.enemies == 0 && !spawner.isSpawning() */;
+        return state.rules.waves && (state.rules.winWave <= 0 || state.wave < state.rules.winWave) && (net.server() || !net.active() || player.admin) /* && state.enemies == 0 && !spawner.isSpawning() */;
     }
 
 }

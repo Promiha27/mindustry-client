@@ -7,7 +7,6 @@ import arc.func.*
 import arc.util.*
 import mindustry.Vars.*
 import mindustry.client.*
-import mindustry.client.antigrief.*
 import mindustry.client.utils.CustomMode.*
 import mindustry.client.utils.Server.Companion.other
 import mindustry.content.*
@@ -24,10 +23,6 @@ sealed class Server(
     private val mapVote: MapVote? = null,
     @JvmField val whisper: Cmd = Cmd("/w", -1), // FINISHME: This system still sucks despite my best efforts at making it good
     private val rtv: Cmd = Cmd("/rtv", -1),
-    @JvmField val freeze: Cmd = Cmd("/freeze", -1),
-    @JvmField val thaw: Cmd = Cmd("/thaw", -1),
-    @JvmField val mute: Cmd = Cmd("/mute", -1),
-    @JvmField val unmute: Cmd = Cmd("/unmute", -1),
     @JvmField val ghost: Boolean = false,
     val networkTileLogs: Boolean = false,
     private val votekickString: String = "Type[orange] /vote <y/n>[] to agree.",
@@ -64,15 +59,6 @@ sealed class Server(
     /** Run when banning [p] */
     open fun handleBan(p: Player) = Call.adminRequest(p, AdminAction.ban, null)
 
-    /** Run when freezing [p] */
-    open fun handleFreeze(p: Player) {}
-
-    /** Run when muting [p] */
-    open fun handleMute(p: Player) {}
-
-    /** Whether the player has access to the admin ui in the player list */
-    open fun adminui() = player.admin
-
     /** Map like/dislike */
     fun mapVote(i: Int) {
         if (mapVote != null) Call.sendChatMessage(mapVote[i] ?: run { Log.err("Invalid vote $i"); return })
@@ -86,11 +72,6 @@ sealed class Server(
 
     /** Used to block effects on servers that spam them. */
     open fun blockEffect(fx: Effect, rot: Float): Boolean = false
-
-    // FINISHME: Encourage servers to add a packet just for id. Maybe even one packet that gets all member ids. That would be nice.
-    open fun getStats(player: Player, force: Boolean = false) {}
-
-    open fun updateRank() {}
 
     companion object {
         // Create a variable for each server. This is abhorrent, but it's the best way to avoid the .INSTANCE call in java.
@@ -171,37 +152,9 @@ object IO : Server(
     mapVote = Companion.MapVote(),
     whisper = Companion.Cmd("/w"),
     rtv = Companion.Cmd("/rtv"),
-    freeze = Companion.Cmd("/freeze", 4),
-    thaw = Companion.Cmd("/thaw", 4),
-    mute = Companion.Cmd("/mute", 4),
-    unmute = Companion.Cmd("/unmute", 4),
     votekickString = "Type[orange] /vote <y/n>[] to vote."
 ) {
     override val playerIDCopy = Func { p: Player -> p.serverID }
-
-    override fun handleBan(p: Player) {
-        ui.showTextInput("@client.banreason.title", "@client.banreason.body", "Griefing.") { reason ->
-            val id = p.trace?.uuid ?: p.serverID
-            if (id != null) {
-                ui.showConfirm("@confirm", "@client.rollback.title") {
-                    Call.sendChatMessage("/rollback $id 5-f")
-                }
-            }
-            Call.adminRequest(p, AdminAction.ban, reason)
-        }
-    }
-
-    override fun handleFreeze(p: Player) {
-        Moderation.freezePlayer = p
-        getStats(p, true)
-    }
-
-    override fun handleMute(p: Player) {
-        Moderation.mutePlayer = p
-        getStats(p, true)
-    }
-
-    override fun adminui() = player.admin || ClientVars.rank >= 4
 
     override fun handleButtons(msg: ChatMessage) {
         super.handleButtons(msg)
@@ -218,8 +171,6 @@ object IO : Server(
             msg.addButton(disagree.str, disagree::invoke)
         }
     }
-
-    override fun getStats(player: Player, force: Boolean) = if (Core.settings.getBool("autostats") || force) Call.serverPacketReliable("playerdata_by_id", player.id.toString()) else Unit
 }
 
 object Korea : Server(groupName = "Korea", ghost = true)
@@ -281,10 +232,6 @@ object Darkdustry : Server(groupName = "Mindurka")
 object Corium : Server(
     whisper = Companion.Cmd("/w"),
     rtv = Companion.Cmd("/rtv"),
-    freeze = Companion.Cmd("/freeze", 5),
-    thaw = Companion.Cmd("/thaw", 5),
-    mute = Companion.Cmd("/mute", 5),
-    unmute = Companion.Cmd("/unmute", 5),
     networkTileLogs = true
 ) { // FINISHME: Implement everything else specific to corium
     init {
@@ -301,30 +248,6 @@ object Corium : Server(
     override val playerIDCopy = Func { p: Player -> p.serverID }
 
     override val ratelimitMax get() = if (ClientVars.rank < 1) 10 else super.ratelimitMax
-
-    override fun handleBan(p: Player) {
-        ui.showTextInput("@client.banreason.title", "@client.banreason.body", "Griefing.") { reason ->
-            val id = p.trace?.uuid ?: p.serverID
-            if (id != null) {
-                ui.showConfirm("@confirm", "@client.rollback.title") {
-                    Call.sendChatMessage("/rollback $id 5-f")
-                }
-            }
-            Call.adminRequest(p, AdminAction.ban, reason)
-        }
-    }
-
-    override fun handleFreeze(p: Player) {
-        Moderation.freezePlayer = p
-        getStats(p, true)
-    }
-
-    override fun handleMute(p: Player) {
-        Moderation.mutePlayer = p
-        getStats(p, true)
-    }
-
-    override fun adminui() = player.admin || ClientVars.rank >= 5
 
     override fun handleButtons(msg: ChatMessage) {
         super.handleButtons(msg)
@@ -343,14 +266,6 @@ object Corium : Server(
     }
 
     override fun isJoinedServer(group: List<String>?, host: Host?) = host?.name?.contains("Corium") == true
-
-    /** Gets player stats if autotrace or force. Otherwise, only requests player code for serverID usage. */
-    override fun getStats(player: Player, force: Boolean) = Call.serverPacketReliable(if (Core.settings.getBool("autostats") || force) "playerdata_by_id" else "getPlayerCodeById", player.id.toString())
-
-    override fun updateRank() {
-        ClientVars.ratelimitMax = ratelimitMax
-        ClientVars.ratelimitRemaining = ratelimitMax
-    }
 }
 
 

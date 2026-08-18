@@ -9,7 +9,7 @@ import arc.math.geom.*;
 import arc.struct.*;
 import arc.util.*;
 import mindustry.annotations.Annotations.*;
-import mindustry.client.antigrief.*;
+import mindustry.client.utils.*;
 import mindustry.core.*;
 import mindustry.entities.units.*;
 import mindustry.game.*;

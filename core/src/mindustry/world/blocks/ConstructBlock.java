@@ -14,7 +14,6 @@ import arc.util.io.*;
 import mindustry.*;
 import mindustry.annotations.Annotations.*;
 import mindustry.client.*;
-import mindustry.client.antigrief.*;
 import mindustry.client.ui.*;
 import mindustry.client.utils.*;
 import mindustry.content.*;
@@ -370,10 +369,6 @@ public class ConstructBlock extends Block{
             maxProgress = core == null || team.rules().infiniteResources ? maxProgress : checkRequired(core.items, maxProgress, true);
 
             progress = state.rules.infiniteResources ? 1 : Mathf.clamp(progress + maxProgress);
-
-            // Warnings
-            Player targetPlayer = ClientUtils.getPlayer(lastBuilder);
-            if (targetPlayer != null && current == Blocks.thoriumReactor) Seer.INSTANCE.thoriumReactor(targetPlayer, tile.dst(targetPlayer));
 
             handleBlockWarning();
 

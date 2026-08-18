@@ -19,7 +19,6 @@ import arc.util.*;
 import arc.util.io.*;
 import mindustry.*;
 import mindustry.client.*;
-import mindustry.client.antigrief.*;
 import mindustry.client.ui.*;
 import mindustry.client.utils.*;
 import mindustry.content.*;
@@ -53,7 +52,6 @@ public class SettingsMenuDialog extends BaseDialog{
     public SettingsTable sound;
     public SettingsTable dev;
     public SettingsTable client;
-    public SettingsTable moderation;
     public SettingsTable main;
 
     private Table prefs;
@@ -85,7 +83,6 @@ public class SettingsMenuDialog extends BaseDialog{
                 game.rebuild();
                 dev.rebuild();
                 client.rebuild();
-                moderation.rebuild();
                 updateScrollFocus();
                 lastRebuildSize[0] = Core.graphics.getWidth();
                 lastRebuildSize[1] = Core.graphics.getHeight();
@@ -103,7 +100,6 @@ public class SettingsMenuDialog extends BaseDialog{
         sound = new SettingsTable();
         dev = new SettingsTable();
         client = new SettingsTable();
-        moderation = new SettingsTable();
 
         prefs = new Table();
         prefs.top();
@@ -381,7 +377,7 @@ public class SettingsMenuDialog extends BaseDialog{
 
         menu.button("@settings.data", Icon.save, style, isize, () -> dataDialog.show()).marginLeft(marg).row();
 
-        int i = 6;
+        int i = 5;
         for(var cat : categories){
             int index = i;
             if(cat.icon == null){
@@ -411,7 +407,6 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("powersplitwarnings", true); // FINISHME: Add a minimum building requirement and a setting for it
         client.checkPref("viruswarnings", true, b -> LExecutor.virusWarnings = b);
         client.checkPref("removecorenukes", false);
-        client.checkPref("seer-enabled", false);
 
         client.category("chat");
         client.checkPref("clearchatonleave", true);
@@ -451,7 +446,6 @@ public class SettingsMenuDialog extends BaseDialog{
         client.sliderPref("formationopacity", 30, 10, 100, 5, s -> { UnitType.formationAlpha = s / 100f; return s + "%"; });
         client.sliderPref("hitboxopacity", 0, 0, 100, 5, s -> { UnitType.hitboxAlpha = s / 100f; return s == 0 ? "@off" : s + "%"; });
         client.sliderPref("transferrangeopacity", 0, 0, 100, 5, s -> s == 0 ? "@off" : s + "%");
-        client.checkPref("tilehud", true);
         client.checkPref("lighting", true);
         client.checkPref("placementfragmentsearch", true);
         client.checkPref("junctionflowratedirection", false, s -> Junction.flowRateByDirection = s);
@@ -485,8 +479,6 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("showcutscenes", true);
         client.checkPref("powerinfo", true);
         client.checkPref("activemodesdisplay", true);
-        client.checkPref("useiconslogs", false);
-        client.checkPref("colorizelogs", false);
         client.checkPref("showmassdriverdistance", false);
         client.checkPref("alwaysfullnumbers", false);
         client.checkPref("enableunderwaterenv", true);
@@ -520,7 +512,6 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("blockfishannoyances", true, i -> Fish.blockAnnoyances = i);
         client.checkPref("autorestart", true);
         client.checkPref("realautorestart", true);
-        client.checkPref("onjoinfixcode", true);
         client.checkPref("downloadmusic", true);
         client.checkPref("downloadsound", true);
         client.checkPref("schematicmenuexporttags", true);
@@ -533,8 +524,6 @@ public class SettingsMenuDialog extends BaseDialog{
         if (steam) client.checkPref("unlockallachievements", false, i -> { Structs.each(Achievement::complete, Achievement.all); Core.settings.remove("unlockallachievements"); });
         client.checkPref("automega", false, i -> ui.unitPicker.type = i ? UnitTypes.mega : ui.unitPicker.type);
         client.checkPref("processorconfigs", false);
-        client.checkPref("attemwarfare", false);
-        client.checkPref("removeatteminsteadoffixing", false);
         client.checkPref("circleassist", false);
         client.checkPref("ignoremodminversion", false);
         client.checkPref("betterenemyblocktapping", false);
@@ -545,20 +534,6 @@ public class SettingsMenuDialog extends BaseDialog{
             client.category("experimental");
             client.checkPref("trackcoreitems", false, i -> CoreItemsDisplay.trackItems = i && !net.server());
             client.checkPref("modiconloadingoptimization", false);
-
-            client.checkPref("seer-warnings", false);
-            client.checkPref("seer-scoring", false);
-            client.checkPref("seer-autokick", false);
-            client.sliderPref("seer-warnthreshold", 10, 0, 50, String::valueOf);
-            client.sliderPref("seer-autokickthreshold", 20, 0, 50, String::valueOf);
-            client.sliderPref("seer-scoredecayinterval", 1, 0, 10, i -> i * 30 + "s");
-            client.sliderPref("seer-scoredecay", 5, 0, 20, String::valueOf);
-            client.sliderPref("seer-reactorscore", 8, 0, 10, String::valueOf);
-            client.sliderPref("seer-reactordistance", 5, 0, 20, String::valueOf);
-            client.sliderPref("seer-configscore", 3, 0, 50, i -> String.valueOf(i / 5f)); // 0.60
-            client.sliderPref("seer-configdistance", 20, 0, 100, String::valueOf);
-            client.sliderPref("seer-proclinkthreshold", 20, 0, 80, String::valueOf);
-            client.sliderPref("seer-proclinkscore", 10, 0, 50, String::valueOf);
         }
         // End Client Settings
 
@@ -768,11 +743,6 @@ public class SettingsMenuDialog extends BaseDialog{
         }
 
 
-        // Start Moderation Settings
-        moderation.checkPref("modenabled", true, b -> Client.INSTANCE.setLeaves(b ? new Moderation() : null));
-        moderation.sliderPref("leavecount", 100, 5, 1000, 10, String::valueOf);
-        // End Moderation Settings
-
         dev.checkPref("console", false);
         dev.checkPref("drawhitboxes", false);
         dev.checkPref("showperformance", false);
@@ -852,7 +822,7 @@ public class SettingsMenuDialog extends BaseDialog{
     public void visible(int index){
         prefs.clearChildren();
 
-        Seq<Table> tables = Seq.with(game, graphics, sound, dev, client, moderation);
+        Seq<Table> tables = Seq.with(game, graphics, sound, dev, client);
         categories.each(c -> tables.add(c.table));
 
         prefs.add(tables.get(index));

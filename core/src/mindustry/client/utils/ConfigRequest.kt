@@ -1,4 +1,4 @@
-package mindustry.client.antigrief
+package mindustry.client.utils
 
 import mindustry.*
 import mindustry.gen.*

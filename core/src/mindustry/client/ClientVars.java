@@ -22,7 +22,6 @@ import java.util.concurrent.*;
 
 public class ClientVars {
     // Misc
-    public static byte silentTrace; // How many actions to do silently (this is pretty 0head but shh)
     public static float spawnTime = 60f * Core.settings.getInt("spawntime");
     public static float travelTime = Core.settings.getInt("traveltime");
     public static int rank; // The rank int for servers such as io

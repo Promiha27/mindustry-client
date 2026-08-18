@@ -17,7 +17,6 @@ import arc.util.io.*;
 import arc.util.pooling.*;
 import mindustry.ai.types.*;
 import mindustry.client.*;
-import mindustry.client.antigrief.*;
 import mindustry.client.navigation.*;
 import mindustry.client.ui.*;
 import mindustry.client.utils.*;
@@ -46,9 +45,6 @@ public class LogicBlock extends Block{
     public static final int maxLinks = 6000;
     public static final int maxNameLength = 32;
 
-    private static @Nullable Player lastAttem;
-    private static int attemCount;
-    private static ChatFragment.ChatMessage attemMsg;
     private static final IntSet usedBuildings = new IntSet();
     private static final IntSeq waitIndices = new IntSeq();
     private static final FloatSeq waitValues = new FloatSeq();
@@ -684,44 +680,6 @@ public class LogicBlock extends Block{
         @Override
         public void configured(Unit builder, Object value) {
             super.configured(builder, value);
-
-            if (player != null && team == player.team() && value instanceof byte[] && Core.settings.getBool("attemwarfare")) {
-                Player player = ClientUtils.getPlayer(builder);
-                clientThread.post(() -> { // The regex can be expensive, so we delegate it to the client thread
-                    long begin = Time.nanos();
-                    var patched = ProcessorPatcher.INSTANCE.patch(code, Core.settings.getBool("removeatteminsteadoffixing") ? ProcessorPatcher.FixCodeMode.Remove : ProcessorPatcher.FixCodeMode.Fix);
-                    if (!patched.equals(code)) {
-                        Core.app.post(() -> { // FINISHME: Fallback to controller name if player is null
-                            if ((player != lastAttem || player == null)) {
-                                //Player does not exist or is not the last warned player
-                                lastAttem = player;
-                                attemCount = 1;
-                                //Try to whisper
-                                if(ProcessorPatcher.INSTANCE.whisper(player)){
-                                    attemMsg = ui.chatfrag.addMsg(Core.bundle.format("client.attemwarn", ClientUtils.getName(builder), tile.x, tile.y));
-                                    NetClient.findCoords(attemMsg);
-                                }
-                                //If global ratelimit exceeded, or this player has been warned within 5 seconds, this fails
-                                //FINISHME: move all of this logic into processorpatcher
-                            } else {
-                                //Player has already placed attem, try to warn
-                                if (ProcessorPatcher.INSTANCE.whisper(player)) {
-                                    //Fails if they were warned within the past 5 seconds
-                                    //Warn sent again, move attem message to bottom of chat frag and update it
-                                    ui.chatfrag.messages.remove(attemMsg);
-                                    ui.chatfrag.messages.insert(0, attemMsg);
-                                    attemMsg.prefix = "[accent](x" + ++attemCount + ") ";
-                                    attemMsg.format();
-                                    NetClient.findCoords(attemMsg.clearButtons()); // Update the clickable coord positions
-                                }
-                            }
-                            ClientVars.lastSentPos.set(tile.x, tile.y);
-                            ClientVars.configs.add(new ConfigRequest(tile.x, tile.y, compress(patched, relativeConnections())));
-                        });
-                    }
-                    Log.debug("Attem Regex: @ms", Time.millisSinceNanos(begin));
-                });
-            }
         }
 
         public Seq<LogicLink> relativeConnections(){
