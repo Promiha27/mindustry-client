@@ -1,0 +1,218 @@
+package eui.ui.other;
+
+import arc.Core;
+import arc.Events;
+import arc.scene.style.Drawable;
+import arc.scene.ui.ScrollPane;
+import arc.scene.ui.layout.Table;
+import arc.struct.Seq;
+import eui.icons.Icons;
+import eui.interact.AutofillPriorityDialog;
+import eui.interact.SchematicSelector;
+import mindustry.game.EventType.ClientLoadEvent;
+import mindustry.game.EventType.Trigger;
+import mindustry.gen.Icon;
+import mindustry.type.UnitType;
+import mindustry.ui.Styles;
+import mindustry.ui.dialogs.BaseDialog;
+
+import static mindustry.Vars.content;
+import static mindustry.Vars.mobile;
+import static mindustry.Vars.ui;
+
+/**
+ * Collapsible strip of interact toggles docked bottom-center: interact-with-core, auto-fill, the
+ * auto-fill priority editor button, a unit-type picker for auto-unit-control, and (desktop only) the
+ * schematic area-select tool toggle. Ported from ui/other/bottom-panel-ui.js.
+ */
+public class BottomPanelUi{
+    private record UnitCategory(String name, String[] units){}
+
+    private static final UnitCategory[] UNIT_CATEGORIES = {
+        new UnitCategory("Mech", new String[]{"dagger", "mace", "fortress", "scepter", "reign"}),
+        new UnitCategory("Mech2", new String[]{"nova", "pulsar", "quasar", "vela", "corvus"}),
+        new UnitCategory("Legs", new String[]{"crawler", "atrax", "spiroct", "arkyid", "toxopid"}),
+        new UnitCategory("Air", new String[]{"flare", "horizon", "zenith", "antumbra", "eclipse"}),
+        new UnitCategory("Air2", new String[]{"mono", "poly", "mega", "quad", "oct"}),
+        new UnitCategory("Naval", new String[]{"risso", "minke", "bryde", "sei", "omura"}),
+        new UnitCategory("Naval", new String[]{"retusa", "oxynoe", "cyerce", "aegires", "navanax"}),
+        new UnitCategory("Tank", new String[]{"stell", "locus", "precept", "vanquish", "conquer"}),
+        new UnitCategory("Hover", new String[]{"elude", "avert", "obviate", "quell", "disrupt"}),
+        new UnitCategory("spider", new String[]{"merui", "cleroi", "anthicus", "tecta", "collaris"}),
+        new UnitCategory("Neoplasm", new String[]{"renale", "latum"}),
+        new UnitCategory("Core Units", new String[]{"alpha", "beta", "gamma", "evoke", "incite", "emanate"}),
+    };
+
+    private final AutofillPriorityDialog autofillPriorityDialog;
+
+    private BaseDialog selectUnitDialog;
+    private Table contentTable;
+    private Table unitTable;
+    private boolean built = false;
+    private boolean showSettings = false;
+    private boolean schemSelection = false;
+
+    private boolean interactCore;
+    private boolean fillBuildings;
+    private String selectedUnit;
+
+    public BottomPanelUi(AutofillPriorityDialog autofillPriorityDialog){
+        this.autofillPriorityDialog = autofillPriorityDialog;
+        interactCore = Core.settings.getBool("eui-interact-core", false);
+        fillBuildings = Core.settings.getBool("eui-auto-fill", false);
+        selectedUnit = Core.settings.getString("eui-auto-unit", null);
+
+        SchematicSelector.onSelectionEnd = () -> schemSelection = false;
+
+        Events.on(ClientLoadEvent.class, e -> {
+            ui.hudGroup.fill(null, t -> {
+                contentTable = t.table().get();
+                t.center().bottom();
+                t.pack();
+            });
+            contentTable.visibility = () -> ui.hudfrag.shown && built;
+
+            buildSelectUnitDialog();
+        });
+
+        Events.run(Trigger.update, this::update);
+    }
+
+    void update(){
+        if(!Core.settings.getBool("eui-showInteractSettings", true)){
+            if(built) clearTable();
+            return;
+        }
+        if(!built) rebuildTable();
+    }
+
+    void rebuildTable(){
+        clearTable();
+        buildTable();
+    }
+
+    void buildTable(){
+        if(contentTable == null) return;
+        built = true;
+
+        contentTable.button(Icon.upOpen, Styles.selecti, () -> {
+            showSettings = !showSettings;
+            rebuildTable();
+        }).width(64f).height(16f).marginBottom(3f);
+        if(!showSettings) return;
+
+        contentTable.row();
+        Table buttonTable = contentTable.table().get();
+        buttonTable.defaults().size(32f);
+
+        buttonTable.button(Icons.getIconDrawable("core-nucleus"), Styles.clearTogglei, () -> {
+            interactCore = !interactCore;
+            Core.settings.put("eui-interact-core", interactCore);
+        }).update(b -> b.setChecked(interactCore)).get().resizeImage(32f * 0.8f);
+
+        buttonTable.button(Icon.box, Styles.clearTogglei, () -> {
+            fillBuildings = !fillBuildings;
+            Core.settings.put("eui-auto-fill", fillBuildings);
+        }).update(b -> b.setChecked(fillBuildings)).get().resizeImage(32f * 0.8f);
+
+        buttonTable.button(Icon.list, Styles.cleari, autofillPriorityDialog::show).get().resizeImage(32f * 0.8f);
+
+        buttonTable.button(Icons.getIconDrawable(selectedUnit), Styles.cleari, () -> selectUnitDialog.show())
+            .get().resizeImage(32f * 0.8f);
+
+        if(!mobile){
+            buttonTable.button(Icon.save, Styles.clearTogglei, () -> {
+                schemSelection = !schemSelection;
+                SchematicSelector.setActive(schemSelection);
+            }).update(b -> b.setChecked(schemSelection)).get().resizeImage(32f * 0.8f);
+        }
+    }
+
+    void clearTable(){
+        if(!built) return;
+        contentTable.clearChildren();
+        built = false;
+    }
+
+    // ---------------------------------------------------------------- unit picker
+
+    void buildSelectUnitDialog(){
+        float size = 568f;
+
+        selectUnitDialog = new BaseDialog(Core.bundle.get("schematics-table.dialog.change-image.title"));
+        selectUnitDialog.addCloseButton();
+
+        Seq<UnitType> allUnits = new Seq<>();
+        for(UnitType u : content.units()){
+            if(u != null && !u.hidden && u.uiIcon != null && u.uiIcon.found()) allUnits.add(u);
+        }
+
+        ScrollPane scrollPane = new ScrollPane(null);
+        selectUnitDialog.cont.add(scrollPane).size(size, size);
+
+        Table scrollContent = new Table();
+        scrollPane.setWidget(scrollContent);
+
+        Table categoryTable = scrollContent.table().get();
+        categoryTable.defaults().size(40f).pad(2f);
+
+        categoryTable.button(Icon.list, Styles.cleari, () -> showUnitCategory(-1, allUnits)).get().resizeImage(40f * 0.8f);
+
+        for(int i = 0; i < UNIT_CATEGORIES.length; i++){
+            int catIndex = i;
+            UnitCategory cat = UNIT_CATEGORIES[i];
+            Drawable catIcon = Icons.getIconDrawable(cat.units.length > 0 ? cat.units[0] : "cancel");
+
+            categoryTable.button(catIcon, Styles.cleari, () -> showUnitCategory(catIndex, allUnits)).get().resizeImage(40f * 0.8f);
+
+            if((i + 1) % 5 == 0) categoryTable.row();
+        }
+        categoryTable.row();
+
+        scrollContent.add().height(8f).row();
+
+        unitTable = scrollContent.table().get();
+        showUnitCategory(-1, allUnits);
+    }
+
+    void showUnitCategory(int categoryIndex, Seq<UnitType> allUnits){
+        if(unitTable == null) return;
+        unitTable.clear();
+
+        Seq<UnitType> toShow = new Seq<>();
+        if(categoryIndex == -1){
+            for(UnitType u : allUnits) if(shouldShowUnit(u.name)) toShow.add(u);
+            toShow.sort((a, b) -> a.name.compareTo(b.name));
+        }else{
+            for(String name : UNIT_CATEGORIES[categoryIndex].units){
+                UnitType u = findByName(allUnits, name);
+                if(u != null && shouldShowUnit(name)) toShow.add(u);
+            }
+        }
+
+        int r = 0;
+        for(UnitType unit : toShow){
+            String settedName = unit.name;
+            var imageButton = unitTable.button(unit.uiIcon != null ? new arc.scene.style.TextureRegionDrawable(unit.uiIcon) : Icon.cancel, Styles.cleari, () -> {
+                Core.settings.put("eui-auto-unit", settedName);
+                selectedUnit = settedName;
+                rebuildTable();
+                selectUnitDialog.hide();
+            }).size(48f).pad(4f).get();
+            imageButton.resizeImage(48f * 0.8f);
+
+            if(++r % 10 == 0) unitTable.row();
+        }
+    }
+
+    static UnitType findByName(Seq<UnitType> units, String name){
+        for(UnitType u : units) if(u.name.equals(name)) return u;
+        return null;
+    }
+
+    static boolean shouldShowUnit(String unitName){
+        if("block".equals(unitName)) return false;
+        if(eui.units.CoreUnits.includes(unitName)) return false;
+        return !eui.units.Blacklist.includes(unitName);
+    }
+}
