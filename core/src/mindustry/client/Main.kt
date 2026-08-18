@@ -19,6 +19,7 @@ import mindustry.input.*
 import mindustry.ui.fragments.*
 import eui.EUIMod
 import qol.QolSuiteMod
+import sectorstats.CampaignUtilsMod
 import java.nio.file.Files
 import java.security.cert.*
 import java.util.Timer
@@ -54,6 +55,10 @@ object Main : ApplicationListener {
         // sonka's Extended UI++, baked in the same way and for the same reason - see EUIMod's own
         // javadoc for the settings-category/self-disable-guard rationale.
         EUIMod()
+
+        // sonka's "Campaign Utils" (sector production stats + no-landing sector preview), baked in the
+        // same way and for the same reason - see CampaignUtilsMod's own javadoc.
+        CampaignUtilsMod()
 
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
