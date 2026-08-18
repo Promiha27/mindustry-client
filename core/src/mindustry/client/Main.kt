@@ -17,6 +17,7 @@ import mindustry.game.Teams.*
 import mindustry.gen.*
 import mindustry.input.*
 import mindustry.ui.fragments.*
+import qol.QolSuiteMod
 import java.nio.file.Files
 import java.security.cert.*
 import java.util.Timer
@@ -40,6 +41,15 @@ object Main : ApplicationListener {
     /** Run on client load. */
     override fun init() {
         val start = Time.nanos()
+
+        // sonka's qol-suite, baked in as native code rather than a loadable mod - this is where
+        // TileRecords.init() used to sit before the antigrief cut, i.e. the earliest point that
+        // reliably runs before mods.eachClass(Mod::init) and Events.fire(ClientLoadEvent) further
+        // down the ApplicationCore.update() listener-init loop (see ClientLauncher.update()).
+        // QolSuiteMod's constructor only registers Events.on(...) listeners, so it must be
+        // instantiated before ClientLoadEvent actually fires.
+        QolSuiteMod()
+
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
             communicationSystem.init()

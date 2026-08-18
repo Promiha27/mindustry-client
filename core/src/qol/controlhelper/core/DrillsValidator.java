@@ -1,0 +1,120 @@
+package qol.controlhelper.core;
+
+import arc.Events;
+import arc.struct.ObjectIntMap;
+import arc.struct.Queue;
+import arc.struct.Seq;
+import mindustry.entities.units.BuildPlan;
+import mindustry.game.EventType;
+import mindustry.type.Item;
+import mindustry.world.Tile;
+import mindustry.world.blocks.production.Drill;
+import qol.core.SafeSettings;
+
+import java.util.function.BooleanSupplier;
+
+import static mindustry.Vars.player;
+import static mindustry.Vars.state;
+
+/** When several different-output drills get queued at once, keeps only whichever single ore type dominates the batch - avoids scattering miners across every ore in a patch instead of focusing one. */
+public class DrillsValidator{
+    public float drillsThreashold = 0.6f;
+    public Queue<BuildPlan> deltaPlans = new Queue<>();
+
+    final BooleanSupplier masterEnabled;
+
+    public DrillsValidator(BooleanSupplier masterEnabled){
+        this.masterEnabled = masterEnabled;
+    }
+
+    public void Init(){
+        Events.run(EventType.Trigger.update, () -> {
+            if(!masterEnabled.getAsBoolean() || !IsEnabled() || !state.isGame() || player == null || player.unit() == null) return;
+
+            Queue<BuildPlan> plans = player.unit().plans;
+            Queue<BuildPlan> newPlans = new Queue<>();
+            for(BuildPlan plan : plans){
+                if(deltaPlans.contains(plan)) continue;
+                newPlans.add(plan);
+            }
+            if(newPlans.size != 0){
+                Queue<BuildPlan> tmpPlans = new Queue<>();
+                for(BuildPlan plan : deltaPlans){
+                    if(plans.contains(plan)) tmpPlans.add(plan);
+                }
+                for(BuildPlan plan : ValidatePlans(newPlans)) tmpPlans.add(plan);
+                player.unit().plans = tmpPlans;
+                deltaPlans.clear();
+                for(BuildPlan plan : tmpPlans) deltaPlans.add(plan);
+            }
+        });
+    }
+
+    public Queue<BuildPlan> ValidatePlans(Queue<BuildPlan> plans){
+        Queue<BuildPlan> anotherBlocks = new Queue<>();
+        Queue<DVDrill> drills = new Queue<>();
+        for(BuildPlan plan : plans){
+            if(plan.breaking) continue;
+            if(!(plan.block instanceof Drill drill)){
+                anotherBlocks.add(plan);
+                continue;
+            }
+            Item returnItem = GetDrillReturnItem(drill, plan.tile());
+            int id = drills.indexOf(i -> i.returnItem == returnItem);
+            if(id == -1){
+                DVDrill dvDrill = new DVDrill(returnItem);
+                dvDrill.plans.add(plan);
+                drills.add(dvDrill);
+            }else{
+                drills.get(id).plans.add(plan);
+            }
+        }
+
+        int drillsCount = 0;
+        for(DVDrill dvDrill : drills) drillsCount += dvDrill.plans.size;
+        if(drillsCount == 0) return plans;
+
+        for(DVDrill dvDrill : drills) dvDrill.relativeReturnItem = (float)dvDrill.plans.size / drillsCount;
+        int id = drills.indexOf(i -> i.relativeReturnItem > drillsThreashold);
+        if(id == -1) return plans;
+
+        Queue<BuildPlan> newPlans = new Queue<>();
+        DVDrill winner = drills.get(id);
+        plans.each(i -> {
+            if(winner.plans.contains(i) || anotherBlocks.contains(i)) newPlans.add(i);
+        });
+        return newPlans;
+    }
+
+    public Item GetDrillReturnItem(Drill drill, Tile tile){
+        ObjectIntMap<Item> oreCount = new ObjectIntMap<>();
+        Seq<Item> itemArray = new Seq<>();
+        Seq<Tile> temp = new Seq<>();
+        for(Tile other : tile.getLinkedTilesAs(drill, temp)){
+            if(!drill.canMine(other)) continue;
+            oreCount.increment(other.drop(), 0, 1);
+        }
+        for(Item item : oreCount.keys()) itemArray.add(item);
+        itemArray.sort((item1, item2) -> {
+            int type = Boolean.compare(!item1.lowPriority, !item2.lowPriority);
+            if(type != 0) return type;
+            int amounts = Integer.compare(oreCount.get(item1, 0), oreCount.get(item2, 0));
+            return amounts != 0 ? amounts : Integer.compare(item1.id, item2.id);
+        });
+        return itemArray.size == 0 ? null : itemArray.peek();
+    }
+
+    public boolean IsEnabled(){
+        return SafeSettings.getBool("drillsValidator", true);
+    }
+
+    public static class DVDrill{
+        public Item returnItem;
+        public Queue<BuildPlan> plans = new Queue<>();
+        public float relativeReturnItem = 0f;
+
+        public DVDrill(Item returnItem){
+            this.returnItem = returnItem;
+        }
+    }
+}
