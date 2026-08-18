@@ -14,6 +14,14 @@ import eui.interact.AutoUnit;
 import eui.interact.SchematicSelector;
 import eui.other.ExtendZoom;
 import eui.other.Mine;
+import eui.ui.alerts.LosingSupport;
+import eui.ui.alerts.UnderAttack;
+import eui.ui.blocks.BlockInfoUi;
+import eui.ui.blocks.EfficiencyOverlay;
+import eui.ui.blocks.ProgressBarOverlay;
+import eui.ui.other.ResourceRateUi;
+import eui.ui.units.DrawCycle;
+import eui.ui.units.UnitsTableUi;
 import mindustry.game.EventType.ClientLoadEvent;
 import mindustry.game.EventType.Trigger;
 import mindustry.gen.Icon;
@@ -85,6 +93,16 @@ public class EUIMod{
             SchematicSelector.draw();
         });
 
+        //--- phase B: HUD/overlays ---
+        new BlockInfoUi();
+        new EfficiencyOverlay();
+        new ProgressBarOverlay();
+        new DrawCycle();
+        new UnitsTableUi();
+        new ResourceRateUi();
+        new LosingSupport();
+        new UnderAttack();
+
         Events.on(ClientLoadEvent.class, e -> buildSettings());
     }
 
@@ -106,6 +124,27 @@ public class EUIMod{
 
             table.pref(new LabelSetting("eui-camera-header", Core.bundle.get("eui.camera.title", "Camera")));
             table.sliderPref("eui-maxZoom", 10, 1, 10, 1, i -> i + "");
+
+            table.pref(new LabelSetting("eui-hud-header", Core.bundle.get("eui.hud.title", "HUD")));
+            table.checkPref("eui-ShowBlockInfo", true);
+            table.checkPref("eui-showPowerBar", true);
+            table.checkPref("eui-showFactoryProgress", true);
+            table.checkPref("eui-ShowResourceRate", false);
+            table.checkPref("eui-ShowAlerts", true);
+            table.checkPref("eui-ShowAlertsBottom", false);
+
+            table.pref(new LabelSetting("eui-units-header", Core.bundle.get("eui.units.title", "Units")));
+            table.checkPref("eui-showUnitBar", true);
+            table.checkPref("eui-ShowUnitTable", true);
+            table.sliderPref("eui-UnitsTableAlpha", 100, 0, 100, 5, i -> i + "%");
+            table.checkPref("eui-TrackPlayerCursor", false);
+            table.sliderPref("eui-playerCursorStyle", 7, 1, 7, 1, i -> i + "");
+            table.checkPref("eui-ShowOwnCursor", false);
+            table.checkPref("eui-TrackLogicControl", false);
+
+            table.pref(new LabelSetting("eui-efficiency-header", Core.bundle.get("eui.efficiency.title", "Efficiency")));
+            table.checkPref("eui-ShowEfficiency", false);
+            table.sliderPref("eui-EfficiencyTimer", 15, 10, 180, 5, i -> i + "s");
         });
     }
 }
