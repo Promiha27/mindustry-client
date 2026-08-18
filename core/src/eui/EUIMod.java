@@ -3,6 +3,7 @@ package eui;
 import arc.Core;
 import arc.Events;
 import arc.util.Log;
+import eui.core.ButtonSetting;
 import eui.core.LabelSetting;
 import eui.input.ConveyorDrag;
 import eui.input.CoreDrag;
@@ -19,7 +20,10 @@ import eui.ui.alerts.UnderAttack;
 import eui.ui.blocks.BlockInfoUi;
 import eui.ui.blocks.EfficiencyOverlay;
 import eui.ui.blocks.ProgressBarOverlay;
+import eui.ui.other.BottomPanelUi;
 import eui.ui.other.ResourceRateUi;
+import eui.ui.other.SchematicsImportExport;
+import eui.ui.other.SchematicsTableUi;
 import eui.ui.units.DrawCycle;
 import eui.ui.units.UnitsTableUi;
 import mindustry.game.EventType.ClientLoadEvent;
@@ -65,6 +69,8 @@ import static mindustry.Vars.ui;
  */
 public class EUIMod{
     private AutofillPriorityDialog autofillPriorityDialog;
+    private SchematicsImportExport schematicsImportExport;
+    private boolean lastMinimapSetting;
 
     public EUIMod(){
         //self-disable if the original jar/script mod is still dropped in the mods folder - two copies
@@ -102,6 +108,23 @@ public class EUIMod{
         new ResourceRateUi();
         new LosingSupport();
         new UnderAttack();
+
+        //--- phase C: schematics table, import/export, bottom panel ---
+        SchematicsTableUi schematicsTableUi = new SchematicsTableUi();
+        schematicsImportExport = new SchematicsImportExport(schematicsTableUi);
+        new BottomPanelUi(autofillPriorityDialog);
+
+        //settings-ui.js's one remaining piece of standalone logic (not a "feature" of its own) - the
+        //mod's own "eui-showMinimap" toggle just proxies the engine's real "minimap" setting
+        lastMinimapSetting = Core.settings.getBool("eui-showMinimap", true);
+        Core.settings.put("minimap", lastMinimapSetting);
+        Events.run(Trigger.update, () -> {
+            boolean current = Core.settings.getBool("eui-showMinimap", true);
+            if(current != lastMinimapSetting){
+                Core.settings.put("minimap", current);
+                lastMinimapSetting = current;
+            }
+        });
 
         Events.on(ClientLoadEvent.class, e -> buildSettings());
     }
@@ -145,6 +168,22 @@ public class EUIMod{
             table.pref(new LabelSetting("eui-efficiency-header", Core.bundle.get("eui.efficiency.title", "Efficiency")));
             table.checkPref("eui-ShowEfficiency", false);
             table.sliderPref("eui-EfficiencyTimer", 15, 10, 180, 5, i -> i + "s");
+
+            table.pref(new LabelSetting("eui-schematics-header", Core.bundle.get("eui.schematics.title", "Schematics table")));
+            table.checkPref("eui-ShowSchematicsTable", true);
+            table.checkPref("eui-ShowSchematicsPreview", true);
+            table.sliderPref("eui-SchematicsTableRows", 4, 2, 20, 1, i -> i + "");
+            table.sliderPref("eui-SchematicsTableColumns", 5, 4, 16, 1, i -> i + "");
+            table.sliderPref("eui-SchematicsTableButtonSize", 30, 20, 80, 2, i -> i + "");
+            table.sliderPref("eui-SchematicsTableX", 10, 0, 2000, 10, i -> i + "px");
+            table.sliderPref("eui-SchematicsTableY", 160, 0, 2000, 10, i -> i + "px");
+            table.sliderPref("eui-SchematicsTableAlpha", 100, 0, 100, 5, i -> i + "%");
+            table.pref(new ButtonSetting("eui-schematics-export", () -> schematicsImportExport.showExportDialog()));
+            table.pref(new ButtonSetting("eui-schematics-import", () -> schematicsImportExport.showImportDialog()));
+
+            table.pref(new LabelSetting("eui-misc-header", Core.bundle.get("eui.misc.title", "Misc")));
+            table.checkPref("eui-showMinimap", true);
+            table.checkPref("eui-showInteractSettings", true);
         });
     }
 }
