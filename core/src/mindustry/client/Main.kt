@@ -17,6 +17,7 @@ import mindustry.game.Teams.*
 import mindustry.gen.*
 import mindustry.input.*
 import mindustry.ui.fragments.*
+import eui.EUIMod
 import qol.QolSuiteMod
 import java.nio.file.Files
 import java.security.cert.*
@@ -49,6 +50,10 @@ object Main : ApplicationListener {
         // QolSuiteMod's constructor only registers Events.on(...) listeners, so it must be
         // instantiated before ClientLoadEvent actually fires.
         QolSuiteMod()
+
+        // sonka's Extended UI++, baked in the same way and for the same reason - see EUIMod's own
+        // javadoc for the settings-category/self-disable-guard rationale.
+        EUIMod()
 
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
