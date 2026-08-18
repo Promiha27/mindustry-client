@@ -1,0 +1,212 @@
+package eui.icons;
+
+import arc.graphics.Color;
+import arc.scene.style.Drawable;
+import arc.scene.style.TextureRegionDrawable;
+import arc.struct.ObjectMap;
+import arc.struct.Seq;
+import mindustry.content.Blocks;
+import mindustry.content.Items;
+import mindustry.content.Liquids;
+import mindustry.content.StatusEffects;
+import mindustry.content.UnitTypes;
+import mindustry.ctype.UnlockableContent;
+import mindustry.game.Team;
+import mindustry.gen.Icon;
+import mindustry.graphics.Pal;
+import mindustry.mod.Mods.LoadedMod;
+
+import static mindustry.Vars.content;
+import static mindustry.Vars.mods;
+
+/**
+ * "Give me a {@link Drawable} for this arbitrary icon name" lookup used by the icon-category picker
+ * ({@link IconCategoriesConfig}) and the schematics-table cell/category icons - tries, in order: a
+ * built-in UI icon ({@link Icon#icons}), a content sprite (item/liquid/unit/status/block, by internal
+ * name), a team color swatch/sprite, an icon contributed by an enabled mod, a couple of special-cased
+ * hidden "missile" units, and finally a direct atlas region lookup (with and without a "unit-...-ui"
+ * prefix) - falling back to the pencil icon if nothing matched. Ported from utils/icons.js.
+ * <p>
+ * Not ported: the source's tier between "mod icons" and "missile units" that dynamically indexed the
+ * {@code Tex} class by string ({@code Tex[iconName]}, a Rhino property-by-string trick over its static
+ * fields) - there's no equivalent zero-cost move in compiled Java (it would need reflection over a
+ * generated class purely to check a handful of raw UI texture names), and every icon anyone would
+ * realistically pick from the category list below is already covered by one of the other tiers.
+ */
+public class Icons{
+    private static final ObjectMap<String, Drawable> allSprites = new ObjectMap<>();
+    private static final ObjectMap<String, Drawable> teamIcons = new ObjectMap<>();
+    private static final ObjectMap<String, Drawable> modIcons = new ObjectMap<>();
+
+    private static boolean spritesCached = false;
+    private static boolean teamIconsCached = false;
+    private static boolean modIconsCached = false;
+
+    private static final String[] missileUnits = {
+        "scathe-missile", "scathe-missile-phase", "scathe-missile-surge", "scathe-missile-surge-split",
+        "quell-missile", "disrupt-missile", "anthicus-missile"
+    };
+
+    /** Forces every lookup cache to populate, so {@link #allIconNames()}/{@link #modIconNames()} see the complete set - used by {@link IconCategoriesConfig}'s "everything else" bucket. */
+    public static void ensureAllCached(){
+        if(!spritesCached) setupSprites();
+        if(!teamIconsCached) setupTeamIcons();
+        if(!modIconsCached) setupModIcons();
+    }
+
+    /** Every icon name resolvable via {@link #getIconDrawable} through the UI/sprite/team/mod tiers (not the atlas-fallback tiers, which aren't enumerable by name). */
+    public static Seq<String> allIconNames(){
+        ensureAllCached();
+        Seq<String> names = new Seq<>();
+        names.addAll(Icon.icons.keys().toSeq());
+        names.addAll(allSprites.keys().toSeq());
+        names.addAll(teamIcons.keys().toSeq());
+        names.addAll(modIcons.keys().toSeq());
+        return names;
+    }
+
+    public static Seq<String> modIconNames(){
+        if(!modIconsCached) setupModIcons();
+        return modIcons.keys().toSeq();
+    }
+
+    public static Drawable getIconDrawable(String iconName){
+        if(iconName == null || iconName.isEmpty()) return pencil();
+
+        try{
+            if(Icon.icons.containsKey(iconName)) return Icon.icons.get(iconName);
+
+            if(!spritesCached) setupSprites();
+            if(allSprites.containsKey(iconName)) return allSprites.get(iconName);
+
+            if(iconName.startsWith("team-")) return teamIconDrawable(iconName.substring(5));
+            if(isTeamName(iconName)) return teamIconDrawable(iconName);
+
+            if(!modIconsCached) setupModIcons();
+            if(modIcons.containsKey(iconName)) return modIcons.get(iconName);
+
+            if(isMissileUnit(iconName)){
+                Drawable missile = atlasDrawable("unit-" + iconName + "-ui");
+                if(missile != null) return missile;
+            }
+
+            Drawable direct = atlasDrawable(iconName);
+            if(direct != null) return direct;
+
+            Drawable unitPrefixed = atlasDrawable("unit-" + iconName + "-ui");
+            if(unitPrefixed != null) return unitPrefixed;
+
+            return pencil();
+        }catch(Exception e){
+            return pencil();
+        }
+    }
+
+    static Drawable pencil(){
+        return Icon.pencil;
+    }
+
+    static Drawable atlasDrawable(String regionName){
+        var region = arc.Core.atlas.find(regionName);
+        return region != null && region.found() ? new TextureRegionDrawable(region) : null;
+    }
+
+    static boolean isMissileUnit(String name){
+        for(String m : missileUnits) if(m.equals(name)) return true;
+        return false;
+    }
+
+    static boolean isTeamName(String name){
+        return switch(name){
+            case "sharded", "crux", "malis", "derelict", "green", "blue", "neoplastic" -> true;
+            default -> false;
+        };
+    }
+
+    static void setupSprites(){
+        registerAll(content.items());
+        registerAll(content.liquids());
+        registerAll(content.units());
+        registerAll(content.statusEffects());
+        registerAll(content.blocks());
+        spritesCached = true;
+    }
+
+    static <T extends UnlockableContent> void registerAll(Seq<T> items){
+        for(T item : items){
+            if(item == null || item.uiIcon == null || !item.uiIcon.found()) continue;
+            allSprites.put(item.name, new TextureRegionDrawable(item.uiIcon));
+        }
+    }
+
+    static void setupTeamIcons(){
+        registerTeamColor("derelict", Color.valueOf("4d4e58"));
+        registerTeamColor("sharded", Pal.accent);
+        registerTeamColor("crux", Color.valueOf("f25555"));
+        registerTeamColor("malis", Color.valueOf("a27ce5"));
+        registerTeamColor("green", Color.valueOf("54d67d"));
+        registerTeamColor("blue", Color.valueOf("6c87fd"));
+
+        Drawable neoplastic = atlasDrawable("team-neoplastic");
+        if(neoplastic != null) teamIcons.put("neoplastic", neoplastic);
+
+        teamIconsCached = true;
+    }
+
+    /**
+     * The source called a {@code drawable.setTint(color)} mutator here that doesn't actually exist on
+     * {@link TextureRegionDrawable} in this engine (checked via javap against the real dependency jar,
+     * vanilla Arc doesn't have it either) - a latent bug, this fallback swatch would have thrown instead
+     * of ever rendering. The real (non-mutating) API is {@link TextureRegionDrawable#tint(Color)}, which
+     * returns a new correctly-tinted copy - used here instead to get the obviously-intended "solid color
+     * team swatch" result.
+     */
+    static Drawable registerTeamColor(String teamName, Color fallbackColor){
+        Drawable drawable = atlasDrawable("team-" + teamName);
+        if(drawable == null){
+            TextureRegionDrawable whiteui = (TextureRegionDrawable)atlasDrawable("whiteui");
+            drawable = whiteui.tint(fallbackColor);
+        }
+        teamIcons.put(teamName, drawable);
+        return drawable;
+    }
+
+    static Drawable teamIconDrawable(String teamName){
+        if(!teamIconsCached) setupTeamIcons();
+        if(teamIcons.containsKey(teamName)) return teamIcons.get(teamName);
+
+        Team team = teamByName(teamName);
+        if(team == null) return pencil();
+
+        return registerTeamColor(teamName, team.color);
+    }
+
+    static Team teamByName(String name){
+        for(Team t : Team.all){
+            if(t != null && t.name.equals(name)) return t;
+        }
+        return null;
+    }
+
+    static void setupModIcons(){
+        for(LoadedMod mod : mods.list()){
+            if(!mod.enabled() || mod.meta == null) continue;
+
+            registerModContent(content.blocks(), mod, "block-");
+            registerModContent(content.items(), mod, "item-");
+            registerModContent(content.units(), mod, "unit-");
+        }
+        modIconsCached = true;
+    }
+
+    static <T extends UnlockableContent> void registerModContent(Seq<T> items, LoadedMod mod, String prefix){
+        for(T item : items){
+            if(item.minfo.mod != mod || item.uiIcon == null || !item.uiIcon.found()) continue;
+
+            String bareName = item.name.startsWith(prefix) ? item.name.substring(prefix.length()) : item.name;
+            Drawable drawable = new TextureRegionDrawable(item.uiIcon);
+            modIcons.put(bareName, drawable);
+            modIcons.put(prefix + bareName, drawable);
+        }
+    }
+}
