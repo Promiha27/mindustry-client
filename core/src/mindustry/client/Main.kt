@@ -18,6 +18,7 @@ import mindustry.gen.*
 import mindustry.input.*
 import mindustry.ui.fragments.*
 import eui.EUIMod
+import mi2u.MI2UMod
 import qol.QolSuiteMod
 import qolc.QolControlMod
 import sectorstats.CampaignUtilsMod
@@ -64,6 +65,11 @@ object Main : ApplicationListener {
         // Port of the third-party "QoL Control" mod's REMAINDER (most of it already exists as
         // qol-suite/EUI/native features) - see QolControlMod's javadoc for the full inventory.
         QolControlMod()
+
+        // Port of the third-party "MI2-Utilities Java" mod (BlackDeluxeCat, v1.15.2) - Mindow2
+        // window framework, zone/distribution rendering, Core Info, FullAI, Logic Helper etc.
+        // See MI2UMod's javadoc for the adaptation notes and the self-disable guard.
+        MI2UMod()
 
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
