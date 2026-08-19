@@ -8,7 +8,6 @@ import arc.scene.ui.layout.Table;
 import arc.struct.Seq;
 import eui.icons.Icons;
 import eui.interact.AutofillPriorityDialog;
-import eui.interact.SchematicSelector;
 import mindustry.game.EventType.ClientLoadEvent;
 import mindustry.game.EventType.Trigger;
 import mindustry.gen.Icon;
@@ -17,15 +16,14 @@ import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
 
 import static mindustry.Vars.content;
-import static mindustry.Vars.mobile;
 import static mindustry.Vars.ui;
 
 /**
  * Collapsible strip of interact toggles docked bottom-center: the auto-fill priority editor button
  * (whose priorities now feed the native {@code mindustry.client.utils.AutoTransfer} - the eui AutoFill
- * loop plus its interact-with-core/auto-fill toggles were removed in the dedupe pass), a unit-type
- * picker for auto-unit-control, and (desktop only) the schematic area-select tool toggle. Ported from
- * ui/other/bottom-panel-ui.js.
+ * loop plus its interact-with-core/auto-fill toggles were removed in the dedupe pass, as was the
+ * schematic area-select toggle, covered by native "F" + qol's CopyAnywhere) and a unit-type picker for
+ * auto-unit-control. Ported from ui/other/bottom-panel-ui.js.
  */
 public class BottomPanelUi{
     private record UnitCategory(String name, String[] units){}
@@ -52,15 +50,12 @@ public class BottomPanelUi{
     private Table unitTable;
     private boolean built = false;
     private boolean showSettings = false;
-    private boolean schemSelection = false;
 
     private String selectedUnit;
 
     public BottomPanelUi(AutofillPriorityDialog autofillPriorityDialog){
         this.autofillPriorityDialog = autofillPriorityDialog;
         selectedUnit = Core.settings.getString("eui-auto-unit", null);
-
-        SchematicSelector.onSelectionEnd = () -> schemSelection = false;
 
         Events.on(ClientLoadEvent.class, e -> {
             ui.hudGroup.fill(null, t -> {
@@ -107,13 +102,6 @@ public class BottomPanelUi{
 
         buttonTable.button(Icons.getIconDrawable(selectedUnit), Styles.cleari, () -> selectUnitDialog.show())
             .get().resizeImage(32f * 0.8f);
-
-        if(!mobile){
-            buttonTable.button(Icon.save, Styles.clearTogglei, () -> {
-                schemSelection = !schemSelection;
-                SchematicSelector.setActive(schemSelection);
-            }).update(b -> b.setChecked(schemSelection)).get().resizeImage(32f * 0.8f);
-        }
     }
 
     void clearTable(){

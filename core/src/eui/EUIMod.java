@@ -11,7 +11,6 @@ import eui.input.Drag;
 import eui.interact.ActionDelayHotkey;
 import eui.interact.AutofillPriorityDialog;
 import eui.interact.AutoUnit;
-import eui.interact.SchematicSelector;
 import eui.other.Mine;
 import eui.ui.alerts.LosingSupport;
 import eui.ui.alerts.UnderAttack;
@@ -72,13 +71,12 @@ import static mindustry.Vars.ui;
  * cutscenes the port was fully inert, and the native slider already covers zooming out further.
  * Removing it also restores the vanilla cutscene zoom bounds the repo comment on those fields asks to
  * keep ("don't change or vanilla compat breaks").</li>
- * <li>{@link SchematicSelector} (bottom-panel toggle + drag) vs. this engine's own native
- * {@code Binding.schematicSelect} (hold "F", drag over built tiles - see
- * {@code DesktopInput.java}'s handling of it) - both do the exact same "select an area, capture it as a
- * schematic, arm it for placement" job. The native one only works while the player has a controllable
- * unit (same limitation qol-suite's own {@code CopyAnywhereFeature} exists to lift for spectators); this
- * port's version has no such requirement either, so the two are close to fully redundant for a player
- * who does have a unit.</li>
+ * <li>RESOLVED (dedupe pass): {@code eui.interact.SchematicSelector} (bottom-panel toggle + drag) vs.
+ * this engine's own native {@code Binding.schematicSelect} (hold "F", drag over built tiles) - removed:
+ * with a unit the native gesture does the same select-capture-arm job, and while spectating qol-suite's
+ * {@code CopyAnywhereFeature} (same F key, dead-player-gated) covers area-capture-to-library; arming
+ * for placement without a unit was useless anyway since placing requires one. Its
+ * {@code eui.util.Schematics} helper went with it.</li>
  * <li>{@link ConveyorDrag} ("eui-DragPathfind") vs. this engine's own native conveyor drag-placement,
  * which already routes around obstacles automatically ({@code Placement.pathfindLine(...)}, gated by the
  * native "conveyorpathfinding" setting, called from {@code InputHandler.java} whenever a conveyor/rail is
@@ -117,7 +115,6 @@ public class EUIMod{
         Events.run(Trigger.draw, () -> {
             conveyorDrag.draw();
             coreDrag.draw();
-            SchematicSelector.draw();
         });
 
         //--- phase B: HUD/overlays ---
