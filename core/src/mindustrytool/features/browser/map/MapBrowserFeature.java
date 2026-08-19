@@ -32,11 +32,9 @@ public class MapBrowserFeature implements Feature {
 
     @Override
     public void init() {
-        Events.run(Trigger.update, () -> {
-            boolean noInputFocused = !Core.scene.hasField();
-            boolean enabled = isEnabled();
-
-            if (enabled && noInputFocused && Core.input.keyRelease(MdtKeybinds.mapBrowserKb)) {
+        //перф: общий диспатчер кейбиндов вместо своего Trigger.update-листенера
+        MdtKeybinds.onKeyRelease(MdtKeybinds.mapBrowserKb, () -> {
+            if (isEnabled()) {
                 Core.app.post(() -> dialog().ifPresent(Dialog::show));
             }
         });

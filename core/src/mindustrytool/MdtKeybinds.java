@@ -24,13 +24,34 @@ public class MdtKeybinds {
         chatKb.load();
     }
 
-    public static void addFeatureKeyBind(Feature feature, KeyBind keyBind) {
-        Events.run(Trigger.update, () -> {
-            boolean noInputFocused = !Core.scene.hasField();
+    /* перф: один Trigger.update-диспатчер на все кейбинды мода вместо отдельного листенера
+     * (и отдельной проверки Core.scene.hasField) на каждую фичу; неиспользуемый
+     * addFeatureKeyBind(feature, keyBind) убран при консолидации */
+    private static final Seq<KeyBindAction> actions = new Seq<>();
+    private static boolean dispatcherHooked = false;
 
-            if (noInputFocused && Core.input.keyRelease(keyBind)) {
-                Core.app.post(() -> FeatureManager.getInstance().toggle(feature));
-            }
-        });
+    /** Регистрирует действие на отпускание кейбинда (срабатывает только когда нет фокуса в текстовом поле). */
+    public static void onKeyRelease(KeyBind keyBind, Runnable action) {
+        actions.add(new KeyBindAction(keyBind, action));
+        if (!dispatcherHooked) {
+            dispatcherHooked = true;
+            Events.run(Trigger.update, () -> {
+                if (Core.scene.hasField()) return;
+                for (int i = 0; i < actions.size; i++) {
+                    KeyBindAction a = actions.get(i);
+                    if (Core.input.keyRelease(a.keyBind)) a.action.run();
+                }
+            });
+        }
+    }
+
+    private static class KeyBindAction {
+        final KeyBind keyBind;
+        final Runnable action;
+
+        KeyBindAction(KeyBind keyBind, Runnable action) {
+            this.keyBind = keyBind;
+            this.action = action;
+        }
     }
 }

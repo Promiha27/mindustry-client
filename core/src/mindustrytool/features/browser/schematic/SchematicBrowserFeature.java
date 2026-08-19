@@ -40,11 +40,9 @@ public class SchematicBrowserFeature implements Feature {
             addBrowseButton();
         }
 
-        Events.run(Trigger.update, () -> {
-            boolean noInputFocused = !Core.scene.hasField();
-            boolean enabled = isEnabled();
-
-            if (enabled && noInputFocused && Core.input.keyRelease(MdtKeybinds.schematicBrowserKb)) {
+        //перф: общий диспатчер кейбиндов вместо своего Trigger.update-листенера
+        MdtKeybinds.onKeyRelease(MdtKeybinds.schematicBrowserKb, () -> {
+            if (isEnabled()) {
                 Core.app.post(() -> dialog().ifPresent(Dialog::show));
             }
         });

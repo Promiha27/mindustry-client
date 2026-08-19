@@ -74,12 +74,10 @@ public class ChatOverlay extends Table {
         Events.on(LoginEvent.class, e -> Core.app.post(this::setup));
         Events.on(LogoutEvent.class, e -> Core.app.post(this::setup));
 
-        Events.run(Trigger.update, () -> {
-            boolean noInputFocused = !Core.scene.hasField();
-            if (noInputFocused && Core.input.keyRelease(MdtKeybinds.chatKb)) {
-                ChatConfig.collapsed(!ChatConfig.collapsed());
-                setup();
-            }
+        //перф: общий диспатчер кейбиндов вместо своего Trigger.update-листенера
+        MdtKeybinds.onKeyRelease(MdtKeybinds.chatKb, () -> {
+            ChatConfig.collapsed(!ChatConfig.collapsed());
+            setup();
         });
 
         addListener(new InputListener() {
