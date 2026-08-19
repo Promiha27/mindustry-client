@@ -348,7 +348,8 @@ public class HudFragment{
             t.visible(() -> shown && Core.settings.getBool(("minimap"))); // FINISHME: Only hide minimap when doing so, use a collapser to shrink it maybe? Idk
             t.name = "minimap/position";
             //minimap
-            t.add(new Minimap()).name("minimap").top();
+            //sonka: пер-панельный масштаб (см. sonkaextras.PanelScale) - живой слайдер в Sonka Extras
+            t.add(new sonkaextras.PanelScale(new Minimap(), Align.topRight, sonkaextras.PanelScale.setting(sonkaextras.PanelScale.MINIMAP_KEY))).name("minimap").top();
             t.row();
             //position
             t.label(() -> player.tileX() + ", " + player.tileY() + "\n" + "[coral]" + World.toTile(Core.input.mouseWorldX()) + ", " + World.toTile(Core.input.mouseWorldY()))
@@ -478,7 +479,10 @@ public class HudFragment{
 
             Table wavesMain, editorMain;
 
-            cont.stack(wavesMain = new Table(), editorMain = new Table(), new Element(){
+            //sonka: пер-панельный масштаб top-left стека (statustable + панель режимов Foo + энергия
+            //+ всё, что чужие моды доложат в "waves" - eui units table едет вместе с ним).
+            //Обёртка внутри Stack: Stack растянет её на свой размер, контент прижмётся к topLeft
+            cont.stack(new sonkaextras.PanelScale(wavesMain = new Table(), Align.topLeft, sonkaextras.PanelScale.setting(sonkaextras.PanelScale.WAVES_KEY)), editorMain = new Table(), new Element(){
                 //this may seem insane, but adding an empty element of a specific height to this stack fixes layout issues on mobile.
 
                 {
@@ -671,7 +675,8 @@ public class HudFragment{
 
             t.table(c -> {
                 //core items
-                c.top().collapser(coreItems, () -> Core.settings.getBool("coreitems") && shown).fillX().row();
+                //sonka: пер-панельный масштаб дисплея ресурсов ядра (см. sonkaextras.PanelScale)
+                c.top().collapser(col -> col.add(new sonkaextras.PanelScale(coreItems, Align.top, sonkaextras.PanelScale.setting(sonkaextras.PanelScale.COREITEMS_KEY))), () -> Core.settings.getBool("coreitems") && shown).fillX().row();
 
                 float notifDuration = 240f;
 

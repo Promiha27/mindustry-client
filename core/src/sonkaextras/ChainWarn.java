@@ -99,6 +99,14 @@ public final class ChainWarn{
             t.pref(new qol.core.ButtonSetting("sonka-linerotate-configure", () -> new LineRotate.PickerDialog().show()));
             //автосейв на старте волны для кнопки «Повторить волну» (CampaignRetry)
             t.checkPref(CampaignRetry.autosaveKey, true);
+            //пер-панельный масштаб нативных HUD-панелей (PanelScale/ChatFragment.draw). Секция
+            //Sonka Extras, а не вкладка Graphics: все sonka-фичи движка живут одной секцией, а поиск
+            //настроек всё равно находит их с любой вкладки. Всё применяется вживую, без рестарта
+            t.sliderPref(PanelScale.CHAT_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%");
+            t.sliderPref(PanelScale.MINIMAP_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%");
+            t.sliderPref(PanelScale.WAVES_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%");
+            t.sliderPref(PanelScale.COREITEMS_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%");
+            t.sliderPref(PanelScale.PALETTE_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%");
         }));
 
         Events.on(WorldLoadEvent.class, e -> {

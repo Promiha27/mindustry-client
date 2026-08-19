@@ -1,6 +1,7 @@
 package mindustry.ui.fragments;
 
 import arc.*;
+import arc.func.*;
 import arc.graphics.*;
 import arc.input.*;
 import arc.math.geom.*;
@@ -299,7 +300,12 @@ public class PlacementFragment{
             toggler = full;
             full.bottom().right().visible(() -> ui.hudfrag.shown);
 
-            full.table(frame -> {
+            //sonka: пер-панельный масштаб блок-палитры (см. sonkaextras.PanelScale). Контент строится
+            //в отдельную таблицу, а в full кладётся transform-обёртка; тело билдера не тронуто -
+            //Cons ниже вызывается с той же таблицей под тем же именем frame
+            Table frameTable = new Table();
+            full.add(new sonkaextras.PanelScale(frameTable, Align.bottomRight, sonkaextras.PanelScale.setting(sonkaextras.PanelScale.PALETTE_KEY)));
+            Cons<Table> buildFrame = frame -> {
 
                 //rebuilds the category table with the correct recipes
                 Runnable rebuildCategory = () -> {
@@ -856,7 +862,8 @@ public class PlacementFragment{
                         rebuildCategory.run();
                     }
                 });
-            });
+            };
+            buildFrame.get(frameTable);
         });
     }
 

@@ -106,7 +106,9 @@ public class HudFragment{
                 }).visible(() -> true).update(mode -> mode.setTranslation(Scl.scl(building.fliped ? 0f : -87f), 0f));
             }).height(254f).update(pad -> {
                 if(block == null) return; // block is null before the world is loaded
-                pad.setTranslation(Scl.scl(building.fliped ? 4f : 178f) - block.getWidth(), 0f);
+                //sonka: блок-меню может быть масштабировано PanelScale-обёрткой - якорим по
+                //ВИЗУАЛЬНОЙ ширине (локальная ширина * произведение scale предков)
+                pad.setTranslation(Scl.scl(building.fliped ? 4f : 178f) - block.getWidth() * sonkaextras.PanelScale.effectiveScale(block), 0f);
                 pad.setWidth(Scl.scl(building.fliped ? 244f : 70f)); // more magic numbers to the god of magic numbers
             });
         });
@@ -161,7 +163,8 @@ public class HudFragment{
             }).margin(0f).update(pad -> {
                 Element anchor = state.rules.editor ? editorTable : statusTable;
                 if(anchor == null) return;
-                pad.setTranslation(0f, Scl.scl((admin.fliped ? 0f : 127f) - (mobile ? 69f : 0f)) - anchor.getHeight());
+                //sonka: стек "waves" может быть масштабирован PanelScale-обёрткой - высота якоря визуальная
+                pad.setTranslation(0f, Scl.scl((admin.fliped ? 0f : 127f) - (mobile ? 69f : 0f)) - anchor.getHeight() * sonkaextras.PanelScale.effectiveScale(anchor));
                 pad.setHeight(Scl.scl(admin.fliped ? 190.8f : 63.8f));
             });
         });

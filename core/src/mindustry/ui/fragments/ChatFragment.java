@@ -249,8 +249,25 @@ public class ChatFragment extends Table{
 
     @Override
     public void draw(){
+        //sonka: пер-панельный масштаб чата. Transform-обёртка (sonkaextras.PanelScale) тут не
+        //годится: сообщения рисуются руками в ЭКРАННЫХ координатах и матчатся с input.mouseX/Y для
+        //кликабельных кнопок в тексте - под трансформом эти пространства разъехались бы. Вместо
+        //этого масштабируется сам шрифт вокруг блока сообщений: и метрики отрисовки, и хитбоксы
+        //считаются из одних и тех же масштабированных величин, так что клики/ховеры остаются
+        //точными. Строка ввода/лейблы намеренно НЕ масштабируются (их метрики живут в TextField).
+        //finally - страховка: исключение внутри не должно оставить общий Fonts.def масштабированным.
+        float chatScl = sonkaextras.PanelScale.scl(sonkaextras.PanelScale.CHAT_KEY);
+        float prevScaleX = font.getData().scaleX, prevScaleY = font.getData().scaleY;
+        try{
+            drawImpl(chatScl, prevScaleX, prevScaleY);
+        }finally{
+            font.getData().setScale(prevScaleX, prevScaleY);
+        }
+    }
+
+    private void drawImpl(float chatScl, float prevScaleX, float prevScaleY){
         float opacity = Core.settings.getInt("chatopacity") / 100f;
-        float textWidth = Math.min(Core.graphics.getWidth()/1.5f, Scl.scl(700f));
+        float textWidth = Math.min(Core.graphics.getWidth()/1.5f, Scl.scl(700f) * chatScl);
 
         Draw.color(shadowColor);
 
@@ -268,6 +285,9 @@ public class ChatFragment extends Table{
         Draw.color(shadowColor, shadowColor.a * opacity);
 
         hoveredButton = null;
+        //с этого места и до конца цикла сообщений шрифт масштабирован (см. draw())
+        if(chatScl != 1f) font.getData().setScale(prevScaleX * chatScl, prevScaleY * chatScl);
+        float textspacing = this.textspacing * chatScl;
         float theight = offsety + spacing + getMarginBottom() + scene.marginBottom;
         for(int i = scrollPos; i < messages.size && i < messagesShown + scrollPos && (i < fadetime || shown); i++){
             ChatMessage msg = messages.get(i);
@@ -379,6 +399,9 @@ public class ChatFragment extends Table{
         if(fadetime > 0 && !shown){
             fadetime -= Time.delta / 180f;
         }
+
+        //автодополнение позиционируется от немасштабированного chatfield - рисуем обычным шрифтом
+        if(chatScl != 1f) font.getData().setScale(prevScaleX, prevScaleY);
 
         if (completion.any() && shown) {
             float pos = Reflect.<FloatSeq>get(TextField.class, chatfield, "glyphPositions").peek() + chatfield.x;
