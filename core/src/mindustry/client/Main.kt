@@ -23,6 +23,7 @@ import mi2u.MI2UMod
 import qol.QolSuiteMod
 import qolc.QolControlMod
 import sectorstats.CampaignUtilsMod
+import scheme.SchemeSizeMod
 import java.nio.file.Files
 import java.security.cert.*
 import java.util.Timer
@@ -77,6 +78,13 @@ object Main : ApplicationListener {
         // chat gradient. See AgzamMod's javadoc for the full skip-list (most of the mod already
         // exists natively or via qol/eui/mi2u).
         AgzamMod()
+
+        // Port of the third-party "Scheme Size Port" mod (00SunRay00/RE2b2m22 v2.2.0) REMAINDER -
+        // admin tools (unit spawn/team switch/effects/items/teleport), Rule Setter, building tools
+        // (fill/square/circle/replace/chain-remove/power-connect), schematic layers, renderer
+        // extras (x-ray/grid/ruler), wave-approaching alert. See SchemeSizeMod's javadoc for the
+        // full skip-list (schematic limit, CLaJ, image parser etc. already exist natively).
+        SchemeSizeMod()
 
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't

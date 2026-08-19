@@ -1949,6 +1949,12 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     }
 
     public void flushPlans(Seq<BuildPlan> plans, boolean freeze, boolean force, boolean removeFrozen){
+        //scheme-size port: env-only ("cursed") schematics are placed directly via setNet when admin tools allow it
+        if(scheme.SchemeSizeMod.enabled() && scheme.tools.SchematicLayers.isCursed(plans) && scheme.tools.SchematicLayers.cursedUsable()){
+            scheme.SchemeVars.admins.flush(plans);
+            return;
+        }
+
         var configLogic = Core.settings.getBool("processorconfigs");
         var temp = new BuildPlan[plans.size + plans.count(plan -> plan.block == Blocks.waterExtractor) * 3]; // Cursed but works good enough for me
         var added = 0;
@@ -2102,6 +2108,11 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
     /** Remove everything from the queue in a selection. */
     protected void removeSelection(int x1, int y1, int x2, int y2, boolean flush, int maxLength, boolean freeze){
+        //scheme-size port: remember what the break-selection covered so the "return last removed" tool can rebuild it
+        if(scheme.SchemeSizeMod.enabled() && scheme.SchemeVars.build != null){
+            scheme.SchemeVars.build.save(x1, y1, x2, y2, maxSchematicSize);
+        }
+
         NormalizeResult result = Placement.normalizeArea(x1, y1, x2, y2, rotation, false, maxLength);
         for(int x = 0; x <= Math.abs(result.x2 - result.x); x++){
             for(int y = 0; y <= Math.abs(result.y2 - result.y); y++){
@@ -2270,7 +2281,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         }
     }
 
-    protected void updateLine(int x1, int y1, int x2, int y2){
+    public void updateLine(int x1, int y1, int x2, int y2){ //scheme-size port: public for building tools (square/connect modes)
         linePlans.clear();
         if(block.group == BlockGroup.walls && Core.input.shift()) updateWallLine(x1, y1, x2, y2);
         else
@@ -2293,7 +2304,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         }
     }
 
-    protected void updateLine(int x1, int y1){
+    public void updateLine(int x1, int y1){ //scheme-size port: public for building tools
         updateLine(x1, y1, tileX(getMouseX()), tileY(getMouseY()));
     }
 

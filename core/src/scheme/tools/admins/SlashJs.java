@@ -1,0 +1,224 @@
+package scheme.tools.admins;
+
+import arc.math.Mathf;
+import arc.math.geom.Position;
+import arc.struct.ObjectSet;
+import arc.struct.Seq;
+import arc.util.Strings;
+import mindustry.entities.units.BuildPlan;
+import mindustry.game.Team;
+import mindustry.gen.Player;
+import mindustry.type.Item;
+import mindustry.type.StatusEffect;
+import mindustry.type.UnitType;
+import mindustry.world.Block;
+import scheme.tools.MessageQueue;
+import scheme.tools.RainbowTeam;
+
+import static arc.Core.*;
+import static mindustry.Vars.*;
+import static scheme.SchemeVars.*;
+
+/** Инструменты через спам "/js ..." в чат - для серверов с плагином JSEval. Нужны права админа. */
+public class SlashJs implements AdminsTools{
+
+    public String keyName(){ return "slashjs"; }
+
+    public void manageRuleBool(boolean value, String name){
+        if(unusable()) return;
+        send("Vars.state.rules." + name + " = " + value + "; Call.setRules(Vars.state.rules);");
+    }
+
+    public void manageRuleStr(String value, String name){
+        if(unusable()) return;
+        send("Vars.state.rules." + name + " = " + value + "; Call.setRules(Vars.state.rules);");
+    }
+
+    public void manageTeamRuleBool(int teamId, boolean value, String name){
+        if(unusable()) return;
+        send("var tr = Vars.state.rules.teams.get(Team.all[" + teamId + "]); tr." + name + " = " + value + "; Call.setRules(Vars.state.rules);");
+    }
+
+    public void manageTeamRuleStr(int teamId, String value, String name){
+        if(unusable()) return;
+        send("var tr = Vars.state.rules.teams.get(Team.all[" + teamId + "]); tr." + name + " = " + value + "; Call.setRules(Vars.state.rules);");
+    }
+
+    public void manageRuleObjectSet(String fieldName, ObjectSet<?> value){
+        if(unusable()) return;
+        if(value.isEmpty()){
+            send("Vars.state.rules." + fieldName + ".clear(); Call.setRules(Vars.state.rules);");
+            return;
+        }
+
+        var it = value.iterator();
+        if(it.hasNext()){
+            Object first = it.next();
+            if(first instanceof mindustry.ctype.Content){
+                int ordinal = ((mindustry.ctype.Content)first).getContentType().ordinal();
+                StringBuilder sb = new StringBuilder();
+                for(Object obj : value){
+                    if(obj instanceof mindustry.ctype.Content){
+                        if(sb.length() > 0) sb.append(",");
+                        sb.append(((mindustry.ctype.Content)obj).id);
+                    }
+                }
+                send("Vars.state.rules." + fieldName + ".clear(); [" + sb + "].forEach(id => Vars.state.rules." + fieldName + ".add(Vars.content.getByID(mindustry.ctype.ContentType.all[" + ordinal + "], id))); Call.setRules(Vars.state.rules);");
+            }
+        }
+    }
+
+    public void manageUnit(){
+        if(unusable()) return;
+        unit.select(false, true, false, (target, team, unit, amount) -> {
+            if(!canCreate(team, unit)) return;
+            getPlayer(target);
+            send("player.unit().spawnedByCore = true");
+            send("player.unit(@.spawn(player.team(), player))", getUnit(unit));
+        });
+    }
+
+    public void spawnUnits(){
+        if(unusable()) return;
+        unit.select(true, true, true, (target, team, unit, amount) -> {
+            if(amount == 0f){
+                send("Groups.unit.each(u => u.team == Team.@ && u.type == @, u => u.spawnedByCore = true)", team, getUnit(unit));
+                return;
+            }
+
+            if(!canCreate(team, unit)) return;
+            getPlayer(target);
+            send("var unit = @", getUnit(unit));
+            send("for (var i = 0; i < @; i++) unit.spawn(Team.@, player)", amount, team);
+        });
+    }
+
+    public void manageEffect(){
+        if(unusable()) return;
+        effect.select(true, true, false, (target, team, effect, amount) -> {
+            getPlayer(target);
+            if(amount == 0f) send("player.unit().unapply(" + getEffect(effect) + ")");
+            else send("player.unit().apply(" + getEffect(effect) + ", " + amount + ")");
+        });
+    }
+
+    public void manageItem(){
+        if(unusable()) return;
+        item.select(true, false, true, (target, team, item, amount) -> {
+            if(!hasCore(team)) return;
+            send("Team.@.core().items.add(@, @)", team, getItem(item), fixAmount(item, amount));
+        });
+    }
+
+    public void manageTeam(){
+        if(unusable()) return;
+        team.select(this::manageTeamImpl);
+    }
+
+    public void manageTeam(Team team, Player target){
+        if(unusable()) return;
+        manageTeamImpl(target, team);
+    }
+
+    private void manageTeamImpl(Player target, Team team){
+        if(team != null){
+            RainbowTeam.remove(target);
+            send("Groups.player.getByID(@).team(Team.@)", target.id, team);
+        }else
+            RainbowTeam.add(target, t -> send("Groups.player.getByID(@).team(Team.get(@))", target.id, t.id));
+    }
+
+    public void placeCore(){
+        if(unusable()) return;
+        getPlayer(player);
+        send("var tile = player.tileOn()");
+        send("if (tile != null) tile.setNet(tile.build instanceof CoreBlock.CoreBuild ? Blocks.air : Blocks.coreShard, player.team(), 0)");
+    }
+
+    public void despawn(Player target){
+        if(unusable()) return;
+        getPlayer(target);
+        send("player.unit().spawnedByCore = true");
+        send("player.clearUnit()");
+    }
+
+    public void teleport(Position pos){
+        if(unusable()) return;
+        float x = Mathf.round(pos.getX()), y = Mathf.round(pos.getY());
+        getPlayer(player);
+        send("var spawned = player.unit().spawnedByCore; var unit = player.unit(); unit.spawnedByCore = false; player.clearUnit()");
+        send("unit.set(@, @); Call.setPosition(player.con, @, @)", x, y, x, y);
+        send("Call.setCameraPosition(player.con, @, @)", x, y);
+        send("player.unit(unit); unit.spawnedByCore = spawned");
+    }
+
+    public void fill(int sx, int sy, int ex, int ey){
+        if(unusable()) return;
+        tile.select((floor, block, overlay, building) -> {
+            edit(floor, block, overlay, building);
+            send("for (var x = @; x <= @; x++) for (var y = @; y <= @; y++) todo(Vars.world.tile(x, y))", sx, ex, sy, ey);
+        });
+    }
+
+    public void brush(int x, int y, int radius){
+        if(unusable()) return;
+        tile.select((floor, block, overlay, building) -> {
+            edit(floor, block, overlay, building);
+            send("Geometry.circle(@, @, @, (cx, cy) => todo(Vars.world.tile(cx, cy)))", x, y, radius);
+        });
+    }
+
+    public void flush(Seq<BuildPlan> plans){
+        if(unusable()) return;
+        ui.showInfoFade("@scheme.admins.notsupported");
+    }
+
+    public boolean unusable(){
+        boolean admin = !player.admin && !settings.getBool("adminsalways");
+        if(!settings.getBool("adminsenabled")){
+            ui.showInfoFade("@scheme.admins.notenabled");
+            return true;
+        }else if(admin) ui.showInfoFade("@scheme.admins.notanadmin");
+        return admin;
+    }
+
+    private static void send(String command, Object... args){
+        MessageQueue.send("/js " + Strings.format(command, args));
+    }
+
+    private static void getPlayer(Player target){
+        send("var player = Groups.player.getByID(@)", target.id);
+    }
+
+    private static String getUnit(UnitType unit){
+        return "Vars.content.unit(" + unit.id + ")";
+    }
+
+    private static String getEffect(StatusEffect effect){
+        return "Vars.content.statusEffects().get(" + effect.id + ")";
+    }
+
+    private static String getItem(Item item){
+        return "Vars.content.item(" + item.id + ")";
+    }
+
+    private static String getBlock(Block block){
+        return block == null ? "null" : "Vars.content.block(" + block.id + ")";
+    }
+
+    private static void edit(Block floor, Block block, Block overlay, Block building){
+        boolean fo = floor != null || overlay != null;
+
+        send("f = @; b = @; o = @; d = @", getBlock(floor), getBlock(block), getBlock(overlay), getBlock(building));
+        send(
+            "todo = function(tile){ " +
+                "if(tile != null){ " +
+                (fo ? "sflr(tile);" : "") +
+                (block != null ? "if(tile.block() != b){ tile.setNet(b); }" : "") +
+                (building != null ? "if(tile.block() != d){ tile.setNet(d, Team." + player.team() + ", 0); }" : "") +
+                "} " +
+                "};"
+        );
+        if(fo) send("sflr = tile => { if(tile.floor()!=f||tile.overlay()!=o)tile.setFloorNet(f==null?tile.floor():f,o==null?tile.overlay():o) }");
+    }
+}

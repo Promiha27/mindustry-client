@@ -39,6 +39,10 @@ import mindustry.world.*;
 import mindustry.world.blocks.logic.*;
 import mindustry.world.blocks.payloads.*;
 import mindustry.world.blocks.storage.*;
+import scheme.SchemeVars;
+import scheme.moded.SchemeInput;
+import scheme.tools.BuildingTools;
+import scheme.tools.SchematicLayers;
 
 import static arc.Core.*;
 import static arc.Core.camera;
@@ -217,11 +221,24 @@ public class DesktopInput extends InputHandler{
             }
         }
 
+        //scheme-size port: building tools selections (area fill, power connect box, world brush)
+        SchemeInput.drawTop(this);
+
         Draw.reset();
     }
 
     @Override
     public void drawBottom(){
+        //scheme-size port: while a building tool is placing, draw its plans instead of the vanilla ones
+        if(SchemeInput.drawingTools()){
+            SchemeVars.build.plan.each(plan -> {
+                plan.animScale = 1f;
+                if(SchemeVars.build.mode != BuildingTools.Mode.remove) drawPlan(plan);
+                else drawBreaking(plan);
+            });
+            return;
+        }
+
         int cursorX = tileX(input.mouseX());
         int cursorY = tileY(input.mouseY());
 
@@ -847,8 +864,8 @@ public class DesktopInput extends InputHandler{
             if(ui.listfrag.shown()) ui.listfrag.rebuild();
         }
 
-        //zoom camera
-        if((!Core.scene.hasScroll() || Core.input.keyDown(Binding.diagonalPlacement)) && !ui.chatfrag.shown() && !ui.consolefrag.shown() && Math.abs(Core.input.axisTap(Binding.zoom)) > 0
+        //zoom camera (scheme-size port: not while a building tool consumes scroll for brush resize)
+        if(!SchemeInput.consumingZoom() && (!Core.scene.hasScroll() || Core.input.keyDown(Binding.diagonalPlacement)) && !ui.chatfrag.shown() && !ui.consolefrag.shown() && Math.abs(Core.input.axisTap(Binding.zoom)) > 0
             && !Core.input.keyDown(Binding.rotatePlaced) && (Core.input.keyDown(Binding.diagonalPlacement) ||
                 !Binding.zoom.value.equals(Binding.rotate.value) || ((!player.isBuilder() || !isPlacing() || !block.rotate) && selectPlans.isEmpty()))){
             renderer.scaleCamera(Core.input.axisTap(Binding.zoom));
@@ -888,6 +905,9 @@ public class DesktopInput extends InputHandler{
         if(Core.input.keyRelease(Binding.select)){
             player.shooting = false;
         }
+
+        //scheme-size port: admin keybinds + building tools input (see scheme.moded.SchemeInput)
+        SchemeInput.updateInput(this);
 
         if(!Core.scene.hasMouse() && !ui.minimapfrag.shown()){
             Core.graphics.cursor(cursorType);
@@ -1009,8 +1029,10 @@ public class DesktopInput extends InputHandler{
 
         if(!Core.scene.hasKeyboard() && selectX == -1 && selectY == -1 && schemX != -1 && schemY != -1){
             if(Core.input.keyRelease(Binding.schematicSelect)){
-                lastSchematic = schematics.create(schemX, schemY, rawCursorX, rawCursorY, Core.input.alt() && state.rules.editor);
-                useSchematic(lastSchematic, !state.rules.editor); //Ignore hidden blocks in editor mode
+                //scheme-size port: F-selection honors the current schematic layer (buildings/floor/block/overlay/terrain)
+                lastSchematic = SchematicLayers.create(schemX, schemY, rawCursorX, rawCursorY, Core.input.alt() && state.rules.editor);
+                //Ignore hidden blocks in editor mode; keep them for env-layer ("cursed") schematics too
+                useSchematic(lastSchematic, !state.rules.editor && SchematicLayers.layer == SchematicLayers.Layer.building);
                 if(selectPlans.isEmpty()){
                     lastSchematic = null;
                 }

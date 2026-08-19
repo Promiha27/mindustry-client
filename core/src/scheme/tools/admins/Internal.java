@@ -1,0 +1,235 @@
+package scheme.tools.admins;
+
+import arc.math.geom.Geometry;
+import arc.math.geom.Position;
+import arc.struct.ObjectSet;
+import arc.struct.Seq;
+import arc.util.Log;
+import mindustry.Vars;
+import mindustry.content.Blocks;
+import mindustry.entities.units.BuildPlan;
+import mindustry.game.Rules;
+import mindustry.game.Team;
+import mindustry.gen.Call;
+import mindustry.gen.Groups;
+import mindustry.gen.Player;
+import mindustry.world.Block;
+import mindustry.world.Tile;
+import mindustry.world.blocks.environment.Floor;
+import mindustry.world.blocks.environment.Prop;
+import mindustry.world.blocks.environment.StaticWall;
+import mindustry.world.blocks.storage.CoreBlock.CoreBuild;
+import scheme.tools.RainbowTeam;
+
+import java.lang.reflect.Field;
+
+import static arc.Core.*;
+import static mindustry.Vars.*;
+import static scheme.SchemeVars.*;
+
+/** Прямые вызовы движка - работает у хоста и в локальной/одиночной игре. */
+public class Internal implements AdminsTools{
+
+    public String keyName(){ return "internal"; }
+
+    public void manageRuleBool(boolean value, String name){
+        if(unusable()) return;
+        try{
+            Field field = Rules.class.getField(name);
+            field.setBoolean(Vars.state.rules, value);
+            Call.setRules(Vars.state.rules);
+        }catch(Exception e){
+            Log.err("scheme rule set", e);
+        }
+    }
+
+    public void manageRuleStr(String value, String name){
+        if(unusable()) return;
+        try{
+            Field field = Rules.class.getField(name);
+            setFieldValue(field, Vars.state.rules, value);
+            Call.setRules(Vars.state.rules);
+        }catch(Exception e){
+            Log.err("scheme rule set", e);
+        }
+    }
+
+    public void manageTeamRuleBool(int teamId, boolean value, String name){
+        if(unusable()) return;
+        try{
+            Team team = Team.all[teamId];
+            Rules.TeamRule tr = Vars.state.rules.teams.get(team);
+            Field field = Rules.TeamRule.class.getField(name);
+            field.setBoolean(tr, value);
+            Call.setRules(Vars.state.rules);
+        }catch(Exception e){
+            Log.err("scheme team rule set", e);
+        }
+    }
+
+    public void manageTeamRuleStr(int teamId, String value, String name){
+        if(unusable()) return;
+        try{
+            Team team = Team.all[teamId];
+            Rules.TeamRule tr = Vars.state.rules.teams.get(team);
+            Field field = Rules.TeamRule.class.getField(name);
+            setFieldValue(field, tr, value);
+            Call.setRules(Vars.state.rules);
+        }catch(Exception e){
+            Log.err("scheme team rule set", e);
+        }
+    }
+
+    public void manageRuleObjectSet(String fieldName, ObjectSet<?> value){
+        if(unusable()) return;
+        try{
+            Field field = Rules.class.getField(fieldName);
+            field.set(Vars.state.rules, value);
+            Call.setRules(Vars.state.rules);
+        }catch(Exception e){
+            Log.err("scheme rule set", e);
+        }
+    }
+
+    private void setFieldValue(Field field, Object target, String value) throws Exception{
+        Class<?> type = field.getType();
+        if(type == float.class){
+            field.setFloat(target, Float.parseFloat(value));
+        }else if(type == int.class){
+            field.setInt(target, Integer.parseInt(value));
+        }else{
+            field.set(target, value);
+        }
+    }
+
+    public void manageUnit(){
+        if(unusable()) return;
+        unit.select(false, true, false, (target, team, unit, amount) -> {
+            if(!canCreate(team, unit)) return;
+            target.unit().spawnedByCore(true);
+            target.unit(unit.spawn(team, target));
+        });
+    }
+
+    public void spawnUnits(){
+        if(unusable()) return;
+        unit.select(true, true, true, (target, team, unit, amount) -> {
+            if(amount == 0f){
+                Groups.unit.each(u -> u.team == team && u.type == unit, u -> u.spawnedByCore(true));
+                return;
+            }
+
+            if(!canCreate(team, unit)) return;
+            for(int i = 0; i < amount; i++) unit.spawn(team, target);
+        });
+    }
+
+    public void manageEffect(){
+        if(unusable()) return;
+        effect.select(true, true, false, (target, team, effect, amount) -> {
+            if(target.unit() == null) return;
+            if(amount == 0f) target.unit().unapply(effect);
+            else target.unit().apply(effect, amount);
+        });
+    }
+
+    public void manageItem(){
+        if(unusable()) return;
+        item.select(true, false, true, (target, team, item, amount) -> {
+            if(!hasCore(team)) return;
+            team.core().items.add(item, fixAmount(item, amount));
+        });
+    }
+
+    public void manageTeam(){
+        if(unusable()) return;
+        team.select((target, team) -> manageTeam(team, target));
+    }
+
+    public void manageTeam(Team team, Player target){
+        if(unusable()) return;
+        if(team != null){
+            RainbowTeam.remove(target);
+            target.team(team);
+        }else
+            RainbowTeam.add(target, target::team);
+    }
+
+    public void placeCore(){
+        if(unusable()) return;
+        Tile tile = player.tileOn();
+        if(tile != null) tile.setNet(tile.build instanceof CoreBuild ? Blocks.air : Blocks.coreShard, player.team(), 0);
+    }
+
+    public void despawn(Player target){
+        if(unusable()) return;
+        if(target.unit() == null) return;
+        target.unit().spawnedByCore(true);
+        target.clearUnit();
+    }
+
+    public void teleport(Position pos){
+        if(player.unit() == null) return;
+        player.unit().set(pos); // it's always available
+    }
+
+    public void fill(int sx, int sy, int ex, int ey){
+        if(unusable()) return;
+        tile.select((floor, block, overlay, building) -> {
+            for(int x = sx; x <= ex; x++)
+                for(int y = sy; y <= ey; y++)
+                    edit(floor, block, overlay, building, x, y);
+        });
+    }
+
+    public void brush(int x, int y, int radius){
+        if(unusable()) return;
+        tile.select((floor, block, overlay, building) -> Geometry.circle(x, y, radius, (cx, cy) -> edit(floor, block, overlay, building, cx, cy)));
+    }
+
+    public void flush(Seq<BuildPlan> plans){
+        plans.each(plan -> {
+            Tile t = world.tile(plan.x, plan.y);
+            if(t == null) return;
+            if(plan.block.isFloor() && !plan.block.isOverlay()){
+                if(t.floor() != plan.block) t.setFloorNet(plan.block, t.overlay());
+            }else if(plan.block instanceof Prop || plan.block instanceof StaticWall){
+                if(t.block() != plan.block) t.setNet(plan.block);
+            }else if(plan.block.isOverlay()){
+                if(t.overlay() != plan.block) t.setFloorNet(t.floor(), plan.block);
+            }else if(plan.block == Blocks.removeWall){
+                if(!t.block().hasBuilding()) t.setNet(Blocks.air, player.team(), 0);
+            }else if(plan.block == Blocks.removeOre){
+                t.setFloorNet(t.floor(), null);
+            }else if(t.block() != plan.block){
+                t.setNet(plan.block, player.team(), 0);
+            }
+        });
+    }
+
+    public boolean unusable(){
+        boolean admin = net.client() && !settings.getBool("adminsalways");
+        if(!settings.getBool("adminsenabled")){
+            ui.showInfoFade("@scheme.admins.notenabled");
+            return true;
+        }else if(admin) ui.showInfoFade("@scheme.admins.notavailable");
+        return admin;
+    }
+
+    private static void edit(Block floor, Block block, Block overlay, Block building, int x, int y){
+        Tile tile = world.tile(x, y);
+        if(tile == null) return;
+        Floor tileFloor = tile.floor();
+
+        if((floor != null && tile.floor() != floor) || (overlay != null && tile.overlay() != overlay)){
+            //при смене оверлея сперва кладём воду, чтобы форсировать обновление региона (трюк из мода)
+            if(overlay != null) tile.setFloor(Blocks.water.asFloor());
+            tile.setFloorNet(floor == null ? tileFloor : floor, overlay == null ? tile.overlay() : overlay);
+        }
+
+        if(block != null && tile.block() != block) tile.setNet(block);
+        if(building != null && tile.block() != building && building != Blocks.removeOre && building != Blocks.removeWall) tile.setNet(building, player.team(), 0);
+        if(building == Blocks.removeWall && !tile.block().hasBuilding()) tile.setNet(Blocks.air, player.team(), 0);
+        if(building == Blocks.removeOre) tile.setFloorNet(tileFloor, null);
+    }
+}
