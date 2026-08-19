@@ -201,10 +201,6 @@ public class HudFragment{
             block = ui.hudfrag.blockfrag.blockCatTable;
             statusTable = ui.hudGroup.find("waves");
             editorTable = ui.hudGroup.find("editor");
-            // Диагностика прошлого раунда, оставлена до подтверждения sonka что панель видна; затем убрать.
-            arc.util.Log.info("[scheme] tools panel anchor: found=@, width=@, flipped=@; admin anchor: status=@, editor=@",
-                block != null, block != null ? block.getWidth() : -1f, building != null && building.fliped,
-                statusTable != null, editorTable != null);
         });
     }
 }
