@@ -12,7 +12,6 @@ import eui.interact.ActionDelayHotkey;
 import eui.interact.AutofillPriorityDialog;
 import eui.interact.AutoUnit;
 import eui.interact.SchematicSelector;
-import eui.other.ExtendZoom;
 import eui.other.Mine;
 import eui.ui.alerts.LosingSupport;
 import eui.ui.alerts.UnderAttack;
@@ -66,8 +65,13 @@ import static mindustry.Vars.ui;
  * "eui-interact-core" gate only it read) were removed; its unique value - the per-block-type priority
  * config ({@link AutofillPriorityDialog}, key "eui.autofill.priority") - was merged into AutoTransfer as
  * a service-order modifier (-2 = exclude a block). The dialog stays, now configuring AutoTransfer.</li>
- * <li>{@link ExtendZoom} vs. this fork's native "Min Zoom" settings slider (Settings > Client, key
- * "minzoom") - see {@link ExtendZoom}'s own javadoc; this port is largely inert here.</li>
+ * <li>RESOLVED (dedupe pass): {@code eui.other.ExtendZoom} vs. this fork's native "Min Zoom" settings
+ * slider (Settings > Client, key "minzoom") - removed outright: {@code Renderer.minScale()} only reads
+ * the {@code renderer.minZoom} field it wrote during logic cutscenes (and the
+ * {@code min/maxZoomInGame} fields recomputed from it every frame are never read anywhere), so outside
+ * cutscenes the port was fully inert, and the native slider already covers zooming out further.
+ * Removing it also restores the vanilla cutscene zoom bounds the repo comment on those fields asks to
+ * keep ("don't change or vanilla compat breaks").</li>
  * <li>{@link SchematicSelector} (bottom-panel toggle + drag) vs. this engine's own native
  * {@code Binding.schematicSelect} (hold "F", drag over built tiles - see
  * {@code DesktopInput.java}'s handling of it) - both do the exact same "select an area, capture it as a
@@ -104,7 +108,6 @@ public class EUIMod{
         new AutoUnit();
         autofillPriorityDialog = new AutofillPriorityDialog();
         new ActionDelayHotkey();
-        new ExtendZoom();
         new Mine();
 
         ConveyorDrag conveyorDrag = new ConveyorDrag();
@@ -162,9 +165,6 @@ public class EUIMod{
                 table.checkPref("eui-DragBlock", false);
                 table.checkPref("eui-DragPathfind", false);
             }
-
-            table.pref(new LabelSetting("eui-camera-header", Core.bundle.get("eui.camera.title", "Camera")));
-            table.sliderPref("eui-maxZoom", 10, 1, 10, 1, i -> i + "");
 
             table.pref(new LabelSetting("eui-hud-header", Core.bundle.get("eui.hud.title", "HUD")));
             table.checkPref("eui-ShowBlockInfo", true);
