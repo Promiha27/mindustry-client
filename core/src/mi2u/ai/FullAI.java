@@ -18,6 +18,7 @@ import mi2u.io.*;
 import mi2u.ui.*;
 import mi2u.ui.elements.*;
 import mindustry.ai.types.*;
+import mindustry.client.ui.Toast;
 import mindustry.content.*;
 import mindustry.ctype.*;
 import mindustry.entities.*;
@@ -446,6 +447,21 @@ public class FullAI extends AIController{
         }
     }
 
+    /**
+     * DEDUPE-PASS arbitration over {@code player.shooting} - three features can drive the trigger, and
+     * this documents the chosen scheme (spec decision 10):
+     * <ul>
+     * <li>While this mode is enabled it OWNS auto-targeting: {@link #act} force-disables the native
+     * "autotarget" setting ({@code mindustry.client.utils.AutoShoot}) with a toast, every tick it finds
+     * it back on - i.e. mi2u wins over the native toggle for as long as the mode is active; to use the
+     * native one again, disable this mode first (the setting stays off after that, flip it back on via
+     * its own toggle/hotkey).</li>
+     * <li>qolc's Multitask needs no arbitration: it only acts while {@code Binding.select} (LMB) is
+     * held - exactly the condition under which this mode returns early and touches nothing - and the
+     * native autotarget itself exits while the unit is building/mining, which is Multitask's only
+     * window. The three therefore never fight over the same frame.</li>
+     * </ul>
+     */
     public static class AutoTargetMode extends Mode{
         public boolean attack = true, heal = true;
 
@@ -453,6 +469,11 @@ public class FullAI extends AIController{
 
         @Override
         public void act(){
+            if(Core.settings.getBool("autotarget")){
+                Core.settings.put("autotarget", false);
+                new Toast(2f).add(Core.bundle.get("mi2u.autotarget.suppress-toast"));
+            }
+
             if(Core.input.keyDown(Binding.select)) return;
 
             if(timer.get(0, 30f)){
