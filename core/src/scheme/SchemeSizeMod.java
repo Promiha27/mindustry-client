@@ -119,6 +119,8 @@ public class SchemeSizeMod{
             t.sliderPref("panspeedmul", 4, 4, 20, v -> v / 4f + "x", v -> applyPanSpeed());
             t.checkPref("hardscheme", false);
             t.checkPref("approachenabled", true);
+            //ключ оригинальный из мода ("mobile buttons") - на деле это админ-панель сверху-слева
+            t.checkPref("mobilebuttons", false);
         });
     }
 

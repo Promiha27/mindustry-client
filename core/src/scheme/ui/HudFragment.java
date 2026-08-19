@@ -40,9 +40,14 @@ public class HudFragment{
     }};
 
     public FlipButton building = new FlipButton();
+    public FlipButton admin = new FlipButton();
 
     /** PlacementFragment - для выравнивания панели по левому краю блок-меню. */
     public Element block;
+    /** Ванильная волновая панель (top-left, name="statustable") - якорь высоты админ-панели. */
+    public Element statusTable;
+    /** Панель редактора (name="editor") - якорь в режиме редактора. */
+    public Element editorTable;
     public TextField size;
 
     public void build(Group parent){
@@ -118,6 +123,56 @@ public class HudFragment{
                 pad.touchable = pad.color.a > .001f ? Touchable.childrenOnly : Touchable.disabled; // ingeniously
             }).get().color.a(0f); // hide on startup
         });
+
+        parent.fill(cont -> { // Admin panel (в моде звалась "Mobile Buttons", но это именно админ-панель)
+            cont.name = "scheme-adminpanel";
+            cont.top().left();
+
+            //ключ настройки оригинальный ("mobilebuttons") - сохранённое значение sonka из мода подхватится
+            cont.visible(() -> ui.hudfrag.shown && !ui.minimapfrag.shown() && (settings.getBool("mobilebuttons", false) || mobile));
+
+            cont.table(Tex.buttonEdge4, pad -> {
+                //ряд 1 виден всегда (шеврон + быстрые действия), в свёрнутом виде панель подъезжает вверх
+                partitionmb(pad, mode -> {
+                    mode.add(admin);
+                    setAction(mode, "blasted", admins::despawn);           //деспавн юнитов
+                    setAction(mode, "overdrive", () -> admins.teleport()); //телепорт к курсору
+                    setAction(mode, Icon.fileText, () -> { if(!admins.unusable()) rulesetter.show(); });
+                }).visible(() -> true).update(mode -> mode.setTranslation(0f, Scl.scl(admin.fliped ? 0f : -63.2f))).row();
+
+                partitionmb(pad, mode -> {
+                    setAction(mode, Icon.effect, admins::placeCore);       //ядро под ногами
+                    setAction(mode, "boss", admins::manageTeam);           //смена команды
+                    setAction(mode, Icon.admin, adminscfg::show);
+                    setAction(mode, Icon.image, rendercfg::show);
+                }).row();
+
+                partitionmb(pad, mode -> {
+                    setAction(mode, Icon.units, admins::manageUnit);
+                    setAction(mode, Icon.add, admins::spawnUnits);
+                    setAction(mode, "corroded", admins::manageEffect);     //статус-эффекты
+                    setAction(mode, Icon.production, admins::manageItem);  //предметы в ядро
+                }).row();
+                //кнопки GammaAI (ai.select) и lock-движений из мода не портированы - их подсистемы SKIP
+            }).margin(0f).update(pad -> {
+                Element anchor = state.rules.editor ? editorTable : statusTable;
+                if(anchor == null) return;
+                pad.setTranslation(0f, Scl.scl((admin.fliped ? 0f : 127f) - (mobile ? 69f : 0f)) - anchor.getHeight());
+                pad.setHeight(Scl.scl(admin.fliped ? 190.8f : 63.8f));
+            });
+        });
+    }
+
+    private Cell<Table> partitionmb(Table table, Cons<Table> cons){
+        return table.table(cont -> {
+            cont.defaults().size(63.5f).left();
+            cons.get(cont);
+        }).visible(() -> admin.fliped);
+    }
+
+    private void setAction(Table table, Object icon, Runnable listener){
+        //строковые иконки - ванильные спрайты статус-эффектов (status-blasted и т.п.), как в моде
+        table.button(icon instanceof String name ? atlas.drawable("status-" + name) : (Drawable)icon, Styles.clearNonei, 37f, listener);
     }
 
     private Cell<Table> partitionbt(Table table, Cons<Table> cons){
@@ -140,9 +195,12 @@ public class HudFragment{
             // всего меню, из-за чего сдвиг панели (178 - width) выходил ПОЛОЖИТЕЛЬНЫМ и панель
             // уезжала за правый край экрана. У форка контейнер доступен напрямую как публичное поле.
             block = ui.hudfrag.blockfrag.blockCatTable;
+            statusTable = ui.hudGroup.find("statustable");
+            editorTable = ui.hudGroup.find("editor");
             // Диагностика прошлого раунда, оставлена до подтверждения sonka что панель видна; затем убрать.
-            arc.util.Log.info("[scheme] tools panel anchor: found=@, width=@, flipped=@",
-                block != null, block != null ? block.getWidth() : -1f, building != null && building.fliped);
+            arc.util.Log.info("[scheme] tools panel anchor: found=@, width=@, flipped=@; admin anchor: status=@, editor=@",
+                block != null, block != null ? block.getWidth() : -1f, building != null && building.fliped,
+                statusTable != null, editorTable != null);
         });
     }
 }
