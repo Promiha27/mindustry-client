@@ -17,6 +17,14 @@ import mindustry.graphics.Layer;
  * Адаптация: мод подменял Groups.draw собственной EntityGroup-обёрткой через рефлексию;
  * вшитая копия вместо этого дёргается напрямую из mindustry.core.Renderer.draw()
  * (см. хук "agzam4 UnitsVisibility" там) - без рефлексии и подмены групп.
+ * <p>
+ * DEDUPE-PASS (решение 14): три режима скрытия юнитов сосуществуют намеренно (кружки / нативная
+ * невидимость ClientVars.hidingUnits по "O" / полное отключение отрисовки mi2u "disableUnit"), но
+ * одновременное включение с кружками даёт бессмыслицу: mi2u disableUnit убирает юнитов из Groups.draw
+ * ещё до нашего хука - H тогда вообще ничего не меняет; нативная невидимость рисует юнита с alpha 0,
+ * но кружок-то мы рисуем поверх - "невидимость" перестаёт быть невидимостью. Поэтому включение кружков
+ * выключает оба конфликтующих режима (с тостом), а включение нативного "O" ({@code DesktopInput}) или
+ * mi2u disableUnit ({@code MI2UI}, changed-callback его чекбокса) - выключает кружки, тоже с тостом.
  */
 public class UnitsVisibility {
 
@@ -30,6 +38,17 @@ public class UnitsVisibility {
 
 	public static void visibility(boolean b) {
 		hide = b;
+		if(!b) return;
+
+		//см. javadoc класса: сочетания с кружками дают бессмыслицу - выключаем конкурентов с тостом
+		if(mindustry.client.ClientVars.hidingUnits){
+			mindustry.client.ClientVars.hidingUnits = false;
+			new mindustry.client.ui.Toast(2f).add(Core.bundle.get("agzam4.hideunits.conflict-native"));
+		}
+		if(Core.settings.getBool("MI2UI.disableUnit", false)){
+			Core.settings.put("MI2UI.disableUnit", false);
+			new mindustry.client.ui.Toast(2f).add(Core.bundle.get("agzam4.hideunits.conflict-mi2u"));
+		}
 	}
 
 	/**

@@ -400,7 +400,15 @@ public class DesktopInput extends InputHandler{
             if(!(commandMode && (Core.input.keyDown(Binding.selectUnitTypeModifier) || Core.input.alt()) && selectedUnits.any())){
 
                 if(input.keyTap(Binding.invisibleAirUnits)) hidingAirUnits ^= true;
-                else if(input.keyTap(Binding.invisibleUnits)) hidingUnits ^= true;
+                else if(input.keyTap(Binding.invisibleUnits)){
+                    hidingUnits ^= true;
+                    //dedupe pass, decision 14: invisible units + agzam4's circle mode contradict each
+                    //other (circles would still be drawn over "invisible" units) - last one on wins
+                    if(hidingUnits && agzam4.gameutils.UnitsVisibility.hide){
+                        agzam4.gameutils.UnitsVisibility.visibility(false);
+                        new Toast(2f).add(bundle.get("client.invisibleunits.conflict-agzam4"));
+                    }
+                }
 
                 if(input.keyTap(Binding.runJS)){
                     boolean ran = false;

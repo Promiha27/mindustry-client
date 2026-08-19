@@ -281,7 +281,15 @@ public class MI2UI extends Mindow2{
         settings.title("graphics.drawGroups");
 
         settings.checkPref("disableWreck", false);
-        settings.checkPref("disableUnit", false);
+        //dedupe pass, decision 14: hiding units from Groups.draw makes agzam4's circle mode ("H") a
+        //silent no-op (its Renderer hook never even sees the units) - so enabling this turns the
+        //circles off, with a toast; see agzam4.gameutils.UnitsVisibility's javadoc for the full scheme
+        settings.checkPref("disableUnit", false, v -> {
+            if(v && agzam4.gameutils.UnitsVisibility.hide){
+                agzam4.gameutils.UnitsVisibility.visibility(false);
+                new mindustry.client.ui.Toast(2f).add(Core.bundle.get("mi2u.disableunit.conflict-agzam4"));
+            }
+        });
         settings.entry("graphics.filterUnit", (entry, t) -> {
             t.button(entry.title, () -> {
                 new BaseDialog(entry.title){{
