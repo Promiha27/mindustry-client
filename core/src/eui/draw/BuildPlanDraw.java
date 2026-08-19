@@ -8,7 +8,7 @@ import mindustry.graphics.Layer;
 /**
  * Draws a live preview of one or several pending {@link BuildPlan}s using each plan's own block
  * region/config-icon drawers, at the same layer/depth the engine's own plan queue draws at. Used by the
- * drag-pathfind previews ({@link eui.input.ConveyorDrag}, {@link eui.input.CoreDrag}). Ported from
+ * drag previews ({@link eui.input.CoreDrag}; also used by the since-removed ConveyorDrag). Ported from
  * utils/draw/build-plan.js.
  * <p>
  * {@link Seq} already implements {@code arc.util.Eachable}, so it's passed straight through as the

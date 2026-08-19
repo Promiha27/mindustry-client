@@ -5,7 +5,6 @@ import arc.Events;
 import arc.util.Log;
 import eui.core.ButtonSetting;
 import eui.core.LabelSetting;
-import eui.input.ConveyorDrag;
 import eui.input.CoreDrag;
 import eui.input.Drag;
 import eui.interact.ActionDelayHotkey;
@@ -77,11 +76,13 @@ import static mindustry.Vars.ui;
  * {@code CopyAnywhereFeature} (same F key, dead-player-gated) covers area-capture-to-library; arming
  * for placement without a unit was useless anyway since placing requires one. Its
  * {@code eui.util.Schematics} helper went with it.</li>
- * <li>{@link ConveyorDrag} ("eui-DragPathfind") vs. this engine's own native conveyor drag-placement,
- * which already routes around obstacles automatically ({@code Placement.pathfindLine(...)}, gated by the
- * native "conveyorpathfinding" setting, called from {@code InputHandler.java} whenever a conveyor/rail is
- * drag-placed normally) - no separate armed tool needed there at all. {@link CoreDrag} ("eui-DragBlock",
- * drag from a core to auto-place a vault) has no such native equivalent found, so it isn't redundant.</li>
+ * <li>RESOLVED (dedupe pass): {@code eui.input.ConveyorDrag} ("eui-DragPathfind") vs. this engine's own
+ * native conveyor drag-placement, which already routes around obstacles automatically
+ * ({@code Placement.pathfindLine(...)}, gated by the native "conveyorpathfinding" setting, called from
+ * {@code InputHandler.java} whenever a conveyor/rail is drag-placed normally) - removed along with its
+ * {@code eui.ai.ConveyorPathfind} helper; qol-suite's BridgeToCore covers the bridge/junction
+ * route-to-core niche. {@link CoreDrag} ("eui-DragBlock", drag from a core to auto-place a vault) has
+ * no native equivalent, so it stays.</li>
  * <li>{@code eui-showMinimap} vs. the native Settings > Graphics "Minimap" checkbox
  * ({@code SettingsMenuDialog.java}'s {@code graphics.checkPref("minimap", ...)}) - both write the exact
  * same {@code Core.settings} key ("minimap"), so this is a second toggle for the same switch rather than
@@ -108,14 +109,10 @@ public class EUIMod{
         new ActionDelayHotkey();
         new Mine();
 
-        ConveyorDrag conveyorDrag = new ConveyorDrag();
         CoreDrag coreDrag = new CoreDrag();
 
         Events.run(Trigger.update, Drag::update);
-        Events.run(Trigger.draw, () -> {
-            conveyorDrag.draw();
-            coreDrag.draw();
-        });
+        Events.run(Trigger.draw, coreDrag::draw);
 
         //--- phase B: HUD/overlays ---
         new BlockInfoUi();
@@ -160,7 +157,6 @@ public class EUIMod{
             table.checkPref("eui-makeMineble", false);
             if(!mobile){
                 table.checkPref("eui-DragBlock", false);
-                table.checkPref("eui-DragPathfind", false);
             }
 
             table.pref(new LabelSetting("eui-hud-header", Core.bundle.get("eui.hud.title", "HUD")));
