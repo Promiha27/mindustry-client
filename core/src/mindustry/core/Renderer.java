@@ -35,7 +35,8 @@ public class Renderer implements ApplicationListener{
     public final FogRenderer fog = new FogRenderer();
     public final MinimapRenderer minimap = new MinimapRenderer();
     public final OverlayRenderer overlays = new OverlayRenderer();
-    public final LightRenderer lights = new LightRenderer();
+    /** agzam4: не final - порт Agzam's Mod подменяет рендер света своим (agzam4.render.light.LightRenderer). */
+    public LightRenderer lights = new LightRenderer();
     public final Pixelator pixelator = new Pixelator();
     public PlanetRenderer planets;
 
@@ -418,7 +419,11 @@ public class Renderer implements ApplicationListener{
         Events.fire(Trigger.drawOver);
         blocks.drawBlocks();
 
-        Groups.draw.draw(Drawc::draw);
+        //agzam4 UnitsVisibility: хоткей "скрыть юнитов" рисует вместо юнита командный кружок
+        //(мод для этого подменял Groups.draw рефлексией; вшитой копии проще хукнуться здесь)
+        Groups.draw.draw(d -> {
+            if(!agzam4.gameutils.UnitsVisibility.skipDraw(d)) d.draw();
+        });
 
         if(settings.getBool("drawhitboxes")){
             DebugCollisionRenderer.draw();

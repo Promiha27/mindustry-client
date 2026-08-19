@@ -17,6 +17,7 @@ import mindustry.game.Teams.*
 import mindustry.gen.*
 import mindustry.input.*
 import mindustry.ui.fragments.*
+import agzam4.AgzamMod
 import eui.EUIMod
 import mi2u.MI2UMod
 import qol.QolSuiteMod
@@ -70,6 +71,12 @@ object Main : ApplicationListener {
         // window framework, zone/distribution rendering, Core Info, FullAI, Logic Helper etc.
         // See MI2UMod's javadoc for the adaptation notes and the self-disable guard.
         MI2UMod()
+
+        // Port of the third-party "Agzam's Mod" (Agzam4, v155.4.a) REMAINDER - industry calculator,
+        // processor/display generators, unit spawner, AFK auto-reply, custom light render, unlocks,
+        // chat gradient. See AgzamMod's javadoc for the full skip-list (most of the mod already
+        // exists natively or via qol/eui/mi2u).
+        AgzamMod()
 
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't

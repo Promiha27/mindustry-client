@@ -472,6 +472,10 @@ public class ChatFragment extends Table{
         }
         message = messageBuild.toString();
 
+        //agzam4: градиентная покраска исходящих сообщений (порт Agzam's Mod, инертна пока
+        //в настройках мода не заданы цвета; команды и уже покрашенные сообщения не трогает)
+        message = agzam4.uiOverride.ChatGradient.apply(message);
+
         checkPing(message);
 
         handleClientCommand(message);
