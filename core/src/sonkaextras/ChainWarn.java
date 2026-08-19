@@ -60,6 +60,16 @@ import static mindustry.Vars.*;
 public final class ChainWarn{
     public static final String settingKey = "sonka-chain-warn";
     public static final String settingEndKey = "sonka-chain-warn-end";
+    /**
+     * Фильтр блоков для проверки ВЫХОДА (по просьбе sonka): предупреждение "выход в никуда"
+     * срабатывает только для цепочек из выбранных здесь типов. Ключ отсутствует = выбраны ВСЕ
+     * кандидаты (поведение до фичи). Проверку ВХОДА фильтр сознательно не трогает - просили
+     * именно про выводы. Хранение/пикер - по образцу {@link LineRotate}.
+     */
+    public static final String endFilterKey = "sonka-chain-warn-end-blocks";
+
+    /** Кэш выбранных для end-проверки имён блоков; null = ещё не разобран из настройки. */
+    static ObjectSet<String> endSelected;
 
     /** Больше висящих проверок держать нет смысла - старейшие вытесняются. */
     static final int MAX_PENDING = 16;
@@ -93,6 +103,7 @@ public final class ChainWarn{
         Events.on(ClientLoadEvent.class, e -> ModsSettings.section("modsec-sonkaextras", t -> {
             t.checkPref(settingKey, true);
             t.checkPref(settingEndKey, false);
+            t.pref(new qol.core.ButtonSetting("sonka-chain-warn-end-configure", () -> new EndFilterDialog().show()));
             //пикер LineRotate живёт в ЭТОМ билдере: повторный вызов ModsSettings.section с тем же
             //именем добавил бы второй заголовок «Sonka Extras» (category() не дедупит), поэтому
             //секция строится в одном месте, а соседние фичи sonkaextras добавляются сюда
@@ -141,7 +152,8 @@ public final class ChainWarn{
 
         boolean liquid = first.block.hasLiquids && !first.block.hasItems;
         addPending(first, liquid, false);
-        if(Core.settings.getBool(settingEndKey, false)) addPending(last, liquid, true);
+        //end-проверка дополнительно гейтится пикером блоков (линия протяжки всегда из одного блока)
+        if(Core.settings.getBool(settingEndKey, false) && endAllows(first.block)) addPending(last, liquid, true);
     }
 
     static void addPending(BuildPlan plan, boolean liquid, boolean end){
@@ -305,5 +317,90 @@ public final class ChainWarn{
             Lines.square(h.x, h.y, tilesize * 0.9f);
         }
         Draw.reset();
+    }
+
+    //---- фильтр блоков end-проверки (пикер по образцу LineRotate) ----
+
+    /** Участвует ли блок цепочки в проверке выхода. Ключ отсутствует = все кандидаты. */
+    static boolean endAllows(Block b){
+        if(b == null) return false;
+        if(endSelected == null) rebuildEndFilter();
+        return endSelected.contains(b.name);
+    }
+
+    /** Кандидаты фильтра = ровно те блоки, из которых onLinePlaced собирает цепочки. */
+    static Seq<Block> endCandidates(){
+        return content.blocks().select(b ->
+            b.rotate && b.conveyorPlacement && (b.hasItems || b.hasLiquids)
+            && !b.isHidden() && b.uiIcon != null && b.uiIcon.found());
+    }
+
+    static void rebuildEndFilter(){
+        endSelected = new ObjectSet<>();
+        String raw = Core.settings.getString(endFilterKey, null);
+        if(raw == null){
+            //ключа нет = все кандидаты (поведение до появления фильтра)
+            for(Block b : endCandidates()) endSelected.add(b.name);
+        }else if(!raw.isEmpty()){
+            for(String name : raw.split(",")) endSelected.add(name);
+        }
+    }
+
+    static void saveEndFilter(){
+        Seq<String> names = endSelected.toSeq();
+        names.sort(); //стабильный порядок - settings.bin не «дребезжит» от порядка ObjectSet
+        Core.settings.put(endFilterKey, names.toString(","));
+    }
+
+    static void toggleEndFilter(Block b){
+        if(endSelected == null) rebuildEndFilter();
+        if(!endSelected.add(b.name)) endSelected.remove(b.name);
+        saveEndFilter();
+    }
+
+    /** Пикер блоков end-проверки: сетка иконок-тоглов, паттерн {@link LineRotate.PickerDialog}. */
+    public static class EndFilterDialog extends mindustry.ui.dialogs.BaseDialog{
+        public EndFilterDialog(){
+            super("@client.sonka.chainwarn.filter.title");
+            addCloseButton();
+            shown(this::setup);
+            onResize(this::setup);
+        }
+
+        private void setup(){
+            cont.clear();
+            if(endSelected == null) rebuildEndFilter();
+
+            cont.add("@client.sonka.chainwarn.filter.hint").width(520f).wrap().pad(6f).row();
+
+            cont.table(t -> {
+                t.defaults().growX().height(44f).pad(2f);
+                t.button("@client.sonka.linerotate.all", () -> {
+                    for(Block b : endCandidates()) endSelected.add(b.name);
+                    saveEndFilter();
+                    setup();
+                });
+                t.button("@client.sonka.linerotate.none", () -> {
+                    endSelected.clear();
+                    saveEndFilter();
+                    setup();
+                });
+            }).growX().row();
+
+            Seq<Block> blocks = endCandidates();
+            int cols = Mathf.clamp((int)(Core.graphics.getWidth() / arc.scene.ui.layout.Scl.scl(64f)) - 4, 4, 12);
+
+            cont.pane(p -> {
+                int i = 0;
+                for(Block b : blocks){
+                    arc.scene.ui.ImageButton btn = p.button(Tex.whiteui, mindustry.ui.Styles.clearTogglei, 40, () -> toggleEndFilter(b))
+                        .size(56f).tooltip(b.localizedName).get();
+                    //ImageButton копирует shared-стиль в конструкторе - мутировать getStyle() безопасно
+                    btn.getStyle().imageUp = new arc.scene.style.TextureRegionDrawable(b.uiIcon);
+                    btn.update(() -> btn.setChecked(endSelected != null && endSelected.contains(b.name)));
+                    if(++i % cols == 0) p.row();
+                }
+            }).grow().pad(4f);
+        }
     }
 }
