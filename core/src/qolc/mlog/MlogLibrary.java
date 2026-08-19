@@ -163,6 +163,55 @@ public final class MlogLibrary{
         }
     }
 
+    /**
+     * Две строки в Edit-меню редактора логики: сохранить текущий код в библиотеку
+     * ({@code qol/mlog/<имя>.txt}) и загрузить файл библиотеки в редактор. Минимальный полезный кусок
+     * "редакторных расширений" mlog.js - без него библиотеку {@code !mlog} нельзя пополнять из игры.
+     * Вызывается из {@link mindustry.logic.LogicDialog} (мы владеем исходником движка - не нужен
+     * scene-watcher, которым оригинал впрыскивал кнопки в чужой диалог).
+     */
+    public static void buildEditMenuButtons(arc.scene.ui.layout.Table t, arc.scene.ui.TextButton.TextButtonStyle style, mindustry.logic.LCanvas canvas, Runnable closeMenu){
+        t.button(Core.bundle.get("qolc.mlog.save-button"), mindustry.gen.Icon.save, style, () -> {
+            closeMenu.run();
+            Vars.ui.showTextInput(Core.bundle.get("qolc.mlog.save-title"), Core.bundle.get("qolc.mlog.save-name"), 64, "", name -> {
+                if(name.isEmpty()) return;
+                try{
+                    Fi dir = dir();
+                    dir.mkdirs();
+                    dir.child(name + ".txt").writeString(canvas.save());
+                    Vars.ui.showInfoFade(Core.bundle.format("qolc.mlog.saved", name));
+                }catch(Throwable e){
+                    Vars.ui.showException(e);
+                }
+            });
+        }).marginLeft(12f).row();
+
+        t.button(Core.bundle.get("qolc.mlog.load-button"), mindustry.gen.Icon.folder, style, () -> {
+            closeMenu.run();
+            mindustry.ui.dialogs.BaseDialog picker = new mindustry.ui.dialogs.BaseDialog(Core.bundle.get("qolc.mlog.load-button"));
+            picker.addCloseButton();
+            picker.cont.pane(p -> {
+                p.margin(10f);
+                Seq<Fi> files = Seq.with(dir().list()).select(f -> f.extension().equals("txt"));
+                if(files.isEmpty()){
+                    p.add(Core.bundle.get("qolc.mlog.no-files"));
+                    return;
+                }
+                for(Fi f : files){
+                    p.button(f.nameWithoutExtension(), () -> {
+                        try{
+                            canvas.load(f.readString().replace("\r\n", "\n"));
+                            picker.hide();
+                        }catch(Throwable e){
+                            Vars.ui.showException(e);
+                        }
+                    }).size(280f, 50f).padBottom(4f).row();
+                }
+            });
+            picker.show();
+        }).marginLeft(12f).row();
+    }
+
     private static void inject(LogicBuild target, String code){
         try{
             target.configure(LogicBlock.compress(code, target.links));
