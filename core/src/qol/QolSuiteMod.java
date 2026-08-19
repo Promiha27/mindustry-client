@@ -22,7 +22,6 @@ import qol.core.UnitClaims;
 import qol.coreheal.CoreHealFeature;
 import qol.core.LabelSetting;
 import qol.conveyorupgrade.ConveyorUpgradeFeature;
-import qol.minimap.MiniMapFeature;
 import qol.quickchat.QuickChatFeature;
 import qol.quicktoggles.QuickTogglesFeature;
 import qol.resourceforecast.ResourceForecastFeature;
@@ -78,7 +77,10 @@ public class QolSuiteMod{
         features.add(new AutoPossessFeature());
         features.add(new QuickChatFeature());
         features.add(new CustomBindsFeature());
-        features.add(new MiniMapFeature());
+        //MiniMapFeature removed in the dedupe pass: mi2u's MinimapMindow is the richer live minimap
+        //(fog, spawns, RTS command taps, zoom); the vanilla full map stays on Tab. Unique qol bits that
+        //went with it: desktop click-to-open-full-map, per-type unit sprites w/ outline/sort/size and
+        //the player eye/name markers.
         features.add(new CrawlerControlFeature());
         features.add(new CopyAnywhereFeature());
 
