@@ -637,21 +637,32 @@ public class DesktopInput extends InputHandler{
 
                     IntSeq group = controlGroups[i];
                     boolean creating = input.keyDown(Binding.createControlGroup);
+                    // sonka: Shift = аддитивный режим, стандартный для RTS кусок, которого в ваниле нет:
+                    // Ctrl+Shift+цифра ДОПОЛНЯЕТ группу текущим выделением (без перезаписи),
+                    // Shift+цифра ДОБАВЛЯЕТ группу к текущему выделению (без сброса). Работает потому,
+                    // что input.keyTap(бинд-цифра) срабатывает независимо от зажатых модификаторов -
+                    // ровно так же ваниль ловит Ctrl (createControlGroup) поверх той же цифры.
+                    boolean additive = input.shift();
 
                     //clear existing if making a new control group
                     //if any of the control group edit buttons are pressed take the current selection
                     if(creating){
-                        group.clear();
+                        if(!additive) group.clear();
 
                         IntSeq selectedUnitIds = selectedUnits.mapInt(u -> u.id);
                         if(Core.settings.getBool("distinctcontrolgroups", true)){
                             for(IntSeq cg : controlGroups){
-                                if(cg != null){
+                                //в аддитивном режиме группа не очищена - не выкидывать юнитов из неё же
+                                if(cg != null && cg != group){
                                     cg.removeAll(selectedUnitIds);
                                 }
                             }
                         }
-                        group.addAll(selectedUnitIds);
+                        //поштучно с проверкой дублей: при Ctrl+Shift часть выделения уже может быть в группе
+                        for(int j = 0; j < selectedUnitIds.size; j++){
+                            int id = selectedUnitIds.get(j);
+                            if(!group.contains(id)) group.add(id);
+                        }
                     }
 
                     //remove invalid units
@@ -665,28 +676,34 @@ public class DesktopInput extends InputHandler{
 
                     //replace the selected units with the current control group
                     if(!group.isEmpty() && !creating){
-                        selectedUnits.clear();
-                        commandBuildings.clear();
+                        //sonka: с Shift выделение не сбрасывается - группа доливается к нему
+                        if(!additive){
+                            selectedUnits.clear();
+                            commandBuildings.clear();
+                        }
 
                         group.each(id -> {
                             var unit = Groups.unit.getByID(id);
-                            if(unit != null){
-                                selectedUnits.addAll(unit);
+                            if(unit != null && !selectedUnits.contains(unit)){
+                                selectedUnits.add(unit);
                             }
                         });
 
                         //double tap to center camera
-                        if(lastCtrlGroup == i && Time.timeSinceMillis(lastCtrlGroupSelectMillis) < 400){
-                            float totalX = 0, totalY = 0;
-                            for(Unit unit : selectedUnits){
-                                totalX += unit.x;
-                                totalY += unit.y;
+                        //sonka: только без Shift - аддитивный набор нескольких групп подряд не должен дёргать камеру
+                        if(!additive){
+                            if(lastCtrlGroup == i && Time.timeSinceMillis(lastCtrlGroupSelectMillis) < 400){
+                                float totalX = 0, totalY = 0;
+                                for(Unit unit : selectedUnits){
+                                    totalX += unit.x;
+                                    totalY += unit.y;
+                                }
+                                panning = true;
+                                Core.camera.position.set(totalX / selectedUnits.size, totalY / selectedUnits.size);
                             }
-                            panning = true;
-                            Core.camera.position.set(totalX / selectedUnits.size, totalY / selectedUnits.size);
+                            lastCtrlGroup = i;
+                            lastCtrlGroupSelectMillis = Time.millis();
                         }
-                        lastCtrlGroup = i;
-                        lastCtrlGroupSelectMillis = Time.millis();
                     }
                 }
             }
