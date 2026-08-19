@@ -707,6 +707,28 @@ public class DesktopInput extends InputHandler{
                     table.add(cursor.block().localizedName + ": (" + cursor.x + ", " + cursor.y + ")").height(itemHeight).left().growX().fillY().padTop(-5);
                 } catch (Exception e) { ui.chatfrag.addMessage(e.getMessage(), null, Color.scarlet, "", e.getMessage()); }
 
+                // sonka: поворот стоящего здания прямо из этого меню. Нативный путь - зажать R
+                // (Binding.rotatePlaced) + скролл над зданием - работает и так, но неоткрываем; главный
+                // сценарий - хвостовой эрекирский мост-труба (DuctBridge/DirectionLiquidBridge): его выход
+                // задаётся ЕГО ЖЕ rotation (moveForward -> front()), отдельного "выходного" направления в
+                // модели нет, а findLink() соседей пересчитывается каждый тик от их собственного rotation -
+                // так что поворот хвоста НЕ рвёт входящую линковку цепочки. Кнопки зовут тот же MP-safe
+                // Call.rotateBlock, что и ваниль; меню специально не закрывается - можно докрутить до нужной
+                // стороны несколькими кликами. Условие - ровно ванильный гейт rotatePlaced (rotate+quickRotate),
+                // поэтому работает на любых поворачиваемых зданиях, не только на мостах.
+                if(cursor.build != null && cursor.interactable(player.team()) && cursor.block().rotate && cursor.block().quickRotate){
+                    table.row().fill();
+                    table.table(rot -> {
+                        rot.defaults().height(itemHeight).growX();
+                        rot.button("@client.sonka.rotatebuild.ccw", () -> {
+                            if(cursor.build != null) Call.rotateBlock(player, cursor.build, false);
+                        }).tooltip("@client.sonka.rotatebuild.tooltip").padRight(5f);
+                        rot.button("@client.sonka.rotatebuild.cw", () -> {
+                            if(cursor.build != null) Call.rotateBlock(player, cursor.build, true);
+                        }).tooltip("@client.sonka.rotatebuild.tooltip");
+                    });
+                }
+
                 table.row().fill();
                 table.button("@client.autotransfer", () -> { // Auto transfer
                     AutoTransfer.enabled ^= true;
