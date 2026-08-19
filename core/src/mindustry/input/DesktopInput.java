@@ -1218,12 +1218,34 @@ public class DesktopInput extends InputHandler{
         }
 
         if(mode == placing && block != null){
-            if(!overrideLineRotation && !Core.input.keyDown(Binding.diagonalPlacement) && (selectX != cursorX || selectY != cursorY) && ((int)Core.input.axisTap(Binding.rotate) != 0)){
-                rotation = ((int)((Angles.angle(selectX, selectY, cursorX, cursorY) + 45) / 90f)) % 4;
-                overrideLineRotation = true;
+            //sonka linerotate: для блоков, выбранных в пикере (дефолт - мосты Эрекира), роль Alt
+            //при протяжке инвертирована: Alt+колесо крутит ТОЛЬКО последний блок (lineLastRotation,
+            //постшаг в updateLine), колесо БЕЗ Alt - весь ряд, причём латч ниже взводится сразу,
+            //без ваниль-требования увести курсор со стартового тайла. Для невыбранных блоков
+            //ветка латча - нетронутая ваниль. Семантика самого латча: overrideLineRotation
+            //переводит iterateLine в режим "штамповать всем планам текущий rotation".
+            boolean invertAlt = sonkaextras.LineRotate.inverted(block);
+            int wheel = (int)Core.input.axisTap(Binding.rotate);
+            if(wheel != 0 && !Core.input.keyDown(Binding.diagonalPlacement)){
+                if(invertAlt && Core.input.alt()){
+                    //стартуем от фактического поворота хвоста, а не глобального rotation - иначе
+                    //первый тик колеса «телепортировал» бы хвост в сторону, куда смотрит призрак
+                    lineLastRotation = Mathf.mod((lineLastRotation != -1 ? lineLastRotation :
+                        linePlans.isEmpty() ? rotation : linePlans.peek().rotation) + wheel, 4);
+                    updateLine(selectX, selectY);
+                }else{
+                    //колесо без Alt снова управляет ВСЕМ рядом - точечный поворот хвоста снимается
+                    lineLastRotation = -1;
+                    if(!overrideLineRotation && (invertAlt || selectX != cursorX || selectY != cursorY)){
+                        rotation = (selectX == cursorX && selectY == cursorY) ? rotation :
+                            ((int)((Angles.angle(selectX, selectY, cursorX, cursorY) + 45) / 90f)) % 4;
+                        overrideLineRotation = true;
+                    }
+                }
             }
         }else{
             overrideLineRotation = false;
+            lineLastRotation = -1;
         }
 
         if(mode == breaking || mode == freezing || mode == dequeue){
@@ -1305,7 +1327,10 @@ public class DesktopInput extends InputHandler{
             selectScale = 0f;
         }
 
-        if(!Core.input.keyDown(Binding.diagonalPlacement) && Math.abs((int)Core.input.axisTap(Binding.rotate)) > 0){
+        //sonka linerotate: Alt+колесо для выбранных блоков уже обработано выше как "только
+        //последний" - глобальный rotation трогать нельзя, иначе штампованный ряд повернётся тоже
+        boolean sonkaAltLastOnly = mode == placing && block != null && Core.input.alt() && sonkaextras.LineRotate.inverted(block);
+        if(!Core.input.keyDown(Binding.diagonalPlacement) && !sonkaAltLastOnly && Math.abs((int)Core.input.axisTap(Binding.rotate)) > 0){
             rotation = Mathf.mod(rotation + (int)Core.input.axisTap(Binding.rotate), 4);
 
             if(splan != null){

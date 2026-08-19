@@ -96,6 +96,12 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
     public Interval controlInterval = new Interval();
     public @Nullable Block block;
     public boolean overrideLineRotation;
+    /**
+     * sonka linerotate: поворот ТОЛЬКО последнего плана линии (Alt+колесо для блоков, выбранных в
+     * {@link sonkaextras.LineRotate}); -1 = неактивен. Применяется постшагом в {@link #updateLine}
+     * поверх любых пересчётов; взводится и сбрасывается в DesktopInput рядом с overrideLineRotation.
+     */
+    public int lineLastRotation = -1;
     public int rotation = 1;
     public boolean droppingItem;
     public float itemDepositCooldown;
@@ -2302,6 +2308,14 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
             });
 
             block.handlePlacementLine(linePlans);
+        }
+
+        //sonka linerotate: Alt-режим "крутить только последний блок" - точечный поворот хвоста
+        //линии ПОВЕРХ любых пересчётов выше (path-повороты iterateLine, override-штамп,
+        //handlePlacementLine мостовых замен), иначе каждый ре-апдейт линии затирал бы его
+        if(lineLastRotation != -1 && linePlans.size > 0){
+            BuildPlan last = linePlans.peek();
+            if(last.block != null && last.block.rotate) last.rotation = lineLastRotation;
         }
     }
 
