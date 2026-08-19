@@ -10,8 +10,8 @@ import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Reflect;
 import mindustry.Vars;
+import mindustry.client.ui.ModsSettings;
 import mindustry.game.EventType.ClientLoadEvent;
-import mindustry.gen.Icon;
 import mindustry.net.Packet;
 import mindustry.ui.dialogs.SettingsMenuDialog.SettingsTable;
 import mindustrytool.features.Feature;
@@ -161,21 +161,20 @@ public class MindustryToolMod {
     }
 
     /**
-     * Категория в настройках клиента — по образцу остальных вшитых пакетов.
-     * Кнопка открывает главный диалог мода, чекбоксы фич идут через
+     * Секция "Mindustry Tool" общей вкладки «Моды» (см. {@link ModsSettings}) — по образцу
+     * остальных вшитых пакетов. Кнопка открывает главный диалог мода, чекбоксы фич идут через
      * FeatureManager.applyEnabled, чтобы срабатывали onEnable/onDisable.
      */
     private void buildSettingsCategory() {
-        Vars.ui.settings.addCategory(Core.bundle.get("mindustrytool.settings.category", "Mindustry Tool"),
-                Icon.planet, table -> {
-                    table.pref(new ButtonSetting("mindustrytool-open",
-                            Core.bundle.get("mindustrytool.settings.open", "Open Mindustry Tool"),
-                            () -> featureSettingDialog.show()));
+        ModsSettings.section("modsec-mindustrytool", table -> {
+            table.pref(new ButtonSetting("mindustrytool-open",
+                    Core.bundle.get("mindustrytool.settings.open", "Open Mindustry Tool"),
+                    () -> featureSettingDialog.show()));
 
-                    for (Feature feature : FeatureManager.getInstance().getFeatures()) {
-                        table.pref(new FeatureToggleSetting(feature));
-                    }
-                });
+            for (Feature feature : FeatureManager.getInstance().getFeatures()) {
+                table.pref(new FeatureToggleSetting(feature));
+            }
+        });
     }
 
     /** Как qol.core.ButtonSetting: через pref(), иначе категория теряет поисковую строку. */

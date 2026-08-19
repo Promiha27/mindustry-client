@@ -5,8 +5,8 @@ import arc.Events;
 import arc.scene.ui.layout.Table;
 import arc.util.Log;
 import mindustry.Vars;
+import mindustry.client.ui.ModsSettings;
 import mindustry.game.EventType.ClientLoadEvent;
-import mindustry.gen.Icon;
 
 import static mindustry.Vars.ui;
 
@@ -93,9 +93,9 @@ public class CampaignUtilsMod{
         });
     }
 
-    /** One shared "Campaign Utils" category, same flat-category convention as {@code QolSuiteMod}/{@code EUIMod}. */
+    /** The "Campaign Utils" section of the shared "Mods" settings tab, same convention as {@code QolSuiteMod}/{@code EUIMod} - see {@link ModsSettings}. */
     private void buildSettings(){
-        ui.settings.addCategory(Core.bundle.get("campaignutils.settings.category", "Campaign Utils"), Icon.settings, table -> {
+        ModsSettings.section("modsec-campaignutils", table -> {
             table.checkPref("campaignutils-show-stats-button", true);
             table.checkPref("campaignutils-show-eye-button", true);
         });

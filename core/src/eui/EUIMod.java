@@ -22,12 +22,11 @@ import eui.ui.other.SchematicsImportExport;
 import eui.ui.other.SchematicsTableUi;
 import eui.ui.units.DrawCycle;
 import eui.ui.units.UnitsTableUi;
+import mindustry.client.ui.ModsSettings;
 import mindustry.game.EventType.ClientLoadEvent;
 import mindustry.game.EventType.Trigger;
-import mindustry.gen.Icon;
 
 import static mindustry.Vars.mobile;
-import static mindustry.Vars.ui;
 
 /**
  * Baked directly into the client as native code (not loaded via the mod system), same approach as
@@ -35,8 +34,9 @@ import static mindustry.Vars.ui;
  * be instantiated before {@code ClientLoadEvent} fires. This is Extended UI++'s own independent
  * {@code eui.*} package / {@code eui-*} settings-key namespace - deliberately not sharing any of
  * qol-suite's classes (own {@link eui.core.LabelSetting}/{@link eui.core.ButtonSetting} instead of qol's,
- * own settings category), so either baked-in mod can be disabled/removed on its own without touching the
- * other.
+ * own section in the shared "Mods" tab registered through the neutral
+ * {@link mindustry.client.ui.ModsSettings}, not through qol code), so either baked-in mod can be
+ * disabled/removed on its own without touching the other.
  * <p>
  * Ported from the "extended-ui" Rhino mod's {@code scripts/main.js}, which loaded every feature module
  * through a single-point-of-failure-tolerant {@code require()} chain (see {@link eui.input.Drag}'s
@@ -51,8 +51,8 @@ import static mindustry.Vars.ui;
  * Rhino not being able to natively subclass {@code SettingsMenuDialog.SettingsTable.Setting} (it had to
  * fall back to a dynamic {@code extend(...)} hack, with its own try/catch fallback for when that hack
  * failed). {@link eui.core.LabelSetting}/{@link eui.core.ButtonSetting} are ordinary compiled Java
- * subclasses with no such risk, so every pref lives directly in one flat "Extended UI++" category here -
- * same as {@code qol.QolSuiteMod.buildSettings()} already does.
+ * subclasses with no such risk, so every pref lives directly in one flat "Extended UI++" section of the
+ * shared "Mods" tab here - same as {@code qol.QolSuiteMod.buildSettings()} already does.
  * <p>
  * KNOWN COLLISIONS with already-baked-in client/qol-suite functionality (ported anyway, per the task
  * spec - just flagged here):
@@ -131,13 +131,15 @@ public class EUIMod{
     }
 
     /**
-     * One shared "Extended UI++" category, sectioned by a bold {@link LabelSetting} header per group of
-     * related prefs - grows across phases as more features land. The auto-fill priority dialog and the
-     * schematic area-select tool aren't opened from here (matching the source): both are opened from the
-     * bottom panel's buttons instead (phase C), not the settings screen.
+     * The "Extended UI++" section of the shared "Mods" settings tab (see
+     * {@link mindustry.client.ui.ModsSettings} - one tab for every baked-in mod), sectioned by a bold
+     * {@link LabelSetting} header per group of related prefs - grows across phases as more features
+     * land. The auto-fill priority dialog and the schematic area-select tool aren't opened from here
+     * (matching the source): both are opened from the bottom panel's buttons instead (phase C), not the
+     * settings screen.
      */
     void buildSettings(){
-        ui.settings.addCategory(Core.bundle.get("eui.settings", "Extended UI++"), Icon.settings, table -> {
+        ModsSettings.section("modsec-eui", table -> {
             table.pref(new LabelSetting("eui-interact-header", Core.bundle.get("eui.interact.title", "Interact")));
             table.sliderPref("eui-action-delay", 500, 0, 3000, 25, i -> i + " ms");
             table.checkPref("eui-makeMineble", false);

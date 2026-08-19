@@ -4,9 +4,9 @@ import arc.Core;
 import arc.Events;
 import arc.struct.Seq;
 import arc.util.Log;
+import mindustry.client.ui.ModsSettings;
 import mindustry.game.EventType.ClientLoadEvent;
 import mindustry.game.EventType.WorldLoadEvent;
-import mindustry.gen.Icon;
 import qol.assistshare.AssistShareFeature;
 import qol.autobuildschematic.AutoBuildSchematicFeature;
 import qol.autopossess.AutoPossessFeature;
@@ -36,8 +36,6 @@ import qol.unitnotify.UnitNotifyFeature;
 import qol.ui.Hub;
 import qol.ui.QolWindow;
 import qol.zoomdisplay.ZoomDisplayFeature;
-
-import static mindustry.Vars.ui;
 
 /**
  * Baked directly into the client as native code (not loaded via the mod system) - see
@@ -107,8 +105,9 @@ public class QolSuiteMod{
     }
 
     /**
-     * One shared "QoL Suite" category, sectioned by a bold header per feature. An earlier version
-     * added that header via a raw {@code table.add(...)} call, which isn't tracked in
+     * The "QoL Suite" section of the shared "Mods" settings tab (see {@link ModsSettings} - one tab
+     * for every baked-in mod, this suite's section comes first), with a bold header per feature. An
+     * earlier version added that header via a raw {@code table.add(...)} call, which isn't tracked in
      * {@link mindustry.ui.dialogs.SettingsMenuDialog.SettingsTable}'s own {@code Setting} list - the
      * settings screen noticed the mismatch and disabled that category's search bar ("Mod added an
      * unexpected row to SettingsTable"). Splitting into one category per feature also fixed that (no
@@ -117,7 +116,7 @@ public class QolSuiteMod{
      * {@code sliderPref} are, instead of a raw row.
      */
     void buildSettings(){
-        ui.settings.addCategory(Core.bundle.get("qol.settings.category", "QoL Suite"), Icon.settings, table -> {
+        ModsSettings.section("modsec-qol", table -> {
             table.pref(new LabelSetting("qol-hub-header", Core.bundle.get("qol.hub.title", "Hub")));
             hub.buildSizeSetting(table);
 

@@ -4,8 +4,8 @@ import arc.Core;
 import arc.Events;
 import arc.util.Log;
 import mindustry.Vars;
+import mindustry.client.ui.ModsSettings;
 import mindustry.game.EventType.ClientLoadEvent;
-import mindustry.gen.Icon;
 import qol.core.ButtonSetting;
 import qol.core.LabelSetting;
 import qolc.autograb.AutoGrabFeature;
@@ -15,8 +15,6 @@ import qolc.multitask.MultitaskFeature;
 import qolc.palcolors.PalColorsFeature;
 import qolc.planrange.PlanRangeFeature;
 import qolc.wave.WaveSkipCommand;
-
-import static mindustry.Vars.ui;
 
 /**
  * Оркестратор порта стороннего JS-мода "QoL Control" (TyT-xexebe), вшитого в клиент нативным кодом -
@@ -73,12 +71,12 @@ public class QolControlMod{
     }
 
     /**
-     * Одна общая категория "QoL Control" c заголовками-секциями per фича - тот же паттерн (и те же
-     * tracked-классы {@link LabelSetting}/{@link ButtonSetting}), что у {@link qol.QolSuiteMod},
-     * см. его javadoc про сломанный поиск настроек при untracked-строках.
+     * Секция "QoL Control" общей вкладки «Моды» (см. {@link ModsSettings}) c заголовками per фича -
+     * тот же паттерн (и те же tracked-классы {@link LabelSetting}/{@link ButtonSetting}), что у
+     * {@link qol.QolSuiteMod}, см. его javadoc про сломанный поиск настроек при untracked-строках.
      */
     private void buildSettings(){
-        ui.settings.addCategory(Core.bundle.get("qolc.settings.category", "QoL Control"), Icon.logic, table -> {
+        ModsSettings.section("modsec-qolc", table -> {
             table.pref(new LabelSetting("qolc-multitask-header", Core.bundle.get("qolc.multitask.title")));
             table.checkPref("qolc-multitask", false);
 

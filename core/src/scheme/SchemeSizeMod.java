@@ -4,6 +4,7 @@ import arc.Events;
 import arc.math.Mathf;
 import arc.util.Log;
 import mindustry.Vars;
+import mindustry.client.ui.ModsSettings;
 import mindustry.game.EventType.ClientLoadEvent;
 import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.gen.Icon;
@@ -98,8 +99,9 @@ public class SchemeSizeMod{
         enabled = true;
     }
 
+    /** Секция "Scheme Size" общей вкладки «Моды» - см. {@link ModsSettings}. */
     void addSettings(){
-        ui.settings.addCategory(bundle.get("scheme.category.mod"), Icon.book, t -> {
+        ModsSettings.section("modsec-scheme", t -> {
             t.pref(new Setting("scheme-dialogs"){
                 @Override
                 public void add(SettingsTable table){
