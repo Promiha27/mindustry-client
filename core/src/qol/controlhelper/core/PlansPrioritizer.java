@@ -3,6 +3,7 @@ package qol.controlhelper.core;
 import arc.Events;
 import arc.math.geom.Geometry;
 import arc.math.geom.Vec2;
+import arc.struct.ObjectSet;
 import arc.struct.Queue;
 import arc.struct.Seq;
 import mindustry.content.Blocks;
@@ -29,6 +30,11 @@ import static mindustry.Vars.world;
 public class PlansPrioritizer{
     public Seq<PriorityFilter> filters = new Seq<>();
     public Seq<BuildPlan> prioritizedPlans = new Seq<>();
+    /* перф: set-зеркало prioritizedPlans (Seq.contains в цикле по очереди давал O(n²) на кадр);
+     * перестраивается после removeAll, так что всегда консистентен. prioritize - буфер вместо
+     * new Seq каждый кадр */
+    private final ObjectSet<BuildPlan> prioritizedSet = new ObjectSet<>();
+    private final Seq<BuildPlan> prioritizeTmp = new Seq<>();
 
     final BooleanSupplier masterEnabled;
 
@@ -48,15 +54,20 @@ public class PlansPrioritizer{
 
             prioritizedPlans.removeAll(plan -> plan == null || plan.build() != null && !(plan.build() instanceof ConstructBuild) || plan.block == Blocks.air);
 
-            Seq<BuildPlan> prioritize = new Seq<>();
+            prioritizedSet.clear();
+            for(int i = 0; i < prioritizedPlans.size; i++) prioritizedSet.add(prioritizedPlans.get(i));
+
+            Seq<BuildPlan> prioritize = prioritizeTmp;
+            prioritize.clear();
             Queue<BuildPlan> plans = player.unit().plans;
             outer:
             for(BuildPlan plan : plans){
-                if(prioritizedPlans.contains(plan)) continue;
+                if(prioritizedSet.contains(plan)) continue;
                 for(PriorityFilter filter : filters){
                     if(!filter.ShouldPreoritize(plan)) continue;
                     prioritize.add(plan);
                     prioritizedPlans.add(plan);
+                    prioritizedSet.add(plan); //зеркалим и внутри кадра - как старый contains по живому Seq
                     continue outer;
                 }
             }

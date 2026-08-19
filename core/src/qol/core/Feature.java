@@ -1,6 +1,7 @@
 package qol.core;
 
 import arc.Core;
+import arc.struct.ObjectMap;
 import mindustry.ui.dialogs.SettingsMenuDialog.SettingsTable;
 import qol.ui.QolWindow;
 
@@ -24,8 +25,18 @@ public interface Feature{
     /** Adds this feature's preferences to the shared settings category. */
     void buildSettings(SettingsTable table);
 
+    /* перф: isEnabled() зовётся из ~23 фич каждый кадр - без кэша каждая проверка собирала бы
+     * строку ключа заново; id() стабилен по контракту, так что мемоизация безопасна */
+    ObjectMap<String, String> SETTINGS_KEY_CACHE = new ObjectMap<>();
+
     default String settingsKey(){
-        return "qol-" + id() + "-enabled";
+        String id = id();
+        String key = SETTINGS_KEY_CACHE.get(id);
+        if(key == null){
+            key = "qol-" + id + "-enabled";
+            SETTINGS_KEY_CACHE.put(id, key);
+        }
+        return key;
     }
 
     default boolean isEnabled(){

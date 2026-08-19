@@ -3,6 +3,7 @@ package qol.crawlercontrol;
 import arc.Events;
 import arc.struct.IntSeq;
 import arc.struct.Seq;
+import arc.util.Time;
 import mindustry.ai.UnitStance;
 import mindustry.ai.types.CommandAI;
 import mindustry.content.UnitTypes;
@@ -30,6 +31,12 @@ import static mindustry.Vars.state;
  * {@code SuicideAI} (i.e. never commanded) are left alone entirely.
  */
 public class CrawlerControlFeature implements Feature{
+    /* перф: сканировать всех краулеров каждый кадр незачем - троттлим по образцу соседних scan-фич
+     * (CoreHeal/AssistShare), но короче (10 тиков, ~0.17с): смена stance чувствительна к задержке -
+     * свежескомандованный краулер не должен успеть подорваться до первого скана */
+    static final float SCAN_INTERVAL_TICKS = 10f;
+    float scanTimer = 0f;
+
     final IntSeq toHold = new IntSeq();
     final IntSeq toRelease = new IntSeq();
 
@@ -54,6 +61,10 @@ public class CrawlerControlFeature implements Feature{
 
     void update(){
         if(!isEnabled() || !state.isGame() || player == null || player.team().data() == null) return;
+
+        scanTimer += Time.delta;
+        if(scanTimer < SCAN_INTERVAL_TICKS) return;
+        scanTimer = 0f;
 
         toHold.clear();
         toRelease.clear();

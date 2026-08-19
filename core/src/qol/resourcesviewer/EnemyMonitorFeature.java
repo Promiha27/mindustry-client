@@ -163,13 +163,15 @@ public class EnemyMonitorFeature implements Feature{
     void update(){
         if(state.isMenu() || player == null || player.team() == null) return;
 
+        //перф: при выключенной фиче не сканируем logList каждый кадр; логи копятся только когда
+        //фича включена, а просроченные всё равно выметутся первым же update после включения
+        if(!isEnabled()) return;
+
         boolean removedOld = logList.size > 0 && logList.contains(l -> Time.timeSinceMillis(l.time) > LOG_LIFETIME_MS);
         if(removedOld){
             logList.removeAll(l -> Time.timeSinceMillis(l.time) > LOG_LIFETIME_MS);
             window.rebuild();
         }
-
-        if(!isEnabled()) return;
 
         checkTimer += Time.delta;
         if(checkTimer < CHECK_INTERVAL_TICKS) return;

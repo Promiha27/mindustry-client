@@ -2,6 +2,7 @@ package qol.controlhelper.core;
 
 import arc.Events;
 import arc.struct.ObjectIntMap;
+import arc.struct.ObjectSet;
 import arc.struct.Queue;
 import arc.struct.Seq;
 import mindustry.entities.units.BuildPlan;
@@ -20,6 +21,11 @@ import static mindustry.Vars.state;
 public class DrillsValidator{
     public float drillsThreashold = 0.6f;
     public Queue<BuildPlan> deltaPlans = new Queue<>();
+    /* перф: зеркало deltaPlans для O(1) membership (Queue.contains в цикле давал O(n²) на кадр)
+     * + переиспользуемые буферы вместо new Queue/new ObjectSet каждый кадр */
+    private final ObjectSet<BuildPlan> deltaSet = new ObjectSet<>();
+    private final Queue<BuildPlan> newPlansTmp = new Queue<>();
+    private final ObjectSet<BuildPlan> plansSetTmp = new ObjectSet<>();
 
     final BooleanSupplier masterEnabled;
 
@@ -32,20 +38,30 @@ public class DrillsValidator{
             if(!masterEnabled.getAsBoolean() || !IsEnabled() || !state.isGame() || player == null || player.unit() == null) return;
 
             Queue<BuildPlan> plans = player.unit().plans;
-            Queue<BuildPlan> newPlans = new Queue<>();
+            Queue<BuildPlan> newPlans = newPlansTmp;
+            newPlans.clear();
             for(BuildPlan plan : plans){
-                if(deltaPlans.contains(plan)) continue;
+                if(deltaSet.contains(plan)) continue;
                 newPlans.add(plan);
             }
             if(newPlans.size != 0){
+                //редкая ветка (появились новые планы); tmpPlans обязан быть свежим объектом -
+                //он становится очередью юнита
                 Queue<BuildPlan> tmpPlans = new Queue<>();
+                plansSetTmp.clear();
+                for(BuildPlan plan : plans) plansSetTmp.add(plan);
                 for(BuildPlan plan : deltaPlans){
-                    if(plans.contains(plan)) tmpPlans.add(plan);
+                    if(plansSetTmp.contains(plan)) tmpPlans.add(plan);
                 }
+                plansSetTmp.clear(); //не держим ссылки на чужие BuildPlan между кадрами
                 for(BuildPlan plan : ValidatePlans(newPlans)) tmpPlans.add(plan);
                 player.unit().plans = tmpPlans;
                 deltaPlans.clear();
-                for(BuildPlan plan : tmpPlans) deltaPlans.add(plan);
+                deltaSet.clear();
+                for(BuildPlan plan : tmpPlans){
+                    deltaPlans.add(plan);
+                    deltaSet.add(plan);
+                }
             }
         });
     }

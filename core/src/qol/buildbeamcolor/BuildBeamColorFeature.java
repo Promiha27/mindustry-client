@@ -244,22 +244,27 @@ public class BuildBeamColorFeature implements Feature{
         overriding = false;
     }
 
+    /* перф: переиспользуемые скретчи для resolved() - каждый из 4 вызовов в beginOverride
+     * немедленно копирует результат через .set(), так что одного out-буфера (плюс буфер второго
+     * градиентного цвета) хватает; до 8 new Color() за кадр уходят */
+    private static final Color resolvedScratch = new Color(), gradient2Scratch = new Color();
+
     /**
      * The configured color for one beam right now: rainbow wins, then the two-color gradient
      * shimmer (a sine sweep between the main and the second picked color), then the flat pick.
-     * Fresh locals rather than reused fields on purpose: fromHsv() only writes r/g/b, so a shared
-     * instance would silently keep a stale alpha (or stale channels) from its last use on another
-     * branch - a prior custom pick's near-zero alpha would render the rainbow as an almost
-     * transparent sliver blending into the (often gray/rocky) terrain, reading as "the rainbow
-     * turned gray" even though the hue never did.
+     * Returns a shared scratch instance: every branch fully rewrites r/g/b (fromHsv covers all
+     * three; set(int) covers rgba) and the unconditional {@code out.a = 1f} covers the one channel
+     * fromHsv leaves alone - the historical "fresh locals so a stale alpha can't gray out the
+     * rainbow" concern is already neutralized by that line, so callers must just copy the result
+     * before the next resolved() call (all four call sites .set() it immediately).
      */
     static Color resolved(boolean rainbow, boolean gradient, String valueKey, int def, String value2Key){
-        Color out = new Color();
+        Color out = resolvedScratch;
         if(rainbow){
             out.fromHsv((Time.time * RAINBOW_SPEED) % 360f, 1f, 1f);
         }else if(gradient){
             out.set(SafeSettings.getInt(valueKey, def))
-                .lerp(new Color().set(SafeSettings.getInt(value2Key, defaultColor2Int())),
+                .lerp(gradient2Scratch.set(SafeSettings.getInt(value2Key, defaultColor2Int())),
                     0.5f + 0.5f * Mathf.sin(Time.time, GRADIENT_SWING, 1f));
         }else{
             out.set(SafeSettings.getInt(valueKey, def));
