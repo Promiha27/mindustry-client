@@ -34,15 +34,18 @@ public final class BestDrillPick{
         //напольная руда: только на пустом тайле (block=air), иначе пипетка и так взяла бы здание
         if(tile.block() == Blocks.air){
             Item drop = tile.drop();
-            if(drop == null) return null;
-            return best(drop, false);
+            Block result = drop == null ? null : best(drop, false);
+            //sonka: временная диагностика «СКМ по руде не работает» - убрать после подтверждения
+            arc.util.Log.info("[bestdrill] floor: tile=@ block=@ overlay=@ drop=@ -> @",
+                tile, tile.block(), tile.overlay(), drop, result);
+            return result;
         }
 
         //стенная руда Эрекира (wallDrop у рудной стены)
         Item wallDrop = tile.wallDrop();
-        if(wallDrop != null) return best(wallDrop, true);
-
-        return null;
+        Block result = wallDrop == null ? null : best(wallDrop, true);
+        arc.util.Log.info("[bestdrill] wall: tile=@ block=@ wallDrop=@ -> @", tile, tile.block(), wallDrop, result);
+        return result;
     }
 
     static Block best(Item drop, boolean wall){
