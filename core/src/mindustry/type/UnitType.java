@@ -1634,7 +1634,16 @@ public class UnitType extends UnlockableContent implements Senseable{
 
         Draw.z(Layer.flyingUnit + 0.1f);
 
-        Draw.color(Color.lightGray, Color.white, 1f - flashScl + Mathf.absin(Time.time, 0.5f, flashScl));
+        //sonka: 4-й луч qol Beam Colors. Из мода этот луч был недостижим (цвета - глобальные
+        //константы lightGray/white, bracket-swap вокруг рендера их не накрывает) - теперь мы движок,
+        //поэтому draw-site просто читает уже разрешённый за кадр цвет из фичи; null = фича неактивна,
+        //ваниль как была. Flash-пульсация (absin) сохранена, меняются только два стопа градиента.
+        Color mineBase = qol.buildbeamcolor.BuildBeamColorFeature.miningBase();
+        if(mineBase != null){
+            Draw.color(mineBase, qol.buildbeamcolor.BuildBeamColorFeature.miningFlash(), 1f - flashScl + Mathf.absin(Time.time, 0.5f, flashScl));
+        }else{
+            Draw.color(Color.lightGray, Color.white, 1f - flashScl + Mathf.absin(Time.time, 0.5f, flashScl));
+        }
         Draw.alpha(currentAlpha);
 
         Draw.alpha(Renderer.unitLaserOpacity);

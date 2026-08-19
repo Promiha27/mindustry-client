@@ -38,6 +38,16 @@ import static mindustry.Vars.ui;
  * {@code laserColor1}/{@code laserColor2} fields (a white-to-{@link Pal#powerLight} gradient by
  * power satisfaction), swapped the same way; the starvation cue is kept by using a darkened copy of
  * the custom color as the second gradient stop.</li>
+ * <li><b>Mining beam</b> - the beam units draw while mining ore. As a jar mod this one was
+ * unreachable: {@code UnitType.drawMiningBeam} tints with the global {@code Color.lightGray}/
+ * {@code Color.white} constants, which everything else in the world uses too, so neither a Pal swap
+ * nor the draw-pass bracket below could touch it without repainting half the game. Now that this
+ * code IS the engine, the draw site reads the resolved color directly ({@link #miningBase()}/
+ * {@link #miningFlash()} - null base means "feature inactive, keep vanilla"), which is both simpler
+ * and safer than widening the bracket: no global constant is ever mutated. The colors are resolved
+ * once per frame here (in the same {@link Trigger#drawOver} hook the other beams use) into reused
+ * static buffers, so the per-unit draw loop allocates nothing. The vanilla white flash pulse
+ * (absin) is preserved; the flash stop is a whitened copy of the picked color.</li>
  * </ul>
  * There's no supported mod hook for any of these individually - e.g. {@code
  * BuilderComp.drawBuildingBeam()} is baked into the generated {@code Unit} class and can't be
@@ -46,9 +56,7 @@ import static mindustry.Vars.ui;
  * {@code Groups.draw.draw(...)} (Renderer.java:416-419 - so BOTH block and unit drawing sit inside
  * the bracket), and {@link Trigger#postDraw} fires right after - the swap never bleeds into menus or
  * the settings UI (a separate Scene2D pass outside the bracket), nor into placement previews and
- * selection overlays (drawn at Layer.plans/overlayUI BEFORE drawOver fires). The mining beam can NOT
- * be recolored this way: it's tinted with the global {@code Color.lightGray}/{@code Color.white}
- * constants, which everything else in the world uses too.
+ * selection overlays (drawn at Layer.plans/overlayUI BEFORE drawOver fires).
  */
 public class BuildBeamColorFeature implements Feature{
     static final float RAINBOW_SPEED = 1.2f; // degrees per tick -> full cycle roughly every 5s at normal speed
@@ -70,6 +78,13 @@ public class BuildBeamColorFeature implements Feature{
     final Seq<Color> mendOrigBase = new Seq<>(), mendOrigPhase = new Seq<>();
     final Seq<RepairTurret> repairBlocks = new Seq<>();
     final Seq<Color> repairOrig = new Seq<>();
+
+    //mining beam: resolved once per frame in beginOverride() into these reused static buffers and
+    //read straight from UnitType.drawMiningBeam (see class javadoc for why the draw site reads the
+    //feature instead of a Pal-style bracket swap). Static so the draw site needs no instance lookup;
+    //if the suite stands down (external jar mod present) they simply stay inactive.
+    static final Color mineBase = new Color(), mineFlash = new Color();
+    static boolean mineActive = false;
 
     @Override
     public String id(){
@@ -112,6 +127,20 @@ public class BuildBeamColorFeature implements Feature{
         Events.run(Trigger.postDraw, this::endOverride);
     }
 
+    /**
+     * Base color for the mining beam this frame, or null when the feature is inactive (disabled, no
+     * custom color picked and no rainbow/gradient) - the draw site keeps vanilla lightGray/white then.
+     * Never mutate the returned instance.
+     */
+    public static @arc.util.Nullable Color miningBase(){
+        return mineActive ? mineBase : null;
+    }
+
+    /** Flash stop for the mining beam - a whitened copy of {@link #miningBase()}; only valid when miningBase() != null. */
+    public static Color miningFlash(){
+        return mineFlash;
+    }
+
     @Override
     public void buildSettings(SettingsTable table){
         table.checkPref(rainbowKey(), false);
@@ -126,11 +155,16 @@ public class BuildBeamColorFeature implements Feature{
         table.checkPref(powerGradientKey(), false);
         table.pref(new ButtonSetting(powerPickKey(), () -> openPicker(powerColorKey(), defaultPowerInt())));
         table.pref(new ButtonSetting(powerPick2Key(), () -> openPicker(powerColor2Key(), defaultColor2Int())));
+        table.checkPref(mineRainbowKey(), false);
+        table.checkPref(mineGradientKey(), false);
+        table.pref(new ButtonSetting(minePickKey(), () -> openPicker(mineColorKey(), defaultMineInt())));
+        table.pref(new ButtonSetting(minePick2Key(), () -> openPicker(mineColor2Key(), defaultColor2Int())));
     }
 
     void beginOverride(){
         if(!isEnabled()){
             overriding = false;
+            mineActive = false;
             return;
         }
 
@@ -170,6 +204,17 @@ public class BuildBeamColorFeature implements Feature{
                 powerBlocks.get(i).laserColor1 = powerC1;
                 powerBlocks.get(i).laserColor2 = powerC2;
             }
+        }
+
+        //mining beam: no engine state to swap - just refresh the buffers UnitType.drawMiningBeam reads.
+        //Units draw inside the drawOver..postDraw bracket, so these are always fresh for this frame.
+        int mineDef = defaultMineInt();
+        mineActive = isMineRainbow() || isMineGradient() || SafeSettings.getInt(mineColorKey(), mineDef) != mineDef;
+        if(mineActive){
+            mineBase.set(resolved(isMineRainbow(), isMineGradient(), mineColorKey(), mineDef, mineColor2Key()));
+            //keep vanilla's "pulse toward a brighter stop" feel: flash = the same color pushed toward white
+            mineFlash.set(mineBase).lerp(Color.white, 0.35f);
+            mineFlash.a = 1f;
         }
 
         overriding = true;
@@ -241,6 +286,11 @@ public class BuildBeamColorFeature implements Feature{
         return Color.rgba8888(Pal.powerLight.r, Pal.powerLight.g, Pal.powerLight.b, Pal.powerLight.a);
     }
 
+    /** Vanilla {@link Color#lightGray}, packed - the mining beam's "nothing picked" default, keeping the feature a no-op until touched. */
+    static int defaultMineInt(){
+        return Color.rgba8888(Color.lightGray.r, Color.lightGray.g, Color.lightGray.b, Color.lightGray.a);
+    }
+
     /** White - the "no second gradient color picked yet" default, so a fresh gradient visibly pulses toward white instead of doing nothing. */
     static int defaultColor2Int(){
         return Color.rgba8888(1f, 1f, 1f, 1f);
@@ -264,6 +314,14 @@ public class BuildBeamColorFeature implements Feature{
 
     boolean isPowerRainbow(){
         return SafeSettings.getBool(powerRainbowKey(), false);
+    }
+
+    boolean isMineRainbow(){
+        return SafeSettings.getBool(mineRainbowKey(), false);
+    }
+
+    boolean isMineGradient(){
+        return SafeSettings.getBool(mineGradientKey(), false);
     }
 
     boolean isPowerGradient(){
@@ -340,5 +398,29 @@ public class BuildBeamColorFeature implements Feature{
 
     String powerColor2Key(){
         return "buildbeam-color-power-value2";
+    }
+
+    String mineRainbowKey(){
+        return "buildbeam-color-mine-rainbow";
+    }
+
+    String mineGradientKey(){
+        return "buildbeam-color-mine-gradient";
+    }
+
+    String minePickKey(){
+        return "buildbeam-color-mine-pick";
+    }
+
+    String mineColorKey(){
+        return "buildbeam-color-mine-value";
+    }
+
+    String minePick2Key(){
+        return "buildbeam-color-mine-pick2";
+    }
+
+    String mineColor2Key(){
+        return "buildbeam-color-mine-value2";
     }
 }
