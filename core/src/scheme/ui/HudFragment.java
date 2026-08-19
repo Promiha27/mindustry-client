@@ -31,6 +31,9 @@ import static scheme.SchemeVars.*;
  * шилд-бар, Gamma/Mono UI и кнопка шорткатов схем из мода не портированы (см. отчёт порта).
  */
 public class HudFragment{
+    /** перф: скретч для пульсации цвета плашки "волна на подходе" - setColor копирует значение, так что общий буфер безопасен (без Color.white.cpy() каждый кадр) */
+    private static final Color approachPulse = new Color();
+
 
     public static final TextFieldStyle input = new TextFieldStyle(){{
         font = Fonts.def;
@@ -122,7 +125,7 @@ public class HudFragment{
 
             //фон плашки-алерта - канонный black6 из единого style-гайда
             cont.table(sonkaextras.UiStyle.titleBg(), pad -> {
-                pad.add("@scheme.approaching.info").labelAlign(Align.center, Align.center).update(label -> label.setColor(Color.white.cpy().lerp(Color.scarlet, Mathf.absin(10f, 1f)))).padRight(6f);
+                pad.add("@scheme.approaching.info").labelAlign(Align.center, Align.center).update(label -> label.setColor(approachPulse.set(Color.white).lerp(Color.scarlet, Mathf.absin(10f, 1f)))).padRight(6f);
                 pad.button(Icon.info, Styles.clearNonei, approaching::show).grow();
                 pad.button(Icon.eyeOffSmall, Styles.clearNonei, () -> settings.put("approachenabled", false)).grow();
             }).margin(6f).padBottom(100f).update(pad -> {
