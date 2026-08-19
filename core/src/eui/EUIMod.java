@@ -146,7 +146,11 @@ public class EUIMod{
             }
 
             table.pref(new LabelSetting("eui-hud-header", Core.bundle.get("eui.hud.title", "HUD")));
-            table.checkPref("eui-ShowBlockInfo", true);
+            //default OFF since the dedupe pass: three under-cursor block-info surfaces coexist (this
+            //bottom-left panel, mi2u's HoverTopTable behind its "replaceTopTable" pref - also default
+            //OFF, verified - and the native top panel, which stays the default); nothing deleted since
+            //each shows a different place/composition
+            table.checkPref("eui-ShowBlockInfo", false);
             table.checkPref("eui-showPowerBar", true);
             table.checkPref("eui-showFactoryProgress", true);
             table.checkPref("eui-ShowResourceRate", false);

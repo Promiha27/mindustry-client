@@ -64,7 +64,7 @@ public class BlockInfoUi{
     }
 
     void update(){
-        if(!Core.settings.getBool("eui-ShowBlockInfo", true)){
+        if(!Core.settings.getBool("eui-ShowBlockInfo", false)){ //default OFF - see EUIMod.buildSettings
             if(built) clearTable();
             hovered = null;
             return;
