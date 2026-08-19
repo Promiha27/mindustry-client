@@ -475,6 +475,8 @@ public class SettingsMenuDialog extends BaseDialog{
                 lastCursednessLevelI[0] = s;
             }
         });
+        // sonka: выбор юнита фона главного меню - рядом с cursednesslevel, второй настройкой этого фона
+        client.pref(new qol.core.ButtonSetting("menu-unit-configure", () -> new sonkaextras.MenuUnitDialog().show()));
         client.checkPref("logiclinkorder", false);
         client.checkPref("showcutscenes", true);
         client.checkPref("powerinfo", true);

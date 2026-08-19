@@ -99,7 +99,9 @@ public class BackgroundFeature implements Feature {
     public static class CustomMenuRenderer extends MenuRenderer {
         private final Texture texture;
         private final TextureRegion region;
-        private final MenuRenderer originalRenderer;
+        // public: sonkaextras.MenuUnitDialog применяет выбор юнита фона меню к оригинальному
+        // рендеру внутри этой обёртки (он рисуется под картинкой при opacity < 100%)
+        public final MenuRenderer originalRenderer;
 
         public CustomMenuRenderer(Texture texture, MenuRenderer originalRenderer) {
             super();

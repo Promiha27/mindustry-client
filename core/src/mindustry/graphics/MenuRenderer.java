@@ -69,6 +69,17 @@ public class MenuRenderer implements Disposable{
             case UHH, OHNO, CURSED -> content.units().select(u -> u.region != null && u.region.found()).random(rand);
             case WWWHHHHHYYYY -> content.units().select(u -> !u.flying && u.region != null && u.region.found()).random(rand);
         };
+        // sonka: настройка "menu-unit" (см. sonkaextras.MenuUnitDialog) принудительно задаёт тип летуна
+        // фона меню поверх случайного выбора выше; пусто/битое имя = ваниль-рандом. Живёт именно тут,
+        // чтобы выбор переживал перегенерацию по H и пересоздание рендера. С mindustrytool Background
+        // совместимо: та фича лишь оборачивает рендерер, а при opacity < 100% рисует оригинальный
+        // MenuRenderer (и этих летунов) под своей картинкой.
+        if(Core.settings != null){
+            UnitType chosen = content.unit(Core.settings.getString(sonkaextras.MenuUnitDialog.settingKey, ""));
+            if(chosen != null && chosen.region != null && chosen.region.found()){
+                flyerType = chosen;
+            }
+        }
         blockFlyerType = content.blocks().select(u -> u.region != null && u.region.found() && u.isPlaceable()).random(rand);
         blockFlyerSpeed = 2f;
     }
