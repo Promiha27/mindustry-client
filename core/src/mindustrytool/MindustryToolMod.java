@@ -13,7 +13,6 @@ import mindustry.Vars;
 import mindustry.game.EventType.ClientLoadEvent;
 import mindustry.gen.Icon;
 import mindustry.net.Packet;
-import mindustry.graphics.Pal;
 import mindustry.ui.dialogs.SettingsMenuDialog.SettingsTable;
 import mindustrytool.features.Feature;
 import mindustrytool.features.FeatureManager;

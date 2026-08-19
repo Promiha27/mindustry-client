@@ -95,6 +95,10 @@ public class Packets {
         public String name = "";
         public String locale = "";
 
+        /** Порт: пустой конструктор нужен Jval-мапперу Utils (jackson создавал инстанс без него). */
+        public RoomPlayer() {
+        }
+
         public RoomPlayer(String name, String locale) {
             this.name = name;
             this.locale = locale;
