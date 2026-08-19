@@ -44,7 +44,11 @@ public class HudFragment{
 
     /** PlacementFragment - для выравнивания панели по левому краю блок-меню. */
     public Element block;
-    /** Ванильная волновая панель (top-left, name="statustable") - якорь высоты админ-панели. */
+    /**
+     * Весь top-left стек форка (name="waves"): statustable + панель режимов Foo's Client
+     * (activemodesdisplay) + панель энергии/пейлоада. Якорь высоты админ-панели. Оригинальный мод
+     * якорился на одну statustable - на этом форке под ней ещё две панели, и админ-панель их накрывала.
+     */
     public Element statusTable;
     /** Панель редактора (name="editor") - якорь в режиме редактора. */
     public Element editorTable;
@@ -195,7 +199,7 @@ public class HudFragment{
             // всего меню, из-за чего сдвиг панели (178 - width) выходил ПОЛОЖИТЕЛЬНЫМ и панель
             // уезжала за правый край экрана. У форка контейнер доступен напрямую как публичное поле.
             block = ui.hudfrag.blockfrag.blockCatTable;
-            statusTable = ui.hudGroup.find("statustable");
+            statusTable = ui.hudGroup.find("waves");
             editorTable = ui.hudGroup.find("editor");
             // Диагностика прошлого раунда, оставлена до подтверждения sonka что панель видна; затем убрать.
             arc.util.Log.info("[scheme] tools panel anchor: found=@, width=@, flipped=@; admin anchor: status=@, editor=@",
