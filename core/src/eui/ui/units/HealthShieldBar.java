@@ -20,6 +20,12 @@ import mindustry.graphics.Pal;
  * changed, then fades out, so a unit sitting at full health/shield stays clean but taking (or healing)
  * any damage flashes its bar back up. Ported from ui/units/health-shield-bar.js.
  * <p>
+ * DEDUPE-PASS NOTE: mi2u's unit hp bar ({@code RendererExt.drawUnitHpBar}, "enUnitHpBar", default ON)
+ * is the primary one - richer statics (drown time, negative health, overshield multiplier text, a
+ * damaged-only filter). This one is NOT a strict subset though: the flash-on-change-then-fade display
+ * window (5s + 3s fade) exists only here, so per the dedupe rule it was kept but switched to default
+ * OFF ("eui-showUnitBar") instead of deleted. Turn one of the two on, not both - they'd overlap.
+ * <p>
  * The source tracked both health and shield state in one shared-by-id map, and had a latent bug on a
  * unit's very first shield-bar draw: it wrote the new map entry, then unconditionally dereferenced the
  * (still null, in the local variable) previous-status reference right after - crashing that draw call

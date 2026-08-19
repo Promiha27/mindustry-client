@@ -22,7 +22,7 @@ public class DrawCycle{
     }
 
     static void update(){
-        boolean showUnitBar = Core.settings.getBool("eui-showUnitBar", true);
+        boolean showUnitBar = Core.settings.getBool("eui-showUnitBar", false); //default OFF - see EUIMod.buildSettings
         boolean trackPlayerCursor = Core.settings.getBool("eui-TrackPlayerCursor", false);
         boolean trackLogicControl = Core.settings.getBool("eui-TrackLogicControl", false);
 

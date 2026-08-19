@@ -154,7 +154,10 @@ public class EUIMod{
             table.checkPref("eui-ShowAlertsBottom", false);
 
             table.pref(new LabelSetting("eui-units-header", Core.bundle.get("eui.units.title", "Units")));
-            table.checkPref("eui-showUnitBar", true);
+            //default OFF since the dedupe pass: mi2u's enUnitHpBar (default ON, richer: drown/overshield
+            //multiplier/damaged-only filter) is the primary unit hp bar; this one is kept, not deleted,
+            //for its unique flash-on-change-then-fade display mode - see HealthShieldBar's javadoc
+            table.checkPref("eui-showUnitBar", false);
             table.checkPref("eui-ShowUnitTable", true);
             table.sliderPref("eui-UnitsTableAlpha", 100, 0, 100, 5, i -> i + "%");
             table.checkPref("eui-TrackPlayerCursor", false);
