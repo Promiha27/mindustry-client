@@ -35,6 +35,9 @@ public class HostDialog extends BaseDialog{
                 });
             }).size(54f).get();
             button.update(() -> button.getStyle().imageUpColor = player.color());
+
+            // sonka: редактор градиентного ника - вторая точка входа, у поля ника хост-диалога
+            t.button(Icon.pencil, Styles.squarei, 40, () -> new sonkaextras.NameGradientDialog().show()).size(54f).padLeft(4f).tooltip("@client.namegradient.title");
         }).width(w).height(70f).pad(4).colspan(3);
 
         if(steam){

@@ -23,6 +23,7 @@ import mindustry.io.versions.*;
 import mindustry.net.*;
 import mindustry.net.Packets.*;
 import mindustry.ui.*;
+import sonkaextras.*;
 
 import java.net.*;
 
@@ -359,6 +360,9 @@ public class JoinDialog extends BaseDialog{
                 });
             }).size(54f).get();
             button.update(() -> button.getStyle().imageUpColor = player.color());
+
+            // sonka: редактор градиентного ника - живёт рядом с полем ника, т.к. пишет в ту же настройку "name"
+            t.button(Icon.pencil, Styles.squarei, 40, () -> new NameGradientDialog().show()).size(54f).padLeft(4f).tooltip("@client.namegradient.title");
         }).width(w).height(70f).pad(4);
         cont.row();
         cont.add(pane).width((w + 5) * columns() + 33).pad(0);
