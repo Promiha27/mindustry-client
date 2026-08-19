@@ -331,6 +331,11 @@ public class Utils {
                 return text;
             }
         }
+        // Порт: у части фич мода имена без "@" ("feature.smart-drill" и т.п.), и апстрим
+        // показывал их сырым ключом; здесь пробуем бандл и для таких строк.
+        if (Core.bundle.has(text)) {
+            return Core.bundle.get(text);
+        }
         return text;
     }
 

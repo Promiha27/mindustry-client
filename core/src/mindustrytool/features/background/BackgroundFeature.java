@@ -27,7 +27,7 @@ public class BackgroundFeature implements Feature {
     public FeatureMetadata getMetadata() {
         return FeatureMetadata.builder()
                 .name("@feature.background")
-                .description("Custom Background")
+                .description("@feature.background.description")
                 .icon(Icon.image)
                 .build();
     }

@@ -220,7 +220,13 @@ public class FeatureCard {
             closeOnBack();
 
             cont.pane(pane -> {
-                pane.add(Utils.getString(feature.getMetadata().name() + ".help"));
+                // Порт: у мода нет ".help"-ключей в бандле — раньше диалог показывал сырой ключ;
+                // теперь при отсутствии перевода падаем на описание фичи.
+                String name = feature.getMetadata().name();
+                String helpKey = (name.startsWith("@") ? name.substring(1) : name) + ".help";
+                String help = Core.bundle.has(helpKey) ? Core.bundle.get(helpKey)
+                        : Utils.getString(feature.getMetadata().description());
+                pane.add(help).wrap().width(400f);
             }).scrollX(false).scrollY(true);
         }
     }

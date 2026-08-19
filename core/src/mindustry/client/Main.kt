@@ -24,6 +24,7 @@ import qol.QolSuiteMod
 import qolc.QolControlMod
 import sectorstats.CampaignUtilsMod
 import scheme.SchemeSizeMod
+import mindustrytool.MindustryToolMod
 import java.nio.file.Files
 import java.security.cert.*
 import java.util.Timer
@@ -85,6 +86,15 @@ object Main : ApplicationListener {
         // extras (x-ray/grid/ruler), wave-approaching alert. See SchemeSizeMod's javadoc for the
         // full skip-list (schematic limit, CLaJ, image parser etc. already exist natively).
         SchemeSizeMod()
+
+        // Port of the third-party "Mindustry Tool" mod (Sharlotte/MindustryVN v4.58.6-v8) - the
+        // mindustry-tool.com integrations: content browser (schematics+maps with tag/planet/sort
+        // filters), site login, global cross-server chat with translation (their API/Gemini/DeepL),
+        // Player Connect relay rooms, plus smart drill/smart upgrade, quick-access HUD, custom menu
+        // background, custom music and a time control bar. See MindustryToolMod's javadoc for the
+        // full skip-list (autoplay, god mode and every visualizer already exist natively or via
+        // mi2u/eui/scheme/qol).
+        MindustryToolMod()
 
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't

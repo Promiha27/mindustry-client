@@ -29,7 +29,7 @@ public class MusicFeature implements Feature {
     public FeatureMetadata getMetadata() {
         return FeatureMetadata.builder()
                 .name("@feature.music")
-                .description("Custom Music Loader")
+                .description("@feature.music.description")
                 .icon(Icon.play)
                 .build();
     }
