@@ -151,22 +151,14 @@ public class SchemeInput{
     }
 
     public static void flushBuildingTools(InputHandler input){
-        if(build.mode != Mode.remove) flush(input, false);
+        if(build.mode != Mode.remove) input.flushPlans(build.plan); //проклятые планы перехватит хук в flushPlans
         else if(player.unit() != null) build.plan.each(player.unit()::addBuild);
         build.plan.clear();
     }
 
     public static void flushLastRemoved(InputHandler input){
-        var plans = build.removed;
-        if(SchematicLayers.isCursed(plans) && SchematicLayers.cursedUsable()) admins.flush(plans);
-        else input.flushPlans(plans);
+        input.flushPlans(build.removed); //проклятые планы перехватит хук в flushPlans
         build.removed.clear();
-    }
-
-    private static void flush(InputHandler input, boolean removed){
-        var plans = build.plan;
-        if(SchematicLayers.isCursed(plans) && SchematicLayers.cursedUsable()) admins.flush(plans);
-        else input.flushPlans(plans);
     }
 
     public static boolean hasMoved(int x, int y){

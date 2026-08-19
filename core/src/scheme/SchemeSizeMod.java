@@ -2,7 +2,6 @@ package scheme;
 
 import arc.Events;
 import arc.math.Mathf;
-import arc.scene.ui.layout.Table;
 import arc.util.Log;
 import mindustry.Vars;
 import mindustry.game.EventType.ClientLoadEvent;
@@ -115,10 +114,7 @@ public class SchemeSizeMod{
                 }
             });
 
-            t.sliderPref("panspeedmul", 4, 4, 20, v -> {
-                applyPanSpeed();
-                return v / 4f + "x";
-            });
+            t.sliderPref("panspeedmul", 4, 4, 20, v -> v / 4f + "x", v -> applyPanSpeed());
             t.checkPref("hardscheme", false);
             t.checkPref("approachenabled", true);
         });

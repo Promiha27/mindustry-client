@@ -1950,8 +1950,9 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
     public void flushPlans(Seq<BuildPlan> plans, boolean freeze, boolean force, boolean removeFrozen){
         //scheme-size port: env-only ("cursed") schematics are placed directly via setNet when admin tools allow it
-        if(scheme.SchemeSizeMod.enabled() && scheme.tools.SchematicLayers.isCursed(plans) && scheme.tools.SchematicLayers.cursedUsable()){
-            scheme.SchemeVars.admins.flush(plans);
+        if(scheme.SchemeSizeMod.enabled() && scheme.tools.SchematicLayers.isCursed(plans)){
+            if(scheme.tools.SchematicLayers.cursedUsable()) scheme.SchemeVars.admins.flush(plans);
+            else ui.showInfoFade("@scheme.admins.notenabled"); //не засоряем очередь юнита планами env-блоков
             return;
         }
 
