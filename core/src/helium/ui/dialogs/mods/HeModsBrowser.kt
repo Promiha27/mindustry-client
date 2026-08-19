@@ -77,6 +77,7 @@ class HeModsBrowser : BaseDialog(Core.bundle["mods.browser"]){
 
     init{
         HeAssets.ensure()
+        addCloseListener() //ESC/Back
         shown(::rebuild)
         resized(::rebuild)
     }

@@ -15,6 +15,9 @@ open class HeAttachedDialog(val attached: Dialog, title: String, val enabled: Bo
     private var bypassOnce = false
 
     init{
+        //ESC/Back закрывает диалог (кнопок addCloseButton у Helium-диалогов нет - свои ряды кнопок)
+        addCloseListener()
+
         attached.shown{
             if(enabled.get() && !bypassOnce){
                 //post: даём attached.show() штатно завершиться, потом мгновенно подменяем

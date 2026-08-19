@@ -123,11 +123,19 @@ class HeQuickInv{
         invSlots.forEach{ it.load() }
     }
 
-    /** Сборка мусора: слоты удалённых сейвов выкидываются из global_vars.bin (порт cleanGlobal мода). */
+    /**
+     * Сборка мусора: слоты удалённых сейвов выкидываются из global_vars.bin (порт cleanGlobal мода).
+     * Отличия от мода: имена сейвов берутся ПРЯМО из файлов saves-папки, а не из control.saves -
+     * этот форк грузит сейвы лениво, и saveSlots на старте либо пуст (мод бы снёс ЖИВЫЕ данные),
+     * либо форсирует медленную синхронную загрузку всех сейвов. Плюс имена сверяются и в сыром,
+     * и в underscore-виде: slotName() заменяет "-" на "_" (у мода из-за этого дырка - слоты
+     * сейвов с дефисом в имени он считал мусором).
+     */
     private fun cleanGlobal(){
         try{
-            val saves = Vars.control.saves.saveSlots
-                .map{ it.file.nameWithoutExtension() }
+            val saves = Vars.saveDirectory.list()
+                .filter{ it.extension() == Vars.saveExtension }
+                .flatMap{ listOf(it.nameWithoutExtension(), it.nameWithoutExtension().replace("-", "_")) }
                 .toSet()
 
             HeVars.global.keys()
