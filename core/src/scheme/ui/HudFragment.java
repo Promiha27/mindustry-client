@@ -136,6 +136,11 @@ public class HudFragment{
         app.post(() -> { // waiting for blockfrag rebuild
             Element found = ui.hudGroup.find("inputTable");
             block = found != null ? found.parent.parent.parent : null;
+            // sonka: временная диагностика "панель не видно" - однострочный факт в лог на каждый
+            // WorldLoadEvent: нашёлся ли якорь блок-меню и какой ширины (от неё считается сдвиг панели).
+            // Убрать, когда панель подтверждённо заработает.
+            arc.util.Log.info("[scheme] tools panel anchor: found=@, width=@, flipped=@",
+                block != null, block != null ? block.getWidth() : -1f, building != null && building.fliped);
         });
     }
 }
