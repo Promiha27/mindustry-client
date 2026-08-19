@@ -93,6 +93,10 @@ public final class ChainWarn{
         Events.on(ClientLoadEvent.class, e -> ModsSettings.section("modsec-sonkaextras", t -> {
             t.checkPref(settingKey, true);
             t.checkPref(settingEndKey, false);
+            //пикер LineRotate живёт в ЭТОМ билдере: повторный вызов ModsSettings.section с тем же
+            //именем добавил бы второй заголовок «Sonka Extras» (category() не дедупит), поэтому
+            //секция строится в одном месте, а соседние фичи sonkaextras добавляются сюда
+            t.pref(new qol.core.ButtonSetting("sonka-linerotate-configure", () -> new LineRotate.PickerDialog().show()));
         }));
 
         Events.on(WorldLoadEvent.class, e -> {
