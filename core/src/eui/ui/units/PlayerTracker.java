@@ -15,6 +15,14 @@ import static mindustry.Vars.player;
  * cursor position, from their controlled unit - a spectator-friendly way to see where teammates are
  * looking/aiming. The "eui-TrackPlayerCursor" setting; the local player's own cursor is skipped by
  * default (system cursor already shows it). Ported from ui/units/player-tracker.js.
+ * <p>
+ * DEDUPE-PASS NOTE: three player-cursor renderers coexist in this client, and this one deliberately
+ * stays default-OFF (it always was) rather than being deleted, because it is NOT a strict subset of the
+ * other two - its team-colored marker styles (7 variants incl. plain line) and the "show own cursor"
+ * option exist nowhere else. The native "drawcursors" setting (default off, red dot + name near your
+ * mouse, {@code BlockRenderer}) is the baseline; mi2u's "enPlayerCursor" (default ON in mi2u's settings
+ * category, {@code RendererExt.drawPlayer}) draws aim-point dash-lines with shooting state and an
+ * off-screen-player name badge. Enable at most one for a clean picture.
  */
 public class PlayerTracker{
     public static void drawCursor(Player p){
