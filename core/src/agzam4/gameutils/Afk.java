@@ -60,7 +60,8 @@ public class Afk {
 					if(Awt.message(Strings.stripColors(e.player.name()) + ": " + msg.substring(pingText.length()))) {
 						Call.sendChatMessage("[lightgray]" + Bungle.afk("message-send"));
 					} else {
-						Call.sendChatMessage("[lightgray]" + Bungle.afk("afk.message-not-send"));
+						//в моде тут стоял ключ "afk.message-not-send" с двойным префиксом (битый) - исправлено
+						Call.sendChatMessage("[lightgray]" + Bungle.afk("message-not-send"));
 					}
 					return;
 				}
