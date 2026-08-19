@@ -20,6 +20,7 @@ import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
 import mindustry.Vars;
+import mindustry.client.ui.ModsSettings;
 import mindustry.ctype.UnlockableContent;
 import mindustry.gen.*;
 import mindustry.graphics.Pal;
@@ -29,24 +30,24 @@ import mindustry.world.Block;
 import mindustry.world.meta.BuildVisibility;
 
 /**
- * Категория "Agzam's Mod" в настройках игры. Урезана относительно оригинала: выброшены секции
- * непортированных фич (updates/апдейт-чекер, cursors, кастомный чат/консоль, мобильный UI,
- * report-bugs) - остались unlock, калькулятор, AFK, кастомный рендер и градиент чата.
- * Ключи настроек - оригинальные.
+ * Секция "Agzam's Mod" общей вкладки настроек «Моды» (см. {@link ModsSettings}). Урезана
+ * относительно оригинала: выброшены секции непортированных фич (updates/апдейт-чекер, cursors,
+ * кастомный чат/консоль, мобильный UI, report-bugs) - остались unlock, калькулятор, AFK,
+ * кастомный рендер и градиент чата. Ключи настроек - оригинальные.
+ * <p>
+ * Виджеты мода - сырые (свои чекбоксы через Prefs.settings, пикер градиента, группа кнопок
+ * рендера), а сырой {@code table.add(...)} на верхнем уровне билдера секции отключил бы
+ * поисковую строку ВСЕЙ общей вкладки (см. javadoc {@link ModsSettings}). Поэтому весь блок
+ * завёрнут в один tracked-{@code Setting}: внутри {@code Setting.add(...)} сырые add'ы легальны
+ * (rebuild() их ожидает), таблица пересобирается при каждом rebuild - состояние виджеты и так
+ * читают из Prefs/статики при построении.
  */
 public class ModSettingsDialog {
 
 	static TextureRegion colorBox;
 
-	public static void builder(SettingsTable settingsTable) {
-		settingsTable.defaults().left();
-		Table table = new Table();
-
-		settingsTable.add(table);
-		settingsTable.row();
-
-		settingsTable.name = Bungle.settings("name");
-		settingsTable.visible = true;
+	static void buildContent(Table table) {
+		table.defaults().left();
 
 		if(colorBox == null) colorBox = AgzamMod.sprite("color-box");
 
@@ -260,7 +261,20 @@ public class ModSettingsDialog {
 		});
 	}
 
-	public static void addCategory() {
-		Vars.ui.settings.addCategory(Bungle.settings("name"), Icon.wrench, ModSettingsDialog::builder);
+	public static void addSection() {
+		ModsSettings.section("modsec-agzam4", st -> st.pref(new SettingsTable.Setting("agzam4-settings"){
+			{
+				//title участвует только в ранжировании поиска - пусть весь блок находится по имени мода
+				title = Bungle.settings("name");
+			}
+
+			@Override
+			public void add(SettingsTable t){
+				Table inner = new Table();
+				buildContent(inner);
+				t.add(inner).left();
+				t.row();
+			}
+		}));
 	}
 }

@@ -88,7 +88,7 @@ public class AgzamMod {
 		IndustryCalculator.init();
 		PlayerUtils.build();
 
-		ModSettingsDialog.addCategory();
+		ModSettingsDialog.addSection();
 
 		Events.run(Trigger.update, () -> {
 			if(Vars.world != null && Core.input.keyTap(Binding.select) && !Core.scene.hasMouse()) {

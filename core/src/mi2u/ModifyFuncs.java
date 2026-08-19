@@ -179,7 +179,12 @@ public class ModifyFuncs{
     }
 
     public static void settingsMenuDialog(){
-        //вшитая копия: у нас нет LoadedMod с iconTexture, категорию помечаем иконкой AI-спрайта мода
+        //вшитая копия: у нас нет LoadedMod с iconTexture, категорию помечаем иконкой AI-спрайта мода.
+        //СОЗНАТЕЛЬНО отдельная категория, а не секция общей вкладки «Моды» (mindustry.client.ui.
+        //ModsSettings): это зеркало настроек Mindow-окон mi2u (контекстные настройки живут в самих
+        //окнах), а билдер ниже построен на сырых st.table/st.add - в общей вкладке такие add'ы
+        //отключили бы поисковую строку для ВСЕХ модов сразу (здесь она и так гаснет, но только для
+        //этой категории; сами настройки mi2u ищутся через st.getSettings().add(...) ниже)
         ui.settings.addCategory("@settings.meta.category", Core.atlas.drawable(MI2UMod.atlasPrefix + "ui-ai"), st ->{
             Table cont = new Table();
             mi2ui.settings.buildList(cont);
