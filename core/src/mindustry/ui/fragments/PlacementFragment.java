@@ -171,6 +171,12 @@ public class PlacementFragment{
                 }
             }
 
+            //sonka: СКМ по руде (пол или рудная стена Эрекира) = лучший доступный бур для неё,
+            //тем же приёмом, каким выше подменяется СКМ по ядру
+            if(tryBlock == null && build == null){
+                tryBlock = sonkaextras.BestDrillPick.bestFor(tile, player.team());
+            }
+
             if(tryBlock == null && state.rules.editor){
                 tryBlock =
                     tile.block() != Blocks.air ? tile.block() :
