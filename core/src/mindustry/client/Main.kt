@@ -105,6 +105,12 @@ object Main : ApplicationListener {
         // (sonkaextras.CampaignRetry - см. его javadoc)
         sonkaextras.CampaignRetry.init()
 
+        // Port of the third-party "Helium" mod (EB-wilson, beta-1.6) SELECTION - gauss-blur UI
+        // background, quick block palette in the placement panel, reworked mods manager/browser.
+        // Attack/effect range outlines and shield stacks deliberately skipped (sonka's call) -
+        // see HeliumMod's javadoc for the adaptation notes and the self-disable guard.
+        helium.HeliumMod()
+
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
             communicationSystem.init()

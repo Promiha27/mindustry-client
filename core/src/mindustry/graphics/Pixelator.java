@@ -15,6 +15,11 @@ public class Pixelator implements Disposable{
     private FrameBuffer buffer = new FrameBuffer();
     private float px, py, pre;
 
+    /** helium: скрин-семплер blur'а подхватывает буфер пикселятора как источник "мира" (см. helium.graphics.ScreenSampler). */
+    public FrameBuffer getBuffer(){
+        return buffer;
+    }
+
     {
         buffer.getTexture().setFilter(TextureFilter.nearest, TextureFilter.nearest);
     }
