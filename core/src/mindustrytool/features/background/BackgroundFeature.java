@@ -23,13 +23,19 @@ public class BackgroundFeature implements Feature {
     private MenuRenderer originalRenderer;
     private CustomMenuRenderer customRenderer;
 
+    /* перф: metadata неизменяема, а isEnabled()/UI зовут getMetadata() каждый кадр -
+     * ленивая мемоизация вместо новой цепочки builder+Drawable на каждый вызов */
+    private FeatureMetadata cachedMetadata;
+
     @Override
     public FeatureMetadata getMetadata() {
-        return FeatureMetadata.builder()
+        if (cachedMetadata == null)
+            cachedMetadata = FeatureMetadata.builder()
                 .name("@feature.background")
                 .description("@feature.background.description")
                 .icon(Icon.image)
                 .build();
+        return cachedMetadata;
     }
 
     @Override

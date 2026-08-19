@@ -32,15 +32,21 @@ public class TimeControlFeature extends Table implements Feature {
 
     private static final float[] SPEEDS = { 0.125f, 0.5f, 1f, 4f, 16f };
 
+    /* перф: metadata неизменяема, а isEnabled()/UI зовут getMetadata() каждый кадр -
+     * ленивая мемоизация вместо новой цепочки builder+Drawable на каждый вызов */
+    private FeatureMetadata cachedMetadata;
+
     @Override
     public FeatureMetadata getMetadata() {
-        return FeatureMetadata.builder()
+        if (cachedMetadata == null)
+            cachedMetadata = FeatureMetadata.builder()
                 .name("@feature.time-control")
                 .description("@feature.time-control.description")
                 .icon(Icon.rotate)
                 .order(1)
                 .enabledByDefault(false)
                 .build();
+        return cachedMetadata;
     }
 
     @Override

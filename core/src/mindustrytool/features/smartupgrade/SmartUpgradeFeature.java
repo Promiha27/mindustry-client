@@ -49,14 +49,20 @@ public class SmartUpgradeFeature implements Feature {
     private Table currentMenu;
     private Tile selectedTile;
 
+    /* перф: metadata неизменяема, а isEnabled()/UI зовут getMetadata() каждый кадр -
+     * ленивая мемоизация вместо новой цепочки builder+Drawable на каждый вызов */
+    private FeatureMetadata cachedMetadata;
+
     @Override
     public FeatureMetadata getMetadata() {
-        return FeatureMetadata.builder()
+        if (cachedMetadata == null)
+            cachedMetadata = FeatureMetadata.builder()
                 .name("feature.smart-upgrade")
                 .description("feature.smart-upgrade.description")
                 .icon(Icon.up)
                 .quickAccess(true)
                 .build();
+        return cachedMetadata;
     }
 
     @Override

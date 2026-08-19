@@ -18,14 +18,20 @@ public class PlayerConnectFeature implements Feature {
     private PlayerConnectJoinInjector injector;
     private PlayerConnectSettingDialog settingDialog;
 
+    /* перф: metadata неизменяема, а isEnabled()/UI зовут getMetadata() каждый кадр -
+     * ленивая мемоизация вместо новой цепочки builder+Drawable на каждый вызов */
+    private FeatureMetadata cachedMetadata;
+
     @Override
     public FeatureMetadata getMetadata() {
-        return FeatureMetadata.builder()
+        if (cachedMetadata == null)
+            cachedMetadata = FeatureMetadata.builder()
                 .name("@feature.player-connect")
                 .description("@feature.player-connect.description")
                 .icon(Icon.planet)
                 .order(3)
                 .build();
+        return cachedMetadata;
     }
 
     @Override

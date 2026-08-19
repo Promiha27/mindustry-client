@@ -38,6 +38,12 @@ import mindustry.game.EventType
  * копия полностью молчит.
  */
 class HeliumMod{
+    companion object{
+        /** Инстанс Helium-менеджера модов (null до ClientLoadEvent или при self-disable). */
+        @JvmStatic var heModsDialog: helium.ui.dialogs.mods.HeModsDialog? = null
+            private set
+    }
+
     init{
         if(Vars.mods.locateMod("he") != null){
             Log.info("[helium] External Helium mod is also loaded - baked-in copy is standing down.")
@@ -53,6 +59,11 @@ class HeliumMod{
                 try{
                     helium.ui.HeAssets.ensure()
                     UiBlur.load()
+
+                    //менеджер/браузер модов: подменяет ванильный ModsDialog при включённой настройке
+                    heModsDialog = helium.ui.dialogs.mods.HeModsDialog()
+                    heModsDialog!!.browser.onInstalledChanged = Runnable{ heModsDialog!!.rebuildMods() }
+
                     registerSettings()
                     HeVars.loaded = true
                 }catch(t: Throwable){
@@ -78,6 +89,7 @@ class HeliumMod{
             t.sliderPref(HeVars.BLUR_SPACE, 5, 2, 32, 1){ "x" + Strings.fixed(it*0.25f, 2) }
             t.checkPref(HeVars.ENABLE_PLACEMENT, true)
             t.sliderPref(HeVars.BLOCK_COLUMNS, 4, 4, 8, 1){ "$it" }
+            t.checkPref(HeVars.ENABLE_MODS_DIALOG, true)
         }
     }
 }

@@ -18,14 +18,20 @@ public class SchematicBrowserFeature implements Feature {
     private SchematicDialog schematicDialog;
     private Button browseButton;
 
+    /* перф: metadata неизменяема, а isEnabled()/UI зовут getMetadata() каждый кадр -
+     * ленивая мемоизация вместо новой цепочки builder+Drawable на каждый вызов */
+    private FeatureMetadata cachedMetadata;
+
     @Override
     public FeatureMetadata getMetadata() {
-        return FeatureMetadata.builder()
+        if (cachedMetadata == null)
+            cachedMetadata = FeatureMetadata.builder()
                 .name("@feature.schematic-browser")
                 .description("@feature.schematic-browser.description")
                 .icon(Icon.paste)
                 .order(2)
                 .build();
+        return cachedMetadata;
     }
 
     @Override

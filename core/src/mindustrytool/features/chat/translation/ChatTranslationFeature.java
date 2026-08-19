@@ -23,13 +23,19 @@ public class ChatTranslationFeature implements Feature {
     private String lastError = null;
     private TranslationProvider currentProvider = defaultTranslationProvider;
 
+    /* перф: metadata неизменяема, а isEnabled()/UI зовут getMetadata() каждый кадр -
+     * ленивая мемоизация вместо новой цепочки builder+Drawable на каждый вызов */
+    private FeatureMetadata cachedMetadata;
+
     @Override
     public FeatureMetadata getMetadata() {
-        return FeatureMetadata.builder()
+        if (cachedMetadata == null)
+            cachedMetadata = FeatureMetadata.builder()
                 .name("chat-translation")
                 .description("chat-translation.description")
                 .icon(mindustry.gen.Icon.chat)
                 .build();
+        return cachedMetadata;
     }
 
     public class SendTranslatedMessageCallPacket extends SendMessageCallPacket {

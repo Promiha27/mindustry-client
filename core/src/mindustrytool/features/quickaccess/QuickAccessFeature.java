@@ -34,13 +34,19 @@ import mindustrytool.features.FeatureMetadata;
 public class QuickAccessFeature extends Table implements Feature {
     private BaseDialog settingsDialog;
 
+    /* перф: metadata неизменяема, а isEnabled()/UI зовут getMetadata() каждый кадр -
+     * ленивая мемоизация вместо новой цепочки builder+Drawable на каждый вызов */
+    private FeatureMetadata cachedMetadata;
+
     @Override
     public FeatureMetadata getMetadata() {
-        return FeatureMetadata.builder()
+        if (cachedMetadata == null)
+            cachedMetadata = FeatureMetadata.builder()
                 .name("@feature.quick-access-hud")
                 .description("@feature.quick-access-hud.description")
                 .icon(Icon.menu)
                 .build();
+        return cachedMetadata;
     }
 
     @Override

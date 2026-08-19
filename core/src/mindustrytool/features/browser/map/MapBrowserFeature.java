@@ -14,14 +14,20 @@ import mindustrytool.features.FeatureMetadata;
 public class MapBrowserFeature implements Feature {
     private MapDialog mapDialog;
 
+    /* перф: metadata неизменяема, а isEnabled()/UI зовут getMetadata() каждый кадр -
+     * ленивая мемоизация вместо новой цепочки builder+Drawable на каждый вызов */
+    private FeatureMetadata cachedMetadata;
+
     @Override
     public FeatureMetadata getMetadata() {
-        return FeatureMetadata.builder()
+        if (cachedMetadata == null)
+            cachedMetadata = FeatureMetadata.builder()
                 .name("@feature.map-browser")
                 .description("@feature.map-browser.description")
                 .icon(Icon.map)
                 .order(1)
                 .build();
+        return cachedMetadata;
     }
 
     @Override

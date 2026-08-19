@@ -4,9 +4,8 @@ import arc.Core;
 import arc.Events;
 import arc.input.KeyBind;
 import arc.input.KeyCode;
+import arc.struct.Seq;
 import mindustry.game.EventType.Trigger;
-import mindustrytool.features.Feature;
-import mindustrytool.features.FeatureManager;
 
 public class MdtKeybinds {
 

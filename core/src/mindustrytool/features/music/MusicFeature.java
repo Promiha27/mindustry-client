@@ -25,13 +25,19 @@ public class MusicFeature implements Feature {
 
     public static final Seq<String> validExtensions = Seq.with("mp3", "ogg", "wav");
 
+    /* перф: metadata неизменяема, а isEnabled()/UI зовут getMetadata() каждый кадр -
+     * ленивая мемоизация вместо новой цепочки builder+Drawable на каждый вызов */
+    private FeatureMetadata cachedMetadata;
+
     @Override
     public FeatureMetadata getMetadata() {
-        return FeatureMetadata.builder()
+        if (cachedMetadata == null)
+            cachedMetadata = FeatureMetadata.builder()
                 .name("@feature.music")
                 .description("@feature.music.description")
                 .icon(Icon.play)
                 .build();
+        return cachedMetadata;
     }
 
     @Override

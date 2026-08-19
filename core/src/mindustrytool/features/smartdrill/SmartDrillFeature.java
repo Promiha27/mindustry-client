@@ -36,14 +36,20 @@ public class SmartDrillFeature implements Feature {
     private Table currentMenu;
     private Tile selectedTile;
 
+    /* перф: metadata неизменяема, а isEnabled()/UI зовут getMetadata() каждый кадр -
+     * ленивая мемоизация вместо новой цепочки builder+Drawable на каждый вызов */
+    private FeatureMetadata cachedMetadata;
+
     @Override
     public FeatureMetadata getMetadata() {
-        return FeatureMetadata.builder()
+        if (cachedMetadata == null)
+            cachedMetadata = FeatureMetadata.builder()
                 .name("feature.smart-drill")
                 .description("feature.smart-drill.description")
                 .icon(Icon.filter)
                 .quickAccess(true)
                 .build();
+        return cachedMetadata;
     }
 
     @Override
