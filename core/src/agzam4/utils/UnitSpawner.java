@@ -365,6 +365,9 @@ public class UnitSpawner {
 
 	public static @Nullable Tile lastTile = null;
 	public static void update() {
+		//адаптация: в моде update() работал и с закрытым окном (клик по карте продолжал спавнить)
+		//и не проверял avaliable() - вшитая копия спавнит только при открытом окне и вне мультиплеера
+		if(!visible || !avaliable()) return;
 		if(selected == null && !eraser) return;
 		if(Core.scene.hasMouse()) return;
 		if(Core.input.keyDown(KeyCode.mouseLeft)) {
