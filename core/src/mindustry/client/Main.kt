@@ -96,6 +96,11 @@ object Main : ApplicationListener {
         // mi2u/eui/scheme/qol).
         MindustryToolMod()
 
+        // sonka: уведомление о незапитанном начале протянутой цепочки труб/конвейеров
+        // (sonkaextras.ChainWarn - см. его javadoc). Как и моды выше, init() только вешает
+        // слушатели и должен отработать до фаера ClientLoadEvent.
+        sonkaextras.ChainWarn.init()
+
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
             communicationSystem.init()

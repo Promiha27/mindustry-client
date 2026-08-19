@@ -1239,6 +1239,11 @@ public class DesktopInput extends InputHandler{
         if(Core.input.keyRelease(Binding.breakBlock) || Core.input.keyRelease(Binding.select)){
 
             if(mode == placing && block != null){ //touch up while placing, place everything in selection
+                // sonka: снимок линии для проверки "начало цепочки труб ничем не запитано" - строго ДО
+                // flushPlans: ниже linePlans очищается раньше, чем фаерится LineConfirmEvent, так что
+                // слушателям события содержимое линии уже недоступно. Замороженные (freeze-queueing)
+                // линии не строятся сейчас - их не проверяем. См. sonkaextras.ChainWarn.
+                if(!isFreezeQueueing) sonkaextras.ChainWarn.onLinePlaced(linePlans);
                 // Why do we even need reversed build plans - SBytes 17/08/2022
 //                if(input.keyDown(Binding.boost)){
 //                    flushPlansReverse(linePlans);
