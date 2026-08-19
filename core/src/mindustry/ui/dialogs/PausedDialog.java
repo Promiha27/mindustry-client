@@ -81,6 +81,17 @@ public class PausedDialog extends BaseDialog{
             .colspan(showObjective ? 1 : 2).width(showObjective ? dw : dw * 2 + 10f)
             .disabled(b -> net.client() || state.gameOver).visible(() -> state.rules.sector != null).row();
 
+            //sonka: рестарт сектора / повтор волны (см. sonkaextras.CampaignRetry). rebuild() зовётся
+            //на каждом show, так что isCampaign() тут всегда свежий; ряд свой, чтобы не трогать
+            //хрупкую вёрстку соседних рядов форка (CLaJ и т.п.)
+            if(state.isCampaign()){
+                cont.button("@client.sonka.restartsector", Icon.rotate, sonkaextras.CampaignRetry::restartSector)
+                    .disabled(b -> net.client()).tooltip("@client.sonka.restartsector.tooltip");
+                cont.button("@client.sonka.replaywave", Icon.refresh, sonkaextras.CampaignRetry::loadWaveSnapshot)
+                    .disabled(b -> net.client() || !sonkaextras.CampaignRetry.hasWaveSnapshot())
+                    .tooltip("@client.sonka.replaywave.tooltip").row();
+            }
+
             cont.button("@back", Icon.left, this::hide).name("back");
             cont.button("@settings", Icon.settings, ui.settings::show).name("settings");
 

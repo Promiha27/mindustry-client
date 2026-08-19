@@ -97,6 +97,8 @@ public final class ChainWarn{
             //именем добавил бы второй заголовок «Sonka Extras» (category() не дедупит), поэтому
             //секция строится в одном месте, а соседние фичи sonkaextras добавляются сюда
             t.pref(new qol.core.ButtonSetting("sonka-linerotate-configure", () -> new LineRotate.PickerDialog().show()));
+            //автосейв на старте волны для кнопки «Повторить волну» (CampaignRetry)
+            t.checkPref(CampaignRetry.autosaveKey, true);
         }));
 
         Events.on(WorldLoadEvent.class, e -> {

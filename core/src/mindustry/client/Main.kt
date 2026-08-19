@@ -101,6 +101,10 @@ object Main : ApplicationListener {
         // слушатели и должен отработать до фаера ClientLoadEvent.
         sonkaextras.ChainWarn.init()
 
+        // sonka: рестарт сектора / автоснапшот на старте волны для кнопки «Повторить волну»
+        // (sonkaextras.CampaignRetry - см. его javadoc)
+        sonkaextras.CampaignRetry.init()
+
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
             communicationSystem.init()
