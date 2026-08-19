@@ -18,11 +18,15 @@ public class DrawTasks{
     private static final Seq<Boolp> tasks = new Seq<>();
 
     static{
-        Events.run(Trigger.draw, () -> Draw.draw(Layer.overlayUI + 0.01f, () -> {
-            for(int i = tasks.size - 1; i >= 0; i--){
-                if(tasks.get(i).get()) tasks.remove(i);
-            }
-        }));
+        Events.run(Trigger.draw, () -> {
+            //перф: почти всегда очередь пуста - не ставим DrawRequest в батч зря
+            if(tasks.isEmpty()) return;
+            Draw.draw(Layer.overlayUI + 0.01f, () -> {
+                for(int i = tasks.size - 1; i >= 0; i--){
+                    if(tasks.get(i).get()) tasks.remove(i);
+                }
+            });
+        });
     }
 
     public static class DivergingCirclesParams{

@@ -49,6 +49,8 @@ public class UnitsTableUi{
     private Table overlayMarker;
     private Table contentTable;
     private Table unitTable;
+    //перф: альфа панели читается из настроек раз в 500мс (в троттленом update), а не каждый кадр в act()
+    private float tableAlpha = 1f;
 
     public UnitsTableUi(){
         Events.on(WorldLoadEvent.class, e -> holdedEntity = null);
@@ -72,6 +74,8 @@ public class UnitsTableUi{
         if(now - 500 < updateTimerMs) return;
         updateTimerMs = now;
 
+        tableAlpha = Core.settings.getInt("eui-UnitsTableAlpha", 100) / 100f;
+
         var unitsValueTop = UnitsCounter.getUnitsValueTop(maxToDisplay, granularity, hideCoreUnits, hideSupportUnits);
         amountToDisplay = unitsValueTop.size;
 
@@ -85,7 +89,9 @@ public class UnitsTableUi{
                 Unit entity = unitInfo.entity;
                 int amount = unitInfo.amount;
 
-                unitTable.label(() -> teamColor(team) + amount + "[white]").left();
+                //перф: текст константен до следующей перестройки (раз в 500мс) - статичная строка вместо
+                //супплаера, собирающего её заново каждый кадр
+                unitTable.add(teamColor(team) + amount + "[white]").left();
                 var image = unitTable.image(entity.icon()).left().padRight(5f).padBottom(2f).maxSize(24f).get();
                 image.hovered(() -> hoveredEntity = entity);
                 image.clicked(() -> {
@@ -142,7 +148,7 @@ public class UnitsTableUi{
         float buttonSizePx = 40;
 
         Table unitTableButtons = contentTable.table().top().left().margin(3f).get();
-        unitTableButtons.update(() -> unitTableButtons.color.a = Core.settings.getInt("eui-UnitsTableAlpha", 100) / 100f);
+        unitTableButtons.update(() -> unitTableButtons.color.a = tableAlpha);
 
         //скиновая унификация: серые "приподнятые" Styles.defaulti заменены плоскими clear-стилями
         //из единого style-гайда (UiStyle) - как у кнопок тайтл-баров qol/mi2u-окон и нативного HUD;

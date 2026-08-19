@@ -5,6 +5,7 @@ import arc.Events;
 import arc.scene.ui.layout.Collapser;
 import arc.scene.ui.layout.Table;
 import arc.struct.ObjectMap;
+import arc.util.Interval;
 import arc.util.Timer;
 import eui.util.Difference;
 import eui.util.Formatting;
@@ -32,6 +33,9 @@ import static mindustry.Vars.ui;
  */
 public class ResourceRateUi{
     private final ObjectMap<Item, Difference> diffs = new ObjectMap<>();
+    /* перф: перестройка таблицы (50+ виджетов) каждый кадр не нужна — троттлим до ~6 Гц,
+     * {@link Difference} интерполирует по абсолютному Time.time, так что редкие сэмплы дают те же числа */
+    private final Interval rebuildTimer = new Interval();
 
     private Table contentTable;
     private Collapser coreItemsCollapser;
@@ -58,7 +62,7 @@ public class ResourceRateUi{
         });
 
         Events.run(Trigger.update, () -> {
-            if(isReplaced) rebuildTable();
+            if(isReplaced && rebuildTimer.get(10f)) rebuildTable();
         });
     }
 

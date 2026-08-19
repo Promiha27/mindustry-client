@@ -7,6 +7,7 @@ import arc.graphics.g2d.Draw;
 import arc.struct.IntMap;
 import arc.util.Time;
 import eui.draw.BarBuilder;
+import eui.util.CameraUtil;
 import mindustry.game.EventType.Trigger;
 import mindustry.game.EventType.WorldLoadEvent;
 import mindustry.gen.Building;
@@ -60,10 +61,15 @@ public class EfficiencyOverlay{
     static void draw(){
         if(!Core.settings.getBool("eui-ShowEfficiency", false)) return;
 
+        //перф: настройка не меняется внутри кадра — читаем один раз, а не на каждое здание
+        int timer = Core.settings.getInt("eui-EfficiencyTimer", 15);
+
         for(Building b : Groups.build){
+            //перф: за кадром метку всё равно не видно — куллинг до любых аллокаций/подсчётов
+            if(!CameraUtil.isIn(b.x, b.y)) continue;
             if(!isTracked(b.block)) continue;
 
-            float efficiency = countEfficiency(b);
+            float efficiency = countEfficiency(b, timer);
             String text = BarBuilder.buildPercentLabel(efficiency);
             Draw.z(Layer.effect + 1);
             BarBuilder.drawLabel(text, b.x, b.y, Color.white, true);
@@ -76,11 +82,10 @@ public class EfficiencyOverlay{
             || block instanceof Drill || block instanceof BeamDrill || block instanceof ImpactReactor || block instanceof NuclearReactor;
     }
 
-    static float countEfficiency(Building build){
+    static float countEfficiency(Building build, int timer){
         State state = storage.get(build.id());
         float points = build.status() == BlockStatus.active ? 0.001f : 0;
         float currentTimeMs = Time.time / 60f * 1000f;
-        int timer = Core.settings.getInt("eui-EfficiencyTimer", 15);
         float millisecondTimer = timer * 1000f;
 
         if(state == null){

@@ -3,6 +3,7 @@ package eui.ui.blocks;
 import arc.Core;
 import arc.Events;
 import eui.draw.BarBuilder;
+import eui.util.CameraUtil;
 import mindustry.game.EventType.Trigger;
 import mindustry.gen.Building;
 import mindustry.gen.Groups;
@@ -34,6 +35,9 @@ public class ProgressBarOverlay{
         if(!Core.settings.getBool("eui-showFactoryProgress", true)) return;
 
         for(Building build : Groups.build){
+            //перф: бар за кадром не виден — куллинг до instanceof-веток и построения строки
+            if(!CameraUtil.isIn(build.x, build.y)) continue;
+
             float progress;
 
             if(build instanceof UnitFactory.UnitFactoryBuild ufb){

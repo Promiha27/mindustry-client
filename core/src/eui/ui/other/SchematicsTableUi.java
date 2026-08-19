@@ -17,6 +17,7 @@ import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
 import arc.struct.Seq;
 import arc.util.Align;
+import arc.util.Interval;
 import arc.util.Log;
 import eui.icons.IconCategoriesConfig;
 import eui.icons.IconCategoriesConfig.Category;
@@ -76,6 +77,14 @@ public class SchematicsTableUi{
     private Integer oldRows, oldColumns, oldSize;
 
     private Schematic hovered;
+
+    /* перф: слот 0 - опрос layout-настроек (getInt/parseIntSetting) раз в полсекунды вместо каждого
+     * кадра; слот 1 - редкий пере-снимок player.core() для живущего превью (см. update) */
+    private final Interval settingsPoll = new Interval(2);
+    private boolean settingsPolled = false;
+    private int posOffsetX, posOffsetY;
+    /** какую схему сейчас показывает превью - перестраиваем его только при смене (образец: BlockInfoUi) */
+    private Schematic lastHoveredPreview;
 
     private static class CellRef{
         final int category, column, row;
@@ -156,10 +165,15 @@ public class SchematicsTableUi{
             return;
         }
 
-        rows = Core.settings.getInt("eui-SchematicsTableRows", 4);
-        columns = Core.settings.getInt("eui-SchematicsTableColumns", 5);
-        schematicButtonSize = Core.settings.getInt("eui-SchematicsTableButtonSize", 30);
-        categoryButtonSize = schematicButtonSize + 2;
+        if(!settingsPolled || settingsPoll.get(0, 30f)){
+            settingsPolled = true;
+            rows = Core.settings.getInt("eui-SchematicsTableRows", 4);
+            columns = Core.settings.getInt("eui-SchematicsTableColumns", 5);
+            schematicButtonSize = Core.settings.getInt("eui-SchematicsTableButtonSize", 30);
+            categoryButtonSize = schematicButtonSize + 2;
+            posOffsetX = clamp(parseIntSetting("eui-SchematicsTableX", 10), 0, 5000);
+            posOffsetY = clamp(parseIntSetting("eui-SchematicsTableY", 160), 0, 5000);
+        }
 
         if(contentTable == null) setMarker();
         if(isRebuildNeeded()) rebuildTable();
@@ -167,9 +181,16 @@ public class SchematicsTableUi{
         updatePosition();
 
         if(hovered != null && contentTable.hasMouse()){
-            rebuildPreviewTable();
+            //перф: контент превью статичен по идентичности схемы (лейблы требований - живые супплаеры),
+            //перестраивать каждый кадр незачем; редкий рефреш (слот 1) пере-снимает player.core(),
+            //чтобы смена/потеря ядра при долгом наведении отражалась как раньше
+            if(hovered != lastHoveredPreview || settingsPoll.get(1, 60f)){
+                lastHoveredPreview = hovered;
+                rebuildPreviewTable();
+            }
         }else{
             hovered = null;
+            lastHoveredPreview = null;
         }
     }
 
@@ -410,10 +431,8 @@ public class SchematicsTableUi{
     void updatePosition(){
         if(contentTable == null) return;
 
-        int offsetX = clamp(parseIntSetting("eui-SchematicsTableX", 10), 0, 5000);
-        int offsetY = clamp(parseIntSetting("eui-SchematicsTableY", 160), 0, 5000);
-
-        contentTable.setPosition(Core.graphics.getWidth() - offsetX, Core.graphics.getHeight() - offsetY, Align.topRight);
+        //перф: offsetX/Y кэшируются в update() (settingsPoll), тут только позиционирование
+        contentTable.setPosition(Core.graphics.getWidth() - posOffsetX, Core.graphics.getHeight() - posOffsetY, Align.topRight);
     }
 
     /** Reads a setting that may be stored as either an int or a string - the source went through this migration itself; kept defensive here too since it shares the same "eui-SchematicsTableX/Y" settings keys an existing install may already have on disk. */

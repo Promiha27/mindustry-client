@@ -28,6 +28,19 @@ public class DrawCycle{
 
         if(!showUnitBar && !trackPlayerCursor && !trackLogicControl) return;
 
+        //перф: курсоры игроков рисуем по Groups.player (единицы), а не сканом всех юнитов мира;
+        //u.isAdded() воспроизводит старый критерий "юнит игрока есть в Groups.unit"
+        if(trackPlayerCursor){
+            boolean showOwnCursor = Core.settings.getBool("eui-ShowOwnCursor", false);
+            int style = Core.settings.getInt("eui-playerCursorStyle", 7);
+            for(Player p : Groups.player){
+                Unit u = p.unit();
+                if(u != null && u.isAdded()) PlayerTracker.drawCursor(p, showOwnCursor, style);
+            }
+        }
+
+        if(!showUnitBar && !trackLogicControl) return;
+
         for(Unit unit : Groups.unit){
             if(showUnitBar){
                 if(HealthShieldBar.drawUnitHealthBar(unit, force)){
@@ -35,10 +48,6 @@ public class DrawCycle{
                 }else{
                     HealthShieldBar.drawUnitShieldBar(unit, false, force);
                 }
-            }
-            if(trackPlayerCursor){
-                Player p = unit.getPlayer();
-                if(p != null) PlayerTracker.drawCursor(p);
             }
             if(trackLogicControl && unit.controller() instanceof LogicAI){
                 LogicTracker.drawLogicLine(unit);

@@ -95,10 +95,12 @@ public class BlockInfoUi{
     void draw(){
         if(hovered == null || hovered.dead || isPlayerTeam || !(hovered instanceof Ranged ranged)) return;
 
-        Draw.draw(Layer.overlayUI + 0.01f, () -> {
-            float realRange = hovered instanceof OverdriveBuild ob ? ob.realRange() : ranged.range();
-            Drawf.dashCircle(hovered.x, hovered.y, realRange, hovered.team.color);
-        });
+        //перф: Draw.z + прямой вызов вместо Draw.draw(лямбда) - без аллокации на кадр при наведении
+        float realRange = hovered instanceof OverdriveBuild ob ? ob.realRange() : ranged.range();
+        float prevZ = Draw.z();
+        Draw.z(Layer.overlayUI + 0.01f);
+        Drawf.dashCircle(hovered.x, hovered.y, realRange, hovered.team.color);
+        Draw.z(prevZ);
     }
 
     void rebuildTable(){

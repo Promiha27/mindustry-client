@@ -3,6 +3,7 @@ package eui.ui.other;
 import arc.Core;
 import arc.Events;
 import arc.scene.ui.layout.Table;
+import arc.struct.ObjectSet;
 import arc.struct.Seq;
 import eui.util.Formatting;
 import mindustry.game.EventType.Trigger;
@@ -27,7 +28,11 @@ public class PowerUi{
 
     private static Bar powerBar;
 
-    private static Seq<PowerGraph> graphs = new Seq<>();
+    /* перф: от Seq графов нужен был только size (в подписи бара) и membership-дедупликация внутри
+     * update - заменено на счётчик + переиспользуемый ObjectSet (O(1) contains, ноль аллокаций/кадр) */
+    private static int graphCount;
+    private static final ObjectSet<PowerGraph> seenGraphs = new ObjectSet<>();
+    private static final float[] newStored = new float[1], newMax = new float[1], newCurrent = new float[1];
     private static float storedNetPower, maxNetPower, currentNetPower;
     private static long debugTimerMs = 0;
 
@@ -37,7 +42,7 @@ public class PowerUi{
 
     public static Table createTableWithBarFrom(Table table){
         if(powerBar == null){
-            powerBar = new Bar(() -> Formatting.powerToString(currentNetPower, graphs.size), () -> Pal.accent, PowerUi::currentPowerStatus);
+            powerBar = new Bar(() -> Formatting.powerToString(currentNetPower, graphCount), () -> Pal.accent, PowerUi::currentPowerStatus);
         }
 
         Table wrapper = new Table();
@@ -50,11 +55,13 @@ public class PowerUi{
     static void update(){
         if(!Core.settings.getBool("eui-showPowerBar", true)) return;
 
-        float[] newStored = {0}, newMax = {0}, newCurrent = {0};
-        Seq<PowerGraph> newGraphs = new Seq<>();
+        newStored[0] = 0;
+        newMax[0] = 0;
+        newCurrent[0] = 0;
+        seenGraphs.clear();
 
-        accumulate(indexer.getFlagged(player.team(), BlockFlag.generator), newStored, newMax, newCurrent, newGraphs);
-        accumulate(indexer.getFlagged(player.team(), BlockFlag.reactor), newStored, newMax, newCurrent, newGraphs);
+        accumulate(indexer.getFlagged(player.team(), BlockFlag.generator), newStored, newMax, newCurrent, seenGraphs);
+        accumulate(indexer.getFlagged(player.team(), BlockFlag.reactor), newStored, newMax, newCurrent, seenGraphs);
 
         //when a power node gets removed, the network briefly reads as 0 power for ~half a second -
         //debounce that blip instead of flashing the bar to zero and back
@@ -72,10 +79,10 @@ public class PowerUi{
         storedNetPower = newStored[0];
         maxNetPower = newMax[0];
         currentNetPower = newCurrent[0];
-        graphs = newGraphs;
+        graphCount = seenGraphs.size;
     }
 
-    static void accumulate(Seq<Building> buildings, float[] stored, float[] max, float[] current, Seq<PowerGraph> seenGraphs){
+    static void accumulate(Seq<Building> buildings, float[] stored, float[] max, float[] current, ObjectSet<PowerGraph> seenGraphs){
         for(Building b : buildings){
             if(b == null || b.power == null) continue;
             PowerGraph graph = b.power.graph;
