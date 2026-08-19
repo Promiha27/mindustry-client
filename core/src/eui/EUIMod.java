@@ -9,7 +9,6 @@ import eui.input.ConveyorDrag;
 import eui.input.CoreDrag;
 import eui.input.Drag;
 import eui.interact.ActionDelayHotkey;
-import eui.interact.AutoFill;
 import eui.interact.AutofillPriorityDialog;
 import eui.interact.AutoUnit;
 import eui.interact.SchematicSelector;
@@ -61,9 +60,12 @@ import static mindustry.Vars.ui;
  * KNOWN COLLISIONS with already-baked-in client/qol-suite functionality (ported anyway, per the task
  * spec - just flagged here):
  * <ul>
- * <li>{@link AutoFill} vs. this client's own {@code mindustry.client.utils.AutoTransfer} - both fork from
- * the same Extended-UI upstream and do overlapping core item hand-off, through different settings keys
- * ("autotransfer" vs "eui-auto-fill"). See {@link AutoFill}'s own javadoc.</li>
+ * <li>RESOLVED (dedupe pass): {@code eui.interact.AutoFill} vs. this client's own
+ * {@code mindustry.client.utils.AutoTransfer} - both forked from the same Extended-UI upstream and did
+ * overlapping core item hand-off. The eui loop and its bottom-panel toggle ("eui-auto-fill", plus the
+ * "eui-interact-core" gate only it read) were removed; its unique value - the per-block-type priority
+ * config ({@link AutofillPriorityDialog}, key "eui.autofill.priority") - was merged into AutoTransfer as
+ * a service-order modifier (-2 = exclude a block). The dialog stays, now configuring AutoTransfer.</li>
  * <li>{@link ExtendZoom} vs. this fork's native "Min Zoom" settings slider (Settings > Client, key
  * "minzoom") - see {@link ExtendZoom}'s own javadoc; this port is largely inert here.</li>
  * <li>{@link SchematicSelector} (bottom-panel toggle + drag) vs. this engine's own native
@@ -99,7 +101,6 @@ public class EUIMod{
         }
 
         //--- phase A: input/automation ---
-        new AutoFill();
         new AutoUnit();
         autofillPriorityDialog = new AutofillPriorityDialog();
         new ActionDelayHotkey();

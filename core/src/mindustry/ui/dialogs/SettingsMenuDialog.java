@@ -435,6 +435,11 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("decreasedrift", false);
         client.checkPref("zerodrift", false);
         client.checkPref("fastrespawn", false);
+        //per-block Auto Transfer service priorities - the dialog is eui's, but since the dedupe pass its
+        //config drives the native AutoTransfer (see AutoTransfer.loadPriorities' doc)
+        client.pref(new qol.core.ButtonSetting("autotransfer-priority", () -> {
+            if(eui.interact.AutofillPriorityDialog.instance != null) eui.interact.AutofillPriorityDialog.instance.show();
+        }));
 
         client.category("graphics");
         client.sliderPref("minzoom", 0, 0, 100, s -> Strings.fixed(Mathf.pow(10, 0.0217f * s) / 100f, 2) + "x");

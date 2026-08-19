@@ -23,10 +23,12 @@ import mindustry.world.consumers.ConsumeItems;
 import static mindustry.Vars.content;
 
 /**
- * Per-block-type priority editor for {@link AutoFill} - blocks with a higher priority are
- * filled/serviced first when several are in range; -2 (the minimum) effectively excludes a block from
- * auto-fill entirely, since {@link AutoFill#update} starts its own running priority at -1 and rejects
- * anything strictly below it. Ported from ui/other/autofill-priority-ui.js.
+ * Per-block-type priority editor, originally for eui's own {@code AutoFill} loop (ported from
+ * ui/other/autofill-priority-ui.js). That loop was removed in the dedupe pass in favor of the client's
+ * native {@code mindustry.client.utils.AutoTransfer}, which now consumes this dialog's config instead:
+ * blocks with a higher priority are filled/serviced first when several are in range, and -2 (the
+ * minimum, {@code AutoTransfer.EXCLUDE_PRIORITY}) excludes a block from auto transfer entirely. Opened
+ * from the eui bottom panel's list button and from Settings > Client ("Auto Transfer block priorities").
  * <p>
  * The JS version went out of its way to read every {@code block.category} exactly once, into a plain
  * array of JS strings, up front in its dialog-build step - and never touched {@code Category} objects
@@ -40,6 +42,13 @@ public class AutofillPriorityDialog{
     private static final int MIN_PRIORITY = -2;
     private static final int MAX_PRIORITY = 5;
     private static final String SETTINGS_KEY = "eui.autofill.priority";
+
+    /**
+     * Set by the constructor (there's exactly one, made by {@link eui.EUIMod}); lets the Settings >
+     * Client button reach the dialog without EUIMod having to expose itself. Stays null if the baked-in
+     * eui port stood down (external mod copy present) - callers must null-check.
+     */
+    public static AutofillPriorityDialog instance;
 
     private BaseDialog dialog;
     private Table list;
@@ -57,6 +66,7 @@ public class AutofillPriorityDialog{
     }
 
     public AutofillPriorityDialog(){
+        instance = this;
         Events.on(ClientLoadEvent.class, e -> {
             try{
                 buildDialog();

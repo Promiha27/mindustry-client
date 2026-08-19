@@ -37,6 +37,29 @@ class AutoTransfer {
         var drain = false
         var drainToContainers = false
 
+        /** Blocks whose [priority] is at (or below) this value are excluded from auto transfer entirely. */
+        const val EXCLUDE_PRIORITY = -2
+
+        /**
+         * Per-block-type service priorities, shared with [eui.interact.AutofillPriorityDialog] (settings
+         * key `eui.autofill.priority`, range -2..5, default 0): within a transfer round, higher-priority
+         * blocks are serviced first (before falling back to the usual accepted-stack ordering), and
+         * [EXCLUDE_PRIORITY] (-2) keeps a block from being filled at all. Merged here from the baked-in
+         * Extended UI++ port's own `eui.interact.AutoFill` loop when that duplicate of this class was
+         * removed - the priority dialog now configures this native AutoTransfer instead (it's reachable
+         * from the eui bottom panel and from Settings > Client > "Auto Transfer block priorities").
+         * Note the priority only affects service *order* and exclusion, not which item gets fetched from
+         * the core - item choice stays needed-amount-based. Values are re-read once per transfer round
+         * (delay-gated, ~1/s), so dialog edits apply immediately without a listener.
+         */
+        @Suppress("UNCHECKED_CAST")
+        fun loadPriorities(): ObjectMap<String, Any?> =
+            Core.settings.getJson("eui.autofill.priority", ObjectMap::class.java) { ObjectMap<String, Any?>() } as ObjectMap<String, Any?>
+
+        /** Defensive [Number] cast: the dialog writes Integers, but JSON round-trips are untrusted. */
+        fun priority(priorities: ObjectMap<String, Any?>, build: Building): Int =
+            (priorities.get(build.block.name) as? Number)?.toInt() ?: 0
+
         fun init() {
             // Main settings
             enabled = Core.settings.getBool("autotransfer", false)
@@ -101,8 +124,9 @@ class AutoTransfer {
 
         if (fromContainers && (core == null || !player.within(core, itemTransferRange))) core = containers.selectFrom(builds) { it.block is StorageBlock && (item == null || it.items.has(item)) }.min { it -> it.dst(player) }
 
-        builds.retainAll { it.block.findConsumer<Consume?> { it is ConsumeItems || it is ConsumeItemFilter || it is ConsumeItemDynamic } != null && it !is NuclearReactorBuild && player.within(it, itemTransferRange) }
-            .sort { b -> -b.acceptStack(player.unit().item(), player.unit().stack.amount, player.unit()).toFloat() }
+        val priorities = loadPriorities()
+        builds.retainAll { it.block.findConsumer<Consume?> { it is ConsumeItems || it is ConsumeItemFilter || it is ConsumeItemDynamic } != null && it !is NuclearReactorBuild && player.within(it, itemTransferRange) && priority(priorities, it) > EXCLUDE_PRIORITY }
+            .sort { b -> priority(priorities, b) * -1e5F - b.acceptStack(player.unit().item(), player.unit().stack.amount, player.unit()).toFloat() }
             .forEach {
                 if (ratelimitRemaining <= 1) return@forEach
 
@@ -156,8 +180,9 @@ class AutoTransfer {
 
         val bestContainers = if (!nearCore && drainToContainers) findDrainDestinations() else emptyArray() // This uses the nearby builds so we do this after the intersect
 
-        val nonContainerBuilds = builds.select { it.block.findConsumer<Consume?> { it is ConsumeItems || it is ConsumeItemFilter || it is ConsumeItemDynamic } != null && it !is NuclearReactorBuild && player.within(it, itemTransferRange) }
-            .sort { b -> -b.acceptStack(player.unit().item(), player.unit().stack.amount, player.unit()).toFloat() }
+        val priorities = loadPriorities()
+        val nonContainerBuilds = builds.select { it.block.findConsumer<Consume?> { it is ConsumeItems || it is ConsumeItemFilter || it is ConsumeItemDynamic } != null && it !is NuclearReactorBuild && player.within(it, itemTransferRange) && priority(priorities, it) > EXCLUDE_PRIORITY }
+            .sort { b -> priority(priorities, b) * -1e5F - b.acceptStack(player.unit().item(), player.unit().stack.amount, player.unit()).toFloat() }
 
         nonContainerBuilds.each { processTransferTarget(it, 0) }
 

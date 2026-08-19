@@ -21,9 +21,11 @@ import static mindustry.Vars.mobile;
 import static mindustry.Vars.ui;
 
 /**
- * Collapsible strip of interact toggles docked bottom-center: interact-with-core, auto-fill, the
- * auto-fill priority editor button, a unit-type picker for auto-unit-control, and (desktop only) the
- * schematic area-select tool toggle. Ported from ui/other/bottom-panel-ui.js.
+ * Collapsible strip of interact toggles docked bottom-center: the auto-fill priority editor button
+ * (whose priorities now feed the native {@code mindustry.client.utils.AutoTransfer} - the eui AutoFill
+ * loop plus its interact-with-core/auto-fill toggles were removed in the dedupe pass), a unit-type
+ * picker for auto-unit-control, and (desktop only) the schematic area-select tool toggle. Ported from
+ * ui/other/bottom-panel-ui.js.
  */
 public class BottomPanelUi{
     private record UnitCategory(String name, String[] units){}
@@ -52,14 +54,10 @@ public class BottomPanelUi{
     private boolean showSettings = false;
     private boolean schemSelection = false;
 
-    private boolean interactCore;
-    private boolean fillBuildings;
     private String selectedUnit;
 
     public BottomPanelUi(AutofillPriorityDialog autofillPriorityDialog){
         this.autofillPriorityDialog = autofillPriorityDialog;
-        interactCore = Core.settings.getBool("eui-interact-core", false);
-        fillBuildings = Core.settings.getBool("eui-auto-fill", false);
         selectedUnit = Core.settings.getString("eui-auto-unit", null);
 
         SchematicSelector.onSelectionEnd = () -> schemSelection = false;
@@ -104,16 +102,6 @@ public class BottomPanelUi{
         contentTable.row();
         Table buttonTable = contentTable.table().get();
         buttonTable.defaults().size(32f);
-
-        buttonTable.button(Icons.getIconDrawable("core-nucleus"), Styles.clearTogglei, () -> {
-            interactCore = !interactCore;
-            Core.settings.put("eui-interact-core", interactCore);
-        }).update(b -> b.setChecked(interactCore)).get().resizeImage(32f * 0.8f);
-
-        buttonTable.button(Icon.box, Styles.clearTogglei, () -> {
-            fillBuildings = !fillBuildings;
-            Core.settings.put("eui-auto-fill", fillBuildings);
-        }).update(b -> b.setChecked(fillBuildings)).get().resizeImage(32f * 0.8f);
 
         buttonTable.button(Icon.list, Styles.cleari, autofillPriorityDialog::show).get().resizeImage(32f * 0.8f);
 
