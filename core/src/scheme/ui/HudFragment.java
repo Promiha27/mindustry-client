@@ -134,11 +134,13 @@ public class HudFragment{
 
     private void updateBlocks(){
         app.post(() -> { // waiting for blockfrag rebuild
-            Element found = ui.hudGroup.find("inputTable");
-            block = found != null ? found.parent.parent.parent : null;
-            // sonka: временная диагностика "панель не видно" - однострочный факт в лог на каждый
-            // WorldLoadEvent: нашёлся ли якорь блок-меню и какой ширины (от неё считается сдвиг панели).
-            // Убрать, когда панель подтверждённо заработает.
+            // sonka: багфикс "панель не видно". Оригинальный мод восстанавливал контейнер блок-меню
+            // хрупкой цепочкой find("inputTable").parent.parent.parent - в ЭТОМ форке вложенность
+            // PlacementFragment другая, цепочка попадала во внутреннюю таблицу шириной ~150px вместо
+            // всего меню, из-за чего сдвиг панели (178 - width) выходил ПОЛОЖИТЕЛЬНЫМ и панель
+            // уезжала за правый край экрана. У форка контейнер доступен напрямую как публичное поле.
+            block = ui.hudfrag.blockfrag.blockCatTable;
+            // Диагностика прошлого раунда, оставлена до подтверждения sonka что панель видна; затем убрать.
             arc.util.Log.info("[scheme] tools panel anchor: found=@, width=@, flipped=@",
                 block != null, block != null ? block.getWidth() : -1f, building != null && building.fliped);
         });
