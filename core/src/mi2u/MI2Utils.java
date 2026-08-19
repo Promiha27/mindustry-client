@@ -68,6 +68,14 @@ public class MI2Utils{
         }catch(Exception ignored){}
     }
 
+    /** перф-вариант для горячих путей: поле разрешено заранее, без строкового ключа; null-семантика как у строковой версии. */
+    public static void setValue(Field field, Object obj, Object value){
+        if(field == null || obj == null || value == null) return;
+        try{
+            field.set(obj, value);
+        }catch(Exception ignored){}
+    }
+
     public static class IntervalMillis{
         long[] times;
 

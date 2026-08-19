@@ -23,6 +23,10 @@ public class SettingHandler{
     public static boolean debug;
     public String prefix;
     public Seq<Setting> list = new Seq<>();
+    /* перф: prefix назначается только в конструкторе, а prefix(name) зовётся из каждого гет/пут-метода -
+     * в т.ч. ~28 раз за кадр из RendererExt.updateSettings - кэшируем готовые "prefix.name" строки,
+     * вместо конкатенации на каждый вызов */
+    private final ObjectMap<String, String> keyCache = new ObjectMap<>();
 
     public SettingHandler(String prefix){
         this.prefix = prefix;
@@ -33,7 +37,12 @@ public class SettingHandler{
     }
 
     public String prefix(String name){
-        return prefix + "." + name;
+        String key = keyCache.get(name);
+        if(key == null){
+            key = prefix + "." + name;
+            keyCache.put(name, key);
+        }
+        return key;
     }
 
     public void buildList(Table p){

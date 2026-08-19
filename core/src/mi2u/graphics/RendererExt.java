@@ -51,7 +51,11 @@ public class RendererExt{
             itemBridgeBufferBuffer = MI2Utils.getField(ItemBuffer.class, "buffer"), itemBridgeBufferIndex = MI2Utils.getField(ItemBuffer.class, "index"),
             unloaderBuilding = MI2Utils.getField(Unloader.ContainerStat.class, "building"),
             lexecTimer = MI2Utils.getField(LExecutor.class, "unitTimeouts"),
-            wallBuildHit = MI2Utils.getField(Wall.WallBuild.class, "hit");
+            wallBuildHit = MI2Utils.getField(Wall.WallBuild.class, "hit"),
+            //перф: разрешаем поля BlockRenderer один раз, а не через строковый ключ (конкатенация + map-lookup) каждый кадр
+            blocksTileview = MI2Utils.getField(BlockRenderer.class, "tileview"),
+            blocksTileExtraCachedView = MI2Utils.getField(BlockRenderer.class, "tileExtraCachedView"),
+            blocksBlockCachedTree = MI2Utils.getField(BlockRenderer.class, "blockCachedTree");
 
     public static boolean animatedshields;
     public static boolean enPlayerCursor;
@@ -172,6 +176,15 @@ public class RendererExt{
 
     public static void drawBase(){
         if(!state.isGame()) return;
+
+        //перф: при всех выключенных тумблерах не гоняем Groups.draw/tileview вхолостую; выходим только
+        //когда нет и остаточного состояния (спрятанные юниты/чанки, следы distribution reveal) -
+        //иначе даём обычному пути его восстановить/дочистить, как раньше
+        if(!enPlayerCursor && !enUnitHitbox && !enUnitHpBar && !enUnitLogic && !enUnitPath && !enUnitRangeZone
+            && !enOverdriveZone && !enMenderZone && !enTurretZone && !enBlockHpBar && !enDistributionReveal
+            && !enSpawnZone && !disableWreck && !disableUnit && !disableBuilding && !disableBullet
+            && hiddenUnit.isEmpty() && removedFromCache.isEmpty() && BuildingInventory.ids.isEmpty()) return;
+
         if(!disableUnit){
             //Caution!! EntityGroup.add without index update leads to bug!!!
             hiddenUnit.select(Healthc::isValid).each(u -> u.setIndex__draw(Groups.draw.addIndex(u)));
@@ -206,8 +219,8 @@ public class RendererExt{
         });
 
         tileViewBuildingCollection.clear();
-        Seq<Tile> tileview = MI2Utils.getValue(renderer.blocks, "tileview");
-        Seq<Building> tileExtraCachedView = MI2Utils.getValue(renderer.blocks, "tileExtraCachedView");
+        Seq<Tile> tileview = MI2Utils.getValue(blocksTileview, renderer.blocks);
+        Seq<Building> tileExtraCachedView = MI2Utils.getValue(blocksTileExtraCachedView, renderer.blocks);
         BuildingInventory.ids.clear();
         if(tileview != null && tileExtraCachedView != null){
             for(Tile tile : tileview){
@@ -222,7 +235,7 @@ public class RendererExt{
             }
 
             if(removedFromCache.any()){
-                QuadTree<Tile> cachedTree = MI2Utils.getValue(renderer.blocks, "blockCachedTree");
+                QuadTree<Tile> cachedTree = MI2Utils.getValue(blocksBlockCachedTree, renderer.blocks);
                 if(cachedTree != null){
                     var iter = removedFromCache.iterator();
                     while(iter.hasNext()){
@@ -244,7 +257,7 @@ public class RendererExt{
                 tileExtraCachedView.removeAll(b -> b != null && getFilterDisableBuilding(b.block.id));
 
                 // 清除 SpriteCache 主纹理
-                QuadTree<Tile> cachedTree = MI2Utils.getValue(renderer.blocks, "blockCachedTree");
+                QuadTree<Tile> cachedTree = MI2Utils.getValue(blocksBlockCachedTree, renderer.blocks);
                 if(cachedTree != null){
                     // 触发 chunk 重缓存
                     for(var build : tileViewBuildingCollection){

@@ -25,11 +25,16 @@ import mindustry.world.blocks.production.*;
 import mindustry.world.consumers.*;
 import mindustry.world.meta.*;
 
+import java.lang.reflect.*;
+
 import static mi2u.MI2UVars.*;
 import static mindustry.Vars.*;
 
 /** modify vanilla game*/
 public class ModifyFuncs{
+    /* перф: package-private поле PlacementFragment.hover пишется из update()-лямбды каждый кадр -
+     * разрешаем Field один раз вместо строкового ключа (конкатенация + map-lookup на кадр) */
+    private static final Field blockfragHover = MI2Utils.getField(mindustry.ui.fragments.PlacementFragment.class, "hover");
 
     public static void modifyVanilla(){
         modifyVanillaBlockBars();
@@ -156,12 +161,13 @@ public class ModifyFuncs{
                 });
             }
             topTable.row();
-            topTable.add(vanilla).growX().visible(() -> control.input.block != null || MI2Utils.getValue(ui.hudfrag.blockfrag, "menuHoverBlock") != null);
+            //перф: menuHoverBlock - публичное поле, рефлексия со строковым ключом каждый кадр не нужна
+            topTable.add(vanilla).growX().visible(() -> control.input.block != null || ui.hudfrag.blockfrag.menuHoverBlock != null);
             topTable.row();
             topTable.add(new Element()).height(0.5f).update(t -> {
                 var cell = topTable.getCell(vanilla);
                 if(cell != null) cell.height(vanilla.getPrefHeight() * (vanilla.visible ? 1f:0f) / Scl.scl() + 0.5f);   //affected by ui scale, I don't know why it's necessary here.
-                MI2Utils.setValue(ui.hudfrag.blockfrag, "hover", HoverTopTable.hoverInfo.unit);
+                MI2Utils.setValue(blockfragHover, ui.hudfrag.blockfrag, HoverTopTable.hoverInfo.unit);
             });
             topTable.visible(() -> {
                 vanilla.updateVisibility();

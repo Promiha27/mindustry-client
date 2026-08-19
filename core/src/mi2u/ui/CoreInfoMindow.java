@@ -29,7 +29,7 @@ import static mi2u.io.SettingHandler.TextFieldSetting.*;
 import static mindustry.Vars.*;
 
 public class CoreInfoMindow extends Mindow2{
-    protected Interval interval = new Interval(2);
+    protected Interval interval = new Interval(3); //слот 2 - троттл скана контента в act() (перф)
     protected CoreBuild core;
     protected Team select, team;
 
@@ -124,7 +124,9 @@ public class CoreInfoMindow extends Mindow2{
         pg.team = team;
         super.act(delta);
 
-        if(state.isGame() && ((content.items().count(item -> core != null && core.items.get(item) > 0 && usedItems.add(item)) > 0) || (content.units().count(type -> team.data().countType(type) > 0 && usedUnits.add(type)) > 0))){
+        //перф: полный скан items+units в каждом act() не нужен - новые типы появляются редко,
+        //троттлим до раза в секунду (свой слот 2: слот 0 занят рекордерами в Trigger.update)
+        if(state.isGame() && interval.get(2, 60f) && ((content.items().count(item -> core != null && core.items.get(item) > 0 && usedItems.add(item)) > 0) || (content.units().count(type -> team.data().countType(type) > 0 && usedUnits.add(type)) > 0))){
             rebuild();
         }
 
