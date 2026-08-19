@@ -19,6 +19,7 @@ import mindustry.input.*
 import mindustry.ui.fragments.*
 import eui.EUIMod
 import qol.QolSuiteMod
+import qolc.QolControlMod
 import sectorstats.CampaignUtilsMod
 import java.nio.file.Files
 import java.security.cert.*
@@ -59,6 +60,10 @@ object Main : ApplicationListener {
         // sonka's "Campaign Utils" (sector production stats + no-landing sector preview), baked in the
         // same way and for the same reason - see CampaignUtilsMod's own javadoc.
         CampaignUtilsMod()
+
+        // Port of the third-party "QoL Control" mod's REMAINDER (most of it already exists as
+        // qol-suite/EUI/native features) - see QolControlMod's javadoc for the full inventory.
+        QolControlMod()
 
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
