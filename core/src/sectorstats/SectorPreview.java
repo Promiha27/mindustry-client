@@ -101,8 +101,13 @@ public class SectorPreview{
     public void attachEyeButton(){
         Table eyeBtn = new Table();
         eyeBtn.button(Icon.eyeSmall, () -> {
-            if(currentSector == null) return;
-            showFor(currentSector);
+            //read the selection straight from the planet dialog: currentSector is only ever set by
+            //showFor() itself, so gating the click on it made the button permanently dead (null until
+            //the first open, which could only happen through this very click) - the original JS mod
+            //read the panel's current sector here for the same reason
+            Sector sector = ui.planet.selected;
+            if(sector == null || sector.hasBase()) return;
+            showFor(sector);
             dialog.show();
         }).size(40);
         eyeBtn.pack();
