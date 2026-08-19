@@ -63,6 +63,11 @@ import mindustry.world.consumers.Consume;
  */
 public class IndustryCalculator {
 
+	/* перф: скретчи BFS-обхода рудного пятна под буром (тултип при наведении) - раньше
+	 * new IntQueue(128)+new IntSet(128) на каждый кадр наведения; не покидают метод */
+	private static final IntQueue drillOres = new IntQueue(128);
+	private static final IntSet drillPositions = new IntSet(128);
+
 	private static final Seq<Drill> drills = ModWork.getBlocks(Drill.class);
 	private static final Seq<Pump> pumps = ModWork.getBlocks(Pump.class);
 	private static final Seq<HeaterGenerator> heatGenerators = ModWork.getBlocks(HeaterGenerator.class);
@@ -143,8 +148,10 @@ public class IndustryCalculator {
 			}
 
 			if(building instanceof DrillBuild drill && drill.dominantItem != null) {
-				IntQueue ores = new IntQueue(128);
-				IntSet positions = new IntSet(128);
+				IntQueue ores = drillOres;
+				IntSet positions = drillPositions;
+				ores.clear();
+				positions.clear();
 				if(drill.tile != null) drill.tile.getLinkedTilesAs(block, t -> {
 					if(t.drop() != drill.dominantItem) return;
 					ores.addLast(t.pos());
