@@ -30,8 +30,15 @@ import static mindustry.Vars.ui;
  * {@code Events.on(ClientLoadEvent, ...)}-wrapped {@code main.js} entry point.
  */
 public class CampaignUtilsMod{
-    private SectorStatsDialog statsDialog;
+    //static: инстанс мода один (Main.init()), а диалогу статистики нужна внешняя точка входа -
+    //кнопка секции «Вшитые моды» в mindustry.client.ui.FeaturesDialog берёт его через statsDialog()
+    private static SectorStatsDialog statsDialog;
     private SectorPreview preview;
+
+    /** Диалог статистики секторов; null при self-disable (или до ClientLoadEvent). */
+    public static SectorStatsDialog statsDialog(){
+        return statsDialog;
+    }
 
     public CampaignUtilsMod(){
         //self-disable if the original jar/script mod is still dropped in the mods folder - two copies

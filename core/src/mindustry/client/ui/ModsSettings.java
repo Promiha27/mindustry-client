@@ -61,4 +61,21 @@ public class ModsSettings{
         table.category(name);
         builder.get(table);
     }
+
+    /**
+     * Открывает Settings сразу на вкладке «Моды» - дополнительная точка входа из секции
+     * «Вшитые моды» справочника {@link FeaturesDialog}. Индекс для {@code visible()}: пять
+     * встроенных вкладок (game/graphics/sound/dev/client - см. {@code SettingsMenuDialog.
+     * rebuildMenu()}/{@code visible()}) + позиция нашей категории среди кастомных; категорию
+     * ищем по идентичности её SettingsTable, а не по локализуемому имени. {@code show()}
+     * синхронно прогоняет shown-листенер (back() + rebuildMenu()), поэтому visible() ПОСЛЕ
+     * show() не будет им перезатёрт. Если все вшитые моды в самоотключении, вкладки нет -
+     * открываются просто Settings.
+     */
+    public static void openTab(){
+        Vars.ui.settings.show();
+        if(table == null) return;
+        int idx = Vars.ui.settings.getCategories().indexOf(c -> c.table == table);
+        if(idx >= 0) Vars.ui.settings.visible(5 + idx);
+    }
 }
