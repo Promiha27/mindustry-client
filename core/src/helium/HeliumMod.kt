@@ -44,10 +44,14 @@ class HeliumMod{
         }else{
             HeVars.active = true
 
+            //бинды региструются сразу (до первого открытия диалога управления) + подтяжка сохранённых
+            HeBinds.load()
+
             ScreenSampler.setup()
 
             Events.on(EventType.ClientLoadEvent::class.java){
                 try{
+                    helium.ui.HeAssets.ensure()
                     UiBlur.load()
                     registerSettings()
                     HeVars.loaded = true
@@ -72,6 +76,8 @@ class HeliumMod{
             t.sliderPref(HeVars.BLUR_LEVEL, 2, 1, 8, 1){ "$it" }
             t.sliderPref(HeVars.BLUR_SCL, 2, 1, 8, 1){ "1/$it" }
             t.sliderPref(HeVars.BLUR_SPACE, 5, 2, 32, 1){ "x" + Strings.fixed(it*0.25f, 2) }
+            t.checkPref(HeVars.ENABLE_PLACEMENT, true)
+            t.sliderPref(HeVars.BLOCK_COLUMNS, 4, 4, 8, 1){ "$it" }
         }
     }
 }

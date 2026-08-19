@@ -37,7 +37,10 @@ import java.util.*;
 import static mindustry.Vars.*;
 
 public class PlacementFragment{
-    final int rowWidth = 4;
+    /** helium: число колонок сетки блоков стало настройкой ("he-blockcolumns", 4..8, дефолт - ванильные 4) */
+    int rowWidth(){
+        return helium.HeVars.getBlockColumns();
+    }
 
     public Category currentCategory = Category.distribution;
 
@@ -46,7 +49,8 @@ public class PlacementFragment{
     boolean[] categoryEmpty = new boolean[Category.all.length];
     ObjectMap<Category,Block> selectedBlocks = new ObjectMap<>();
     ObjectFloatMap<Category> scrollPositions = new ObjectFloatMap<>();
-    @Nullable Block menuHoverBlock;
+    /** helium: public - слоты быстрой палитры (HeQuickInv) показывают свой блок в topTable через это поле */
+    public @Nullable Block menuHoverBlock;
     @Nullable Displayable hover;
     @Nullable public Building lastFlowBuild, nextFlowBuild;
     @Nullable Object lastDisplayState;
@@ -54,6 +58,10 @@ public class PlacementFragment{
     boolean wasHovered;
     public Table blockTable, toggler, topTable, blockCatTable, commandTable;
     Stack mainStack;
+    /** helium: быстрая палитра блоков (колонка слева от blockCatTable); один инстанс на игру, переживает rebuild'ы */
+    public @Nullable helium.ui.HeQuickInv heQuickInv;
+    /** helium: коллапсер сетки блоков (fold-кнопка палитры); blockCatTable живёт ВНУТРИ него и остаётся публичным якорем */
+    public @Nullable helium.ui.HeCollapser heBlockCat;
     public ScrollPane blockPane;
     Runnable rebuildCommand;
     boolean blockSelectEnd, wasCommandMode;
@@ -211,6 +219,10 @@ public class PlacementFragment{
         if(ui.chatfrag.shown() || ui.consolefrag.shown() || Core.scene.hasKeyboard()) return false;
 
         for(int i = 0; i < blockSelect.length; i++){
+            //helium: при включённой быстрой палитре цифры 1-8 заняты её слотами - ванильные
+            //комбо категория+блок на цифрах отключаются целиком (как в моде, где панель Helium
+            //вообще не обрабатывала эти бинды); стрелочная навигация (i > 9) остаётся
+            if(i <= 9 && helium.HeVars.getPlacementEnabled()) continue;
             if(Core.input.keyTap(blockSelect[i])){
                 if(i > 9){ //select block directionally
                     Seq<Block> blocks = getUnlockedByCategory(currentCategory);
@@ -222,13 +234,17 @@ public class PlacementFragment{
                                 case 10 -> j = (j - 1 + blocks.size) % blocks.size;
                                 //right
                                 case 11 -> j = (j + 1) % blocks.size;
-                                //up
+                                //up (helium: шаг ряда = настраиваемое число колонок)
                                 case 12 -> {
-                                    j = (j > 3 ? j - 4 : blocks.size - blocks.size % 4 + j);
-                                    j -= (j < blocks.size ? 0 : 4);
+                                    int cols = rowWidth();
+                                    j = (j >= cols ? j - cols : blocks.size - blocks.size % cols + j);
+                                    j -= (j < blocks.size ? 0 : cols);
                                 }
                                 //down
-                                case 13 -> j = (j < blocks.size - 4 ? j + 4 : j % 4);
+                                case 13 -> {
+                                    int cols = rowWidth();
+                                    j = (j < blocks.size - cols ? j + cols : j % cols);
+                                }
                             }
                             input.block = blocks.get(j);
                             selectedBlocks.put(currentCategory, input.block);
@@ -325,7 +341,7 @@ public class PlacementFragment{
 
                     for(Block block : (search == null || search.getText().isEmpty() || getUnlockedBySearch(search.getText()).isEmpty()) ? getUnlockedByCategory(currentCategory) : getUnlockedBySearch(search.getText())){
                         if(!unlocked(block)) continue;
-                        if(index++ % rowWidth == 0){
+                        if(index++ % rowWidth() == 0){
                             blockTable.row();
                         }
 
@@ -362,8 +378,9 @@ public class PlacementFragment{
                         });
                     }
                     //add missing elements to even out table size
-                    if(index < 4){
-                        for(int i = 0; i < 4-index; i++){
+                    int cols = rowWidth();
+                    if(index < cols){
+                        for(int i = 0; i < cols - index; i++){
                             blockTable.add().size(46f);
                         }
                     }
@@ -403,7 +420,7 @@ public class PlacementFragment{
 
                             topTable.table(header -> {
                                 String keyCombo = "";
-                                if(!mobile){
+                                if(!mobile && !helium.HeVars.getPlacementEnabled()){ //helium: комбо на цифрах отключены палитрой
                                     Seq<Block> blocks = getByCategory(currentCategory);
                                     for(int i = 0; i < blocks.size; i++){
                                         if(blocks.get(i) == displayBlock && (i + 1) / 10 - 1 < blockSelect.length){
@@ -485,21 +502,38 @@ public class PlacementFragment{
                 commandTable = new Table(Tex.pane2);
                 mainStack = new Stack();
 
+                //helium: сетка блоков заворачивается в горизонтальный коллапсер - кнопка-стрелка
+                //быстрой палитры сворачивает всё блок-меню, оставляя только палитру и топ-инфо.
+                //blockCatTable внутри коллапсера получает его анимированные размеры, так что
+                //внешние якоря (scheme-панель по visual width, mi2u-высоты ячеек) продолжают работать
+                if(heQuickInv == null) heQuickInv = new helium.ui.HeQuickInv();
+                heBlockCat = new helium.ui.HeCollapser(blockCatTable, heQuickInv.folded(), true, false);
+                heBlockCat.setDuration(0.3f, arc.math.Interp.pow3Out);
+                heBlockCat.setCollapsed(() -> heQuickInv.folded());
+
                 mainStack.update(() -> {
                     if(control.input.commandMode != wasCommandMode){
                         mainStack.clearChildren();
-                        mainStack.addChild(control.input.commandMode ? commandTable : blockCatTable);
+                        mainStack.addChild(control.input.commandMode ? commandTable : heBlockCat);
 
                         //hacky, but forces command table to be same width as blocks. offset by the margins of the cells so that the sizing is exactly the same
                         if(control.input.commandMode){
-                            commandTable.getCells().peek().width((blockCatTable.getWidth() - (4 * 2 + 5 * 2 + 3 * 2)) / Scl.scl(1f));
+                            //helium: у свёрнутой сетки ширина ~0 - берём естественную (pref) ширину
+                            float catW = heBlockCat.getCollapse() ? blockCatTable.getPrefWidth() : blockCatTable.getWidth();
+                            commandTable.getCells().peek().width((catW - (4 * 2 + 5 * 2 + 3 * 2)) / Scl.scl(1f));
                         }
 
                         wasCommandMode = control.input.commandMode;
                     }
                 });
 
-                frame.add(mainStack).colspan(3).fill();
+                //helium: ряд "быстрая палитра | блок-меню"; right() - при свёрнутой сетке ряд уже
+                //topTable, и палитра должна прижиматься к правому краю экрана, а не центроваться
+                Table midRow = new Table();
+                midRow.bottom().right();
+                midRow.add(heQuickInv.getWrapper()).growY().bottom();
+                midRow.add(mainStack).fill();
+                frame.add(midRow).colspan(3).fill();
 
                 frame.row();
 
@@ -860,7 +894,7 @@ public class PlacementFragment{
                     }).fillY().bottom().touchable(Touchable.enabled);
                 }
 
-                mainStack.add(blockCatTable);
+                mainStack.add(heBlockCat); //helium: сетка внутри коллапсера
 
                 rebuildCategory.run();
                 frame.update(() -> {

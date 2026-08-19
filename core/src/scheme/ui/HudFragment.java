@@ -108,7 +108,10 @@ public class HudFragment{
                 if(block == null) return; // block is null before the world is loaded
                 //sonka: блок-меню может быть масштабировано PanelScale-обёрткой - якорим по
                 //ВИЗУАЛЬНОЙ ширине (локальная ширина * произведение scale предков)
-                pad.setTranslation(Scl.scl(building.fliped ? 4f : 178f) - block.getWidth() * sonkaextras.PanelScale.effectiveScale(block), 0f);
+                //helium: слева от блок-меню теперь может стоять колонка быстрой палитры (тот же
+                //frame, тот же масштаб) - сдвигаемся и на её визуальную ширину
+                float heQuick = ui.hudfrag.blockfrag.heQuickInv != null ? ui.hudfrag.blockfrag.heQuickInv.getWrapper().getWidth() : 0f;
+                pad.setTranslation(Scl.scl(building.fliped ? 4f : 178f) - (block.getWidth() + heQuick) * sonkaextras.PanelScale.effectiveScale(block), 0f);
                 pad.setWidth(Scl.scl(building.fliped ? 244f : 70f)); // more magic numbers to the god of magic numbers
             });
         });
