@@ -83,16 +83,14 @@ import static mindustry.Vars.ui;
  * {@code eui.ai.ConveyorPathfind} helper; qol-suite's BridgeToCore covers the bridge/junction
  * route-to-core niche. {@link CoreDrag} ("eui-DragBlock", drag from a core to auto-place a vault) has
  * no native equivalent, so it stays.</li>
- * <li>{@code eui-showMinimap} vs. the native Settings > Graphics "Minimap" checkbox
- * ({@code SettingsMenuDialog.java}'s {@code graphics.checkPref("minimap", ...)}) - both write the exact
- * same {@code Core.settings} key ("minimap"), so this is a second toggle for the same switch rather than
- * a functional collision; whichever was flipped most recently wins, harmlessly.</li>
+ * <li>RESOLVED (dedupe pass): {@code eui-showMinimap} vs. the native Settings > Graphics "Minimap"
+ * checkbox - the eui toggle was a plain per-frame proxy writing the same {@code Core.settings} key
+ * ("minimap"); removed, the native checkbox remains the single switch.</li>
  * </ul>
  */
 public class EUIMod{
     private AutofillPriorityDialog autofillPriorityDialog;
     private SchematicsImportExport schematicsImportExport;
-    private boolean lastMinimapSetting;
 
     public EUIMod(){
         //self-disable if the original jar/script mod is still dropped in the mods folder - two copies
@@ -128,18 +126,6 @@ public class EUIMod{
         SchematicsTableUi schematicsTableUi = new SchematicsTableUi();
         schematicsImportExport = new SchematicsImportExport(schematicsTableUi);
         new BottomPanelUi(autofillPriorityDialog);
-
-        //settings-ui.js's one remaining piece of standalone logic (not a "feature" of its own) - the
-        //mod's own "eui-showMinimap" toggle just proxies the engine's real "minimap" setting
-        lastMinimapSetting = Core.settings.getBool("eui-showMinimap", true);
-        Core.settings.put("minimap", lastMinimapSetting);
-        Events.run(Trigger.update, () -> {
-            boolean current = Core.settings.getBool("eui-showMinimap", true);
-            if(current != lastMinimapSetting){
-                Core.settings.put("minimap", current);
-                lastMinimapSetting = current;
-            }
-        });
 
         Events.on(ClientLoadEvent.class, e -> buildSettings());
     }
@@ -193,7 +179,6 @@ public class EUIMod{
             table.pref(new ButtonSetting("eui-schematics-import", () -> schematicsImportExport.showImportDialog()));
 
             table.pref(new LabelSetting("eui-misc-header", Core.bundle.get("eui.misc.title", "Misc")));
-            table.checkPref("eui-showMinimap", true);
             table.checkPref("eui-showInteractSettings", true);
         });
     }
