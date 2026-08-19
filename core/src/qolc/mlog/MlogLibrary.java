@@ -212,6 +212,70 @@ public final class MlogLibrary{
         }).marginLeft(12f).row();
     }
 
+    /**
+     * Обзорный диалог библиотеки {@code qol/mlog/}: список файлов с просмотром кода (+копирование в
+     * буфер), удалением и вставкой-по-клику (та же pending-механика, что у {@code !mlog <файл> set}).
+     * Добавлен как кнопка-действие секции «Вшитые моды» в {@link mindustry.client.ui.FeaturesDialog} -
+     * ДОПОЛНИТЕЛЬНАЯ точка входа: команда {@code !mlog} и кнопки Edit-меню редактора логики остаются.
+     */
+    public static void showLibraryDialog(){
+        mindustry.ui.dialogs.BaseDialog dialog = new mindustry.ui.dialogs.BaseDialog(Core.bundle.get("qolc.mlog.library-title"));
+        dialog.addCloseButton();
+
+        arc.scene.ui.layout.Table list = new arc.scene.ui.layout.Table();
+        //массив-обёртка: лямбда перестройки списка ссылается на саму себя (кнопка удаления)
+        Runnable[] rebuild = new Runnable[1];
+        rebuild[0] = () -> {
+            list.clear();
+            Seq<Fi> files = Seq.with(dir().list()).select(f -> f.extension().equals("txt"));
+            files.sort((a, b) -> a.name().compareTo(b.name()));
+            if(files.isEmpty()){
+                list.add(Core.bundle.get("qolc.mlog.no-files")).left();
+                return;
+            }
+            for(Fi f : files){
+                String name = f.nameWithoutExtension();
+                list.add(name).left().growX().padRight(8f);
+                list.button(mindustry.gen.Icon.zoom, mindustry.ui.Styles.clearNonei, () -> showCodeDialog(f))
+                    .size(40f).tooltip("@qolc.mlog.view");
+                list.button(mindustry.gen.Icon.paste, mindustry.ui.Styles.clearNonei, () -> {
+                    //тот же режим, что "!mlog <файл> set": код ждёт клика по процессору своей команды
+                    pending = f.readString();
+                    pendingName = name;
+                    dialog.hide();
+                    //showInfoFade, а не sendMessage: чат может быть закрыт менюшками, из которых открыт диалог
+                    Vars.ui.showInfoFade(Core.bundle.format("qolc.mlog.click-target", name));
+                }).size(40f).disabled(b -> !Vars.state.isGame()).tooltip("@qolc.mlog.set-tooltip");
+                list.button(mindustry.gen.Icon.trash, mindustry.ui.Styles.clearNonei, () -> Vars.ui.showConfirm("@confirm",
+                    Core.bundle.format("qolc.mlog.delete-confirm", name), () -> {
+                        f.delete();
+                        rebuild[0].run();
+                    })).size(40f).tooltip("@delete");
+                list.row();
+            }
+        };
+        rebuild[0].run();
+
+        //подсказка по команде - тот же текст, что печатает "!mlog" без аргументов
+        dialog.cont.add(Core.bundle.get("qolc.mlog.usage")).left().growX().wrap().padBottom(10f).row();
+        dialog.cont.pane(list).growX().maxWidth(640f);
+        dialog.show();
+    }
+
+    /** Просмотр кода одного файла библиотеки, с копированием в буфер обмена. */
+    private static void showCodeDialog(Fi f){
+        mindustry.ui.dialogs.BaseDialog d = new mindustry.ui.dialogs.BaseDialog(f.nameWithoutExtension());
+        d.addCloseButton();
+        String code = f.readString();
+        d.buttons.button("@copy", mindustry.gen.Icon.copy, () -> {
+            Core.app.setClipboardText(code);
+            Vars.ui.showInfoFade("@copied");
+        }).size(210f, 64f);
+        //"[[" - экранирование цветовой разметки arc-Label: mlog-строки со скобками должны показываться как есть
+        d.cont.pane(p -> p.add(new arc.scene.ui.Label(code.replace("[", "[["), mindustry.ui.Styles.monoLabel)).left().growX().wrap()).grow();
+        d.show();
+    }
+
     private static void inject(LogicBuild target, String code){
         try{
             target.configure(LogicBlock.compress(code, target.links));
