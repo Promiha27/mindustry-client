@@ -20,6 +20,7 @@ import mindustry.gen.Tex;
 import mindustry.gen.Unit;
 import mindustry.graphics.Layer;
 import mindustry.ui.Styles;
+import sonkaextras.UiStyle;
 
 import static mindustry.Vars.player;
 import static mindustry.Vars.ui;
@@ -143,16 +144,19 @@ public class UnitsTableUi{
         Table unitTableButtons = contentTable.table().top().left().margin(3f).get();
         unitTableButtons.update(() -> unitTableButtons.color.a = Core.settings.getInt("eui-UnitsTableAlpha", 100) / 100f);
 
-        unitTableButtons.button(Icon.play, Styles.defaulti, () -> unitsUiVisible = !unitsUiVisible)
+        //скиновая унификация: серые "приподнятые" Styles.defaulti заменены плоскими clear-стилями
+        //из единого style-гайда (UiStyle) - как у кнопок тайтл-баров qol/mi2u-окон и нативного HUD;
+        //тогглы - clearTogglei, чтобы включённое состояние читалось подсветкой, а не вдавленностью
+        unitTableButtons.button(Icon.play, UiStyle.titleButton(), () -> unitsUiVisible = !unitsUiVisible)
             .width(buttonSizePx).height(buttonSizePx).pad(1f).name("show").tooltip(Core.bundle.get("units-table.button.hide.tooltip"));
 
-        var coreUnitsButton = unitTableButtons.button(Icon.players, Styles.defaulti, () -> hideCoreUnits = !hideCoreUnits)
+        var coreUnitsButton = unitTableButtons.button(Icon.players, UiStyle.titleToggle(), () -> hideCoreUnits = !hideCoreUnits)
             .update(b -> b.setChecked(hideCoreUnits)).width(buttonSizePx).height(buttonSizePx).pad(1f)
             .name("core-units").tooltip(Core.bundle.get("units-table.button.core-units.tooltip")).get();
         coreUnitsButton.visibility = () -> unitsUiVisible;
         coreUnitsButton.resizeImage(buttonSizePx * 0.6f);
 
-        var supportUnitsButton = unitTableButtons.button(Icon.github, Styles.defaulti, () -> hideSupportUnits = !hideSupportUnits)
+        var supportUnitsButton = unitTableButtons.button(Icon.github, UiStyle.titleToggle(), () -> hideSupportUnits = !hideSupportUnits)
             .update(b -> b.setChecked(hideSupportUnits)).width(buttonSizePx).height(buttonSizePx).pad(1f)
             .name("support-units").tooltip(Core.bundle.get("units-table.button.support-units.tooltip")).get();
         supportUnitsButton.visibility = () -> unitsUiVisible;

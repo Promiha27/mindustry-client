@@ -59,6 +59,9 @@ public class HudFragment{
             size.setFilter(TextFieldFilter.digitsOnly);
             size.changed(() -> build.resize(size.getText()));
 
+            //Tex.buttonEdge2 оставлен сознательно: панель пристыкована к нативному блок-меню и по
+            //style-гайду (sonkaextras.UiStyle) докнутые панели сливаются с соседним нативным стеком,
+            //а не выглядят отдельным плавающим окном
             cont.table(Tex.buttonEdge2, pad -> {
                 partitionbt(pad, mode -> {
                     mode.button(Icon.cancel, Styles.clearNonei, () -> {
@@ -103,7 +106,8 @@ public class HudFragment{
             cont.name = "scheme-waveapproaching";
             cont.bottom();
 
-            cont.table(Styles.black6, pad -> {
+            //фон плашки-алерта - канонный black6 из единого style-гайда
+            cont.table(sonkaextras.UiStyle.titleBg(), pad -> {
                 pad.add("@scheme.approaching.info").labelAlign(Align.center, Align.center).update(label -> label.setColor(Color.white.cpy().lerp(Color.scarlet, Mathf.absin(10f, 1f)))).padRight(6f);
                 pad.button(Icon.info, Styles.clearNonei, approaching::show).grow();
                 pad.button(Icon.eyeOffSmall, Styles.clearNonei, () -> settings.put("approachenabled", false)).grow();

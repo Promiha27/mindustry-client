@@ -1,7 +1,6 @@
 package qol.ui;
 
 import arc.Core;
-import arc.graphics.*;
 import arc.input.KeyCode;
 import arc.math.Mathf;
 import arc.scene.event.*;
@@ -10,15 +9,17 @@ import arc.struct.Seq;
 import arc.util.Align;
 import mindustry.Vars;
 import mindustry.gen.Iconc;
-import mindustry.ui.Styles;
 import mindustry.ui.dialogs.SettingsMenuDialog.SettingsTable;
+import sonkaextras.UiStyle;
 
 import static arc.Core.graphics;
 import static arc.Core.scene;
 
 /**
- * Small draggable, collapsible HUD panel in the same visual language MI2 Utilities' "Mindow2" windows
- * use (Styles.black6/black3 panels, a drag handle that also toggles collapse on a plain click). Click
+ * Small draggable, collapsible HUD panel in the shared visual language of ALL baked-in mods' floating
+ * windows - backgrounds/colors come from the single style guide {@link UiStyle} (title bar black6, body
+ * black3, accent title; Mindow2 uses the same). A drag handle also toggles collapse on a plain click:
+ * click
  * and release without moving the mouse more than {@link #CLICK_SLOP} pixels toggles {@link #minimized};
  * dragging moves the window instead. Position and collapsed state persist per {@link #prefId} via
  * {@link Core#settings}, and the window is clamped back onto the screen every frame so a game window
@@ -52,10 +53,11 @@ public class QolWindow extends Table{
      */
     public float sizeScale = 1f;
 
-    protected final Table titleBar = new Table(Styles.black6);
+    //фоны/цвета - из единого style-гайда UiStyle (тайтл black6, тело black3, заголовок accent)
+    protected final Table titleBar = new Table(UiStyle.titleBg());
     protected final Table titlePane = new Table();
     protected final Table titleExtras = new Table();
-    protected final Table cont = new Table(Styles.black3);
+    protected final Table cont = new Table(UiStyle.windowBg());
 
     protected boolean dragging;
     protected float dragFromX, dragFromY;
@@ -65,7 +67,7 @@ public class QolWindow extends Table{
         this.name = prefId;
 
         titlePane.left();
-        titlePane.add(Iconc.move + " " + Core.bundle.get(titleKey, titleKey)).color(Color.lightGray).left().padLeft(4f).growX().labelAlign(Align.left);
+        titlePane.add(Iconc.move + " " + Core.bundle.get(titleKey, titleKey)).color(UiStyle.titleColor()).left().padLeft(4f).growX().labelAlign(Align.left);
 
         if(prefId != null && !prefId.isEmpty()) load();
 

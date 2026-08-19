@@ -14,6 +14,7 @@ import mindustry.gen.Icon;
 import mindustry.type.UnitType;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
+import sonkaextras.UiStyle;
 
 import static mindustry.Vars.content;
 import static mindustry.Vars.ui;
@@ -88,14 +89,18 @@ public class BottomPanelUi{
         if(contentTable == null) return;
         built = true;
 
-        contentTable.button(Icon.upOpen, Styles.selecti, () -> {
+        //скиновая унификация: шеврон - плоский clearNonei (как FlipButton scheme-панели), а не
+        //рамочный selecti; развёрнутый ряд кнопок получает канонный black6-фон тулбара из UiStyle
+        //вместо голых иконок, висящих в воздухе
+        contentTable.button(Icon.upOpen, UiStyle.titleButton(), () -> {
             showSettings = !showSettings;
             rebuildTable();
         }).width(64f).height(16f).marginBottom(3f);
         if(!showSettings) return;
 
         contentTable.row();
-        Table buttonTable = contentTable.table().get();
+        Table buttonTable = contentTable.table(UiStyle.titleBg()).get();
+        buttonTable.margin(UiStyle.PANEL_MARGIN / 2f);
         buttonTable.defaults().size(32f);
 
         buttonTable.button(Icon.list, Styles.cleari, autofillPriorityDialog::show).get().resizeImage(32f * 0.8f);

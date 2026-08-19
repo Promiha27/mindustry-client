@@ -130,7 +130,10 @@ public class UnitSpawner {
 		mainTable = new Table();
 		mainTable.row();
 		
-		container = mainTable.table(Styles.grayPanel).touchable(Touchable.enabled)
+		// скиновая унификация вшитых модов: непрозрачный grayPanel заменён канонным
+		// полупрозрачным black3-телом окна из единого style-гайда (sonkaextras.UiStyle),
+		// как у qol/mi2u-окон; серые подложки строк - канонным black6
+		container = mainTable.table(sonkaextras.UiStyle.windowBg()).touchable(Touchable.enabled)
 				.width(300) // 300
 				.height(500)
 				.get();
@@ -138,7 +141,7 @@ public class UnitSpawner {
 		container.row();
 		
 
-		Table teamTable = container.table(UIUtils.background).touchable(Touchable.enabled)
+		Table teamTable = container.table(sonkaextras.UiStyle.titleBg()).touchable(Touchable.enabled)
 				.width(300) // 300
 				.height(50)
 				.get();
@@ -279,17 +282,17 @@ public class UnitSpawner {
 			}
 		};
 
-		Table searchTable = table.table(UIUtils.background).touchable(Touchable.enabled)
+		Table searchTable = table.table(sonkaextras.UiStyle.titleBg()).touchable(Touchable.enabled)
 				.width(300).height(50)
-				.get().background(Styles.black6);
+				.get().background(sonkaextras.UiStyle.titleBg());
 		searchTable.image(Icon.zoom).width(50).height(50).margin(0).pad(0);
 		search = searchTable.field(null, text -> rebuild.run()).width(250).height(50).margin(0).pad(0).get();//.padBottom(4).left().growX().width(300).uniformX().get();
 		search.setMessageText("@players.search");
 		table.row();
 		
-		Table scrollTable = table.table(UIUtils.background).touchable(Touchable.enabled)
+		Table scrollTable = table.table(sonkaextras.UiStyle.titleBg()).touchable(Touchable.enabled)
 				.width(300).height(300)
-				.get().background(Styles.black6);
+				.get().background(sonkaextras.UiStyle.titleBg());
 		rebuild.run();
 		
 		ScrollPane pane = new ScrollPane(cont, Styles.smallPane);

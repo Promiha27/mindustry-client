@@ -67,7 +67,8 @@ public class QuickAccessFeature extends Table implements Feature {
 
         // Main container table that will be dragged
         Table container = new Table();
-        container.background(Styles.black6);
+        //фон тулбара - канонный black6 из единого style-гайда вшитых модов (sonkaextras.UiStyle)
+        container.background(sonkaextras.UiStyle.titleBg());
         container.setColor(1f, 1f, 1f, QuickAccessConfig.opacity());
         container.touchable = Touchable.enabled; // Container catches touches
 
@@ -155,7 +156,7 @@ public class QuickAccessFeature extends Table implements Feature {
     }
 
     private void populateContent(Table t) {
-        t.background(Styles.black6);
+        t.background(sonkaextras.UiStyle.titleBg());
 
         Seq<Feature> features = FeatureManager.getInstance().getFeatures();
         int i = 0;

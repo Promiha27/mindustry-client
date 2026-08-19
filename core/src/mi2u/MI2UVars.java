@@ -57,9 +57,12 @@ public class MI2UVars{
     public static MapInfoDialog mapInfo;
 
     public static void init(){
-        var whiteui = (TextureRegionDrawable)Tex.whiteui;
-        mindowTitleBarBackground = whiteui.tint(1f, 0.1f, 0.2f, 0.3f);
-        monitorTitleBarBackground = whiteui.tint(0.1f, 0.2f, 1f, 0.3f);
+        //Скиновая унификация вшитых модов: фирменные красная (окна) и синяя (мониторы) тонировки
+        //тайтл-баров mi2u заменены каноничным black6 из единого style-гайда UiStyle - тем же фоном,
+        //что у тайтлов qol-окон и нативного HUD. Обе переменные оставлены раздельными, чтобы не
+        //трогать использующий их код Mindow2/MonitorCanvas (меняется только вид, не механика).
+        mindowTitleBarBackground = sonkaextras.UiStyle.titleBg();
+        monitorTitleBarBackground = sonkaextras.UiStyle.titleBg();
 
         Pixmap fade = new Pixmap(128, 128);
         for(int x = 0; x < fade.width; x++){

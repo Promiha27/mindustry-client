@@ -118,7 +118,7 @@ public class SchematicsTableUi{
     public SchematicsTableUi(){
         Events.on(ClientLoadEvent.class, e -> {
             ui.hudGroup.fill(null, t -> {
-                previewTable = t.table(Styles.black3).get();
+                previewTable = t.table(sonkaextras.UiStyle.windowBg()).get();
                 previewTable.visibility = this::previewTableVisibility;
                 previewTable.update(() -> previewTable.color.a = Core.settings.getInt("eui-SchematicsTableAlpha", 100) / 100f);
                 t.center();
@@ -395,7 +395,8 @@ public class SchematicsTableUi{
     // ---------------------------------------------------------------- table build/layout
 
     void setMarker(){
-        contentTable = new Table(Styles.black3);
+        //фон тела панели - из единого style-гайда (тот же black3)
+        contentTable = new Table(sonkaextras.UiStyle.windowBg());
         contentTable.name = "eui-schematics-table";
         contentTable.visibility = () -> built && ui.hudfrag.shown;
 

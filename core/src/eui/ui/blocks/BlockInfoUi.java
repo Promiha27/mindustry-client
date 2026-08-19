@@ -12,8 +12,8 @@ import mindustry.gen.Building;
 import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
 import mindustry.logic.Ranged;
-import mindustry.ui.Styles;
 import mindustry.world.blocks.defense.OverdriveProjector.OverdriveBuild;
+import sonkaextras.UiStyle;
 import mindustry.world.blocks.power.PowerGraph;
 import mindustry.world.modules.ItemModule;
 import mindustry.world.modules.PowerModule;
@@ -52,7 +52,8 @@ public class BlockInfoUi{
     public BlockInfoUi(){
         Events.on(ClientLoadEvent.class, e -> {
             ui.hudGroup.fill(null, t -> {
-                contentTable = t.table(Styles.black3).margin(4f).get();
+                //фон/отступ - из единого style-гайда UiStyle (те же black3 и 4px, что и раньше)
+                contentTable = t.table(UiStyle.windowBg()).margin(UiStyle.PANEL_MARGIN).get();
                 contentTable.visibility = () -> ui.hudfrag.shown && built;
                 t.bottom().left();
                 t.pack();

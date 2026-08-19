@@ -17,6 +17,7 @@ import mindustry.game.EventType.*;
 import mindustry.gen.*;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
+import sonkaextras.UiStyle;
 
 import static arc.Core.*;
 import static arc.util.Align.*;
@@ -40,7 +41,8 @@ public class Mindow2 extends Table{
     public boolean hasCloseButton = false;
     public boolean hasTitle = true, minimized = false;
 
-    protected Table titleBar = new Table(), titlePane = new Table(Styles.black6);
+    //фоны - из единого style-гайда вшитых модов (см. sonkaextras.UiStyle): тайтл black6, тело black3
+    protected Table titleBar = new Table(), titlePane = new Table(UiStyle.titleBg());
     protected Table cont = new Table();
 
     /** 窗口专属的settings，在构造方法调用{@code useSettings()}以启用*/
@@ -97,7 +99,7 @@ public class Mindow2 extends Table{
 
         if(name != null && !name.isEmpty() && settings != null) initSettings();
 
-        cont.setBackground(Styles.black3);
+        cont.setBackground(UiStyle.windowBg());
         titleBar.setBackground(mindowTitleBarBackground);
 
         Events.on(ResizeEvent.class, e -> Time.run(60f, () -> {
@@ -166,7 +168,8 @@ public class Mindow2 extends Table{
         }
 
         titleBar.table(t -> {
-            if(minimized) t.add(bundle.get(name + ".MI2U"));
+            //accent-заголовок - канон style-гайда (у развёрнутого Mindow2 текста заголовка нет вовсе)
+            if(minimized) t.add(bundle.get(name + ".MI2U")).color(UiStyle.titleColor());
             t.add(new CombinationIcon(tt -> tt.label(() -> dragging ? Iconc.move + "" : minimized ? "□" : "-").labelAlign(center).grow()).topRight(tt -> tt.label(() -> !dragging ? Iconc.move + "" : "").fontScale(0.6f))).size(buttonSize);
         }).get().addListener(dragListener);
     }
