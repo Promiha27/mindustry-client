@@ -352,6 +352,6 @@ public class MI2UI extends Mindow2{
         settings.checkPref("modTopTableFollowMouse", false).tag(false, true, false);
         settings.sliderPref("maxSchematicSize", 64, 32, 1024, 16, String::valueOf, s -> Vars.maxSchematicSize = s);
 
-        settings.checkPref("enableUpdate", true);
+        //настройка enableUpdate удалена: ModUpdateChecker не портирован (вшитой копии нечего обновлять)
     }
 }

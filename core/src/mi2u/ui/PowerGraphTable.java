@@ -28,6 +28,18 @@ import java.util.*;
 
 import static mindustry.Vars.*;
 
+/**
+ * Таблица энергосетей команды (порт из MI2U).
+ * <p>
+ * ВАЖНО для этого форка (см. javadoc qol.controlhelper.core.PowerNetworkReconnector):
+ * на клиенте энергоузлы (power node) могут отсутствовать в Groups.build, и обнаружение
+ * сетей здесь идёт через {@code state.teams.get(team).buildings} - список может страдать
+ * той же неполнотой. Практическое следствие мало: сеть из ОДНИХ узлов (без батарей,
+ * генераторов и потребителей) имеет нулевые totalcap/totalgen/totalcons и всё равно
+ * рисуется полосой нулевой ширины; любая сеть с хоть одной "содержательной" постройкой
+ * находится по ней. Членство конкретной сети всегда берётся из авторитетного
+ * {@code PowerGraph.all/batteries/consumers/producers}, как и рекомендует qol-джавадок.
+ */
 public class PowerGraphTable extends Table{
     public Team team;
     public PopupTable detailTable = new PopupTable();
