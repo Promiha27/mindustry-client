@@ -113,11 +113,13 @@ public final class ChainWarn{
             //пер-панельный масштаб нативных HUD-панелей (PanelScale/ChatFragment.draw). Секция
             //Sonka Extras, а не вкладка Graphics: все sonka-фичи движка живут одной секцией, а поиск
             //настроек всё равно находит их с любой вкладки. Всё применяется вживую, без рестарта
-            t.sliderPref(PanelScale.CHAT_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%");
-            t.sliderPref(PanelScale.MINIMAP_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%");
-            t.sliderPref(PanelScale.WAVES_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%");
-            t.sliderPref(PanelScale.COREITEMS_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%");
-            t.sliderPref(PanelScale.PALETTE_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%");
+            //changed-колбэк сбрасывает кэш PanelScale.scl - живое применение слайдера сохранено,
+            //а act()-циклы обёрток не лазят в settings каждый кадр (перф)
+            t.sliderPref(PanelScale.CHAT_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%", v -> PanelScale.invalidate(PanelScale.CHAT_KEY));
+            t.sliderPref(PanelScale.MINIMAP_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%", v -> PanelScale.invalidate(PanelScale.MINIMAP_KEY));
+            t.sliderPref(PanelScale.WAVES_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%", v -> PanelScale.invalidate(PanelScale.WAVES_KEY));
+            t.sliderPref(PanelScale.COREITEMS_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%", v -> PanelScale.invalidate(PanelScale.COREITEMS_KEY));
+            t.sliderPref(PanelScale.PALETTE_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%", v -> PanelScale.invalidate(PanelScale.PALETTE_KEY));
         }));
 
         Events.on(WorldLoadEvent.class, e -> {

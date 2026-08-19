@@ -3,6 +3,7 @@ package sonkaextras;
 import arc.Core;
 import arc.func.Floatp;
 import arc.math.Mathf;
+import arc.struct.ObjectMap;
 import arc.scene.Element;
 import arc.scene.Group;
 import arc.scene.event.Touchable;
@@ -67,9 +68,24 @@ public class PanelScale extends WidgetGroup{
         setScale(lastScale);
     }
 
+    /* перф: scl() зовётся из act() каждой обёртки (5 панелей) и из ChatFragment.draw каждый кадр -
+     * кэшируем значение и сбрасываем из changed-колбэка слайдера (ChainWarn.buildSettings), так
+     * что движение слайдера по-прежнему применяется вживую */
+    private static final ObjectMap<String, Float> sclCache = new ObjectMap<>();
+
     /** Текущий множитель настройки key (проценты в settings -> 0.5..1.5). */
     public static float scl(String key){
-        return Mathf.clamp(Core.settings.getInt(key, 100), MIN, MAX) / 100f;
+        Float v = sclCache.get(key);
+        if(v == null){
+            v = Mathf.clamp(Core.settings.getInt(key, 100), MIN, MAX) / 100f;
+            sclCache.put(key, v);
+        }
+        return v;
+    }
+
+    /** Сброс кэша множителя - зовётся из changed-колбэка слайдера настройки. */
+    public static void invalidate(String key){
+        sclCache.remove(key);
     }
 
     /** Живой геттер множителя для конструктора - слайдер применяется без пересборки панели. */
