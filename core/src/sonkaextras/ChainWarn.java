@@ -126,6 +126,7 @@ public final class ChainWarn{
             t.sliderPref(sonkaextras.cursors.CursorCustomizer.scaleKey, 100,
                 sonkaextras.cursors.CursorCustomizer.MIN_PERCENT, sonkaextras.cursors.CursorCustomizer.MAX_PERCENT, 10,
                 v -> v + "%", v -> sonkaextras.cursors.CursorCustomizer.rebuild());
+            t.pref(new qol.core.ButtonSetting("sonka-cursor-configure", () -> new sonkaextras.cursors.CursorsDialog().show()));
         }));
 
         Events.on(WorldLoadEvent.class, e -> {
