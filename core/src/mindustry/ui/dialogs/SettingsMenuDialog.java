@@ -1227,7 +1227,11 @@ public class SettingsMenuDialog extends BaseDialog{
         }
 
         private void updatePref(){
-            settings.defaults("updateurl", "mindustry-antigrief/mindustry-client-v8-builds");
+            //sonka: дефолт был mindustry-antigrief/mindustry-client-v8-builds - автообновление
+            //подсовывало СТОКОВЫЙ Foo's Client поверх нашей кастомной сборки. Пустой дефолт =
+            //апдейтер молчит, пока не задан НАШ репозиторий релизов (через -PupdateUrl при сборке
+            //или руками в этом поле настроек)
+            settings.defaults("updateurl", "");
             if (!Version.updateUrl.isEmpty()) settings.put("updateurl", Version.updateUrl); // overwrites updateurl on every boot, shouldn't be a real issue
             pref(new Setting("updateurl") {
                 boolean urlChanged;
