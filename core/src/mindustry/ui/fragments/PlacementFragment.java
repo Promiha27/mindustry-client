@@ -183,9 +183,6 @@ public class PlacementFragment{
             //тем же приёмом, каким выше подменяется СКМ по ядру
             if(tryBlock == null && build == null){
                 tryBlock = sonkaextras.BestDrillPick.bestFor(tile, player.team());
-            }else{
-                //sonka: временная диагностика - если ветка бура не достигается, узнаем почему
-                arc.util.Log.info("[bestdrill] skipped: tryBlock=@ build=@", tryBlock, build);
             }
 
             if(tryBlock == null && state.rules.editor){

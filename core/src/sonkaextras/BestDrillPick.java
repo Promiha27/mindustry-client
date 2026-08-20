@@ -34,18 +34,15 @@ public final class BestDrillPick{
         //напольная руда: только на пустом тайле (block=air), иначе пипетка и так взяла бы здание
         if(tile.block() == Blocks.air){
             Item drop = tile.drop();
-            Block result = drop == null ? null : best(drop, false);
-            //sonka: временная диагностика «СКМ по руде не работает» - убрать после подтверждения
-            arc.util.Log.info("[bestdrill] floor: tile=@ block=@ overlay=@ drop=@ -> @",
-                tile, tile.block(), tile.overlay(), drop, result);
-            return result;
+            if(drop == null) return null;
+            return best(drop, false);
         }
 
         //стенная руда Эрекира (wallDrop у рудной стены)
         Item wallDrop = tile.wallDrop();
-        Block result = wallDrop == null ? null : best(wallDrop, true);
-        arc.util.Log.info("[bestdrill] wall: tile=@ block=@ wallDrop=@ -> @", tile, tile.block(), wallDrop, result);
-        return result;
+        if(wallDrop != null) return best(wallDrop, true);
+
+        return null;
     }
 
     static Block best(Item drop, boolean wall){
@@ -67,7 +64,11 @@ public final class BestDrillPick{
             }
 
             if(tier < drop.hardness) continue;
-            if(!b.isVisible() || !b.unlockedNow() || state.rules.isBanned(b)) continue;
+            //ВАЖНО: без env-проверки на Серпуло выигрывал эрекирский eruption-drill (tier выше), а
+            //финальный гейт пипетки (unlocked() во фрагменте: supportsEnv+environmentBuildable) его
+            //молча отбрасывал - кнопка "не работала". Отбор обязан зеркалить тот гейт целиком.
+            if(!b.isVisible() || !b.unlockedNow() || state.rules.isBanned(b)
+                || !b.placeablePlayer || !b.environmentBuildable() || !b.supportsEnv(state.rules.env)) continue;
 
             //выше tier = лучше; при равном - быстрее (меньший drillTime)
             if(tier > bestTier || (tier == bestTier && time < bestTime)){
