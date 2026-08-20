@@ -35,20 +35,29 @@ public final class BestDrillPick{
         if(tile.block() == Blocks.air){
             Item drop = tile.drop();
             if(drop == null) return null;
-            return best(drop, false);
+            return best(drop, false, team);
         }
 
         //стенная руда Эрекира (wallDrop у рудной стены)
         Item wallDrop = tile.wallDrop();
-        if(wallDrop != null) return best(wallDrop, true);
+        if(wallDrop != null) return best(wallDrop, true, team);
 
         return null;
     }
 
-    static Block best(Item drop, boolean wall){
-        Block bestBlock = null;
-        int bestTier = -1;
-        float bestTime = Float.MAX_VALUE;
+    static Block best(Item drop, boolean wall, Team team){
+        //лучший, на который ХВАТАЕТ ресурсов ядра (просьба sonka) - тот же критерий, каким форк
+        //выбирает ядро по СКМ (items().has(requirements, buildCostMultiplier), sandbox = всё можно)
+        Block bestAffordable = null;
+        int bestAffTier = -1;
+        float bestAffTime = Float.MAX_VALUE;
+        //запасной: самый ДЕШЁВЫЙ способный (минимальный tier), если не хватает ни на один -
+        //призрак всё равно полезнее, чем "кнопка не сработала"
+        Block cheapest = null;
+        int cheapestTier = Integer.MAX_VALUE;
+        float cheapestTime = Float.MAX_VALUE;
+
+        boolean free = state.rules.infiniteResources;
 
         for(Block b : content.blocks()){
             int tier;
@@ -70,13 +79,20 @@ public final class BestDrillPick{
             if(!b.isVisible() || !b.unlockedNow() || state.rules.isBanned(b)
                 || !b.placeablePlayer || !b.environmentBuildable() || !b.supportsEnv(state.rules.env)) continue;
 
+            boolean affordable = free || (team.core() != null && team.items().has(b.requirements, state.rules.buildCostMultiplier));
+
             //выше tier = лучше; при равном - быстрее (меньший drillTime)
-            if(tier > bestTier || (tier == bestTier && time < bestTime)){
-                bestBlock = b;
-                bestTier = tier;
-                bestTime = time;
+            if(affordable && (tier > bestAffTier || (tier == bestAffTier && time < bestAffTime))){
+                bestAffordable = b;
+                bestAffTier = tier;
+                bestAffTime = time;
+            }
+            if(tier < cheapestTier || (tier == cheapestTier && time < cheapestTime)){
+                cheapest = b;
+                cheapestTier = tier;
+                cheapestTime = time;
             }
         }
-        return bestBlock;
+        return bestAffordable != null ? bestAffordable : cheapest;
     }
 }
