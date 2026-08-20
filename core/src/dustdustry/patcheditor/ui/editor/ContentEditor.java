@@ -1,0 +1,86 @@
+package dustdustry.patcheditor.ui.editor;
+
+import arc.scene.ui.layout.*;
+import dustdustry.patcheditor.core.*;
+import dustdustry.patcheditor.core.resolve.*;
+import dustdustry.patcheditor.ui.*;
+import dustdustry.patcheditor.ui.dialog.*;
+import mindustry.ctype.*;
+import mindustry.gen.*;
+import mindustry.mod.data.*;
+import mindustry.ui.*;
+
+import static mindustry.Vars.state;
+
+public class ContentEditor extends PatchEditor{
+    protected ContentAsset asset;
+
+    public ContentEditor(){
+        super();
+
+        title.setText("@content-editor");
+
+        card.forceOverride(true);
+        hidden(this::resetEditor);
+    }
+
+    @Override
+    protected void savePatch(){
+        asset.data = new JsonProcessor(objectTree, manager.getRoot()).options(EditorSettings.getPatchExportOptions()).toModJson();
+        state.data.reloadContent(false);
+        state.data.regenerateContentSprites(false);
+    }
+
+    @Override
+    public void resetEditor(){
+        manager.reset();
+        ObjectResolver.clearTemplate();
+        objectTree = null;
+        editorTree = null;
+        card.setRootEditorNode(null);
+        card.clean();
+
+        asset = null;
+        editPatch = null;
+    }
+
+    @Override
+    protected void setupTinyButton(Table table){
+        super.setupTinyButton(table);
+
+        table.button(Icon.eyeSmall, Styles.cleari, () -> {
+            EUI.patchEditor.showReadonly(() -> EUI.patchEditor.resetEditor());
+        }).tooltip("@patch-editor.readOnly");
+    }
+
+    @Deprecated
+    @Override
+    public void edit(EditorPatch patch){
+        throw new RuntimeException("Deprecated");
+    }
+
+    public void edit(ContentAsset asset){
+        edit(asset, null);
+    }
+
+    public void edit(ContentAsset asset, Runnable onSaved){
+        this.asset = asset;
+        editPatch = new EditorPatch(asset.name, asset.data);
+
+        Content content = asset.content;
+        ContentType type = asset.type;
+
+        if(content == null){
+            objectTree = ObjectResolver.getTemplate(type.contentClass, ObjectResolver.content);
+        }else{
+            Class<?> typeContent = ClassHelper.actualClass(content.getClass());
+            String name = content instanceof MappableContent mc ? mc.name : "";
+            objectTree = new ObjectNode(name, ObjectExample.getExample(typeContent, typeContent, true), typeContent);
+            objectTree.strategy = ObjectResolver.content;
+        }
+
+        super.edit(editPatch, onSaved);
+
+        card.setEditPath("");
+    }
+}

@@ -156,6 +156,14 @@ object FeaturesDialog : BaseDialog("@client.features") {
                     if (ncOk) newconsole.ConsoleVars.getCurrentConsole().show()
                 }.disabled { !ncOk }.standdownTooltip(ncOk)
             }
+
+            // patcheditor: настройки мода - его собственный контекстный диалог (шестерёнка в
+            // редакторе патчей), секции в ModsSettings нет - кнопка ведёт прямо в этот диалог
+            val peOk = dustdustry.patcheditor.Main.enabled()
+            modRow(list, Core.bundle["client.features.mod.patcheditor.name"], Core.bundle["client.features.mod.patcheditor.desc"], peOk) { btns ->
+                btns.button("@patch-editor.settings", Icon.settings) { dustdustry.patcheditor.ui.EUI.settings?.show() }
+                    .disabled { !peOk }.standdownTooltip(peOk)
+            }
         }.growX().row()
 
         return t

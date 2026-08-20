@@ -1,0 +1,191 @@
+package dustdustry.patcheditor.ui.editor;
+
+import arc.*;
+import arc.scene.style.*;
+import arc.scene.ui.*;
+import arc.util.*;
+import arc.util.serialization.*;
+import arc.util.serialization.Jval.*;
+import dustdustry.patcheditor.core.*;
+import dustdustry.patcheditor.core.JsonProcessor.OutputFormat;
+import dustdustry.patcheditor.ui.*;
+import dustdustry.patcheditor.ui.dialog.*;
+import mindustry.ctype.*;
+import mindustry.gen.*;
+import mindustry.graphics.*;
+import mindustry.mod.data.*;
+import mindustry.ui.*;
+import mindustry.ui.dialogs.*;
+
+import java.util.regex.*;
+
+import static mindustry.Vars.*;
+
+public class ContentAssetEditor extends BaseDialog{
+    public static final Pattern unsafeNamePattern = Pattern.compile("[\\[\\]{}`!@#$%^&*();:,]");
+
+    protected ContentEditor editor;
+
+    protected ContentAsset asset;
+    protected Class<?> contentClass;
+
+    protected boolean dirty;
+
+    protected boolean nameInvalid;
+    protected @Nullable Runnable onDataChanged;
+
+    public ContentAssetEditor(){
+        super("@patch-editor.asset-editor.content");
+
+        editor = new ContentEditor();
+
+        shown(this::rebuild);
+        hidden(this::applyJson);
+    }
+
+    protected void rebuild(){
+        setFillParent(false);
+        closeOnBack();
+
+        cont.clearChildren();
+        buttons.clearChildren();
+
+        cont.add("@name").padRight(10f);
+        TextField nameField = cont.field(asset.name, text -> {
+            asset.setPath(text + ".json");
+        }).with(t -> {
+            t.setFilter((field, c) -> !Character.isWhitespace(c));
+            t.setValidator(ContentAssetEditor::isSafeContentName);
+            t.changed(() -> nameInvalid = content.byName(t.getText()) != null || !t.isValid());
+        }).width(400f).get();
+        cont.row();
+
+        cont.add("@asset.content.type").padRight(10f);
+        cont.table(t -> {
+            t.table(Styles.grayPanel, c -> {
+                c.margin(8f);
+                c.label(() -> "@content." + asset.type.name());
+            }).height(50f).pad(4f).marginLeft(5f).marginRight(5f).width(160f);
+
+            t.image(Tex.whiteui, Pal.accent).size(4f, 50f).pad(4f);
+
+            for(ContentType type : ContentAsset.loadableContent){
+                t.button(new TextureRegionDrawable(NodeDisplay.getDisplayIcon(type)), Styles.grayTogglei, iconMed, () -> {
+                    asset.type = type;
+                    setType(null);
+                    contentClass = type.contentClass;
+                }).checked(b -> asset.type == type).size(50f).pad(4f).tooltip("@content." + type.name());
+            }
+        });
+
+        cont.row();
+
+        cont.add("@patch-editor.asset.contentClass").padRight(10f);
+        cont.table(t -> {
+            t.left();
+            t.table(Styles.grayPanel, c -> {
+                c.margin(8f);
+                c.label(() -> PatchJsonIO.getTypeName(contentClass));
+            }).size(260f, 50f).pad(4f).marginLeft(5f).marginRight(5f);
+
+            t.image(Tex.whiteui, Pal.accent).width(4f).pad(4f).fillY();
+
+            t.button(Icon.edit, Styles.graySquarei, () -> {
+                if(asset.type == ContentType.block){
+                    EUI.blockClassSelector.select(clazz -> {
+                        setType(clazz);
+                        contentClass = clazz;
+                        return true;
+                    });
+                }else{
+                    EUI.classSelector.select(asset.type.contentClass, (clazz) -> {
+                        setType(clazz);
+                        contentClass = clazz;
+                        return true;
+                    });
+                }
+            }).tooltip("@node.changeType", true).padLeft(16f).size(50f);
+        }).fillX();
+
+        cont.row();
+
+        cont.label(() -> !nameField.isValid() ? "@asset.content.badname" : "@asset.content.exists").colspan(2).visible(() -> nameInvalid);
+
+        buttons.defaults().height(64f);
+        buttons.button("@back", Icon.exit, this::hide).width(200f).get();
+
+        buttons.button("@patch-editor.asset.openInEditor", Icon.edit, () -> {
+            if(dirty) applyJson();
+            editor.edit(asset, this::applyJson);
+        }).width(200f);
+
+        buttons.button("@asset.content.import.file", Icon.fileText, () -> FileChooser.open("json", "json5", "hjson").submit(file -> {
+            setJson(file.readString());
+        })).width(170f).disabled(b -> nameField.getText().isEmpty() || nameInvalid);
+
+        buttons.button("@asset.content.import.clipboard", Icon.copy, () -> {
+            String text = Core.app.getClipboardText();
+            if(text == null) return;
+            setJson(text);
+        }).width(170f).disabled(b -> nameField.getText().isEmpty() || nameInvalid || Core.app.getClipboardText() == null);
+    }
+
+    public void show(ContentAsset asset, Runnable onHide){
+        this.asset = asset;
+        this.onDataChanged = onHide;
+        readContentClass();
+        show();
+    }
+
+    protected void setJson(String json){
+        String oldJson = asset.data;
+        asset.data = json;
+        try{
+            Jval.read(asset.data);
+            applyJson();
+        }catch(Exception e){
+            asset.data = oldJson;
+            ui.showException("@patch.importerror", e);
+        }
+    }
+
+    protected void setType(@Nullable Class<?> type){
+        Jval jval = Jval.read(asset.data);
+        if(type != null){
+            if(asset.type == ContentType.unit){
+                jval.put("template", PatchJsonIO.getTypeName(type));
+            }else{
+                jval.put("type", PatchJsonIO.getTypeName(type));
+            }
+        }else{
+            jval.remove("type");
+        }
+        PatchExportOptions options = EditorSettings.getPatchExportOptions();
+        asset.data = options.format == OutputFormat.hjson ? jval.toString(Jformat.hjson)
+        : options.formatJson ? jval.toString(Jformat.formatted)
+        : jval.toString(Jformat.plain);
+
+        dirty = true;
+    }
+
+    protected void readContentClass(){
+        contentClass = asset.content == null ? asset.type.contentClass : ClassHelper.actualClass(asset.content.getClass());
+    }
+
+    protected void applyJson(){
+        state.data.reloadContent(false);
+        state.data.regenerateContentSprites(false);
+        readContentClass();
+
+        if(onDataChanged != null){
+            onDataChanged.run();
+            onDataChanged = null;
+        }
+
+        dirty = false;
+    }
+
+    public static boolean isSafeContentName(String name){
+        return Strings.isSafeFilename(name) && !unsafeNamePattern.matcher(name).find();
+    }
+}

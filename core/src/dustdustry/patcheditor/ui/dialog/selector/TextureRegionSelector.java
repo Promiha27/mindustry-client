@@ -1,0 +1,91 @@
+package dustdustry.patcheditor.ui.dialog.selector;
+
+import arc.*;
+import dustdustry.patcheditor.ui.*;
+import arc.graphics.*;
+import arc.graphics.g2d.TextureAtlas.*;
+import arc.scene.ui.layout.*;
+import arc.struct.*;
+import arc.util.*;
+import mindustry.*;
+import mindustry.graphics.*;
+import mindustry.mod.*;
+
+public class TextureRegionSelector extends SelectorDialog<AtlasRegion>{
+    public TextureRegionSelector(){
+        super("@selector.texture-region");
+    }
+
+    @Override
+    protected void setupCont(Table cont){
+        float width = layoutWidth();
+        int columns = (int)(width / 360f);
+
+        ObjectMap<String, Seq<AtlasRegion>> map = new OrderedMap<>();
+        Seq<AtlasRegion> dpRegions = new Seq<>();
+        map.put(Core.bundle.get("selector.texture-region.custom"), dpRegions);
+        for(AtlasRegion item : getItems()){
+            if(item.name.startsWith(DataImagePacker.regionPrefix)){
+                dpRegions.add(item);
+            }else{
+                map.get("" + Character.toUpperCase(item.name.charAt(0)), Seq::new).add(item);
+            }
+        }
+
+        for(var entry : map){
+            String key = entry.key;
+            Seq<AtlasRegion> regions = entry.value;
+
+            if(regions.isEmpty()) continue;
+
+            cont.table(t -> {
+                t.image().color(Pal.darkerGray).size(32f, 6f);
+                t.add(key).color(EPalettes.type).padLeft(16f).padRight(16f).left();
+                t.image().color(Pal.darkerGray).height(4f).growX();
+            }).marginTop(16f).marginBottom(8f).growX();
+            cont.row();
+            Table regionsCont = cont.table().growX().get();
+            cont.row();
+
+            int index = 0;
+            for(AtlasRegion region : regions){
+                if(!query.isEmpty() && !matchQuery(region)) continue;
+
+                regionsCont.button(table -> {
+                    table.table(t -> setupItemTable(t, region)).growX();
+
+                    table.image().width(4f).color(Color.darkGray).growY().right();
+                    table.row();
+                    Cell<?> horizontalLine = table.image().height(4f).color(Color.darkGray).growX();
+                    horizontalLine.colspan(table.getColumns());
+                }, EStyles.cardButtoni, () -> {
+                    if(consumer.get(region)){
+                        hide();
+                    }
+                }).pad(8f).growX();
+
+                if(++index % columns == 0){
+                    regionsCont.row();
+                }
+            }
+        }
+
+        map.clear();
+    }
+
+    @Override
+    protected void setupItemTable(Table table, AtlasRegion item){
+        table.image(item).scaling(Scaling.fit).size(Vars.iconXLarge).pad(8f);
+        table.add(item.name).ellipsis(true).wrap().pad(8f).growX();
+    }
+
+    @Override
+    protected Seq<AtlasRegion> getItems(){
+        return Core.atlas.getRegionMap().values().toSeq().sortComparing(region -> region.name);
+    }
+
+    @Override
+    protected boolean matchQuery(AtlasRegion item){
+        return Strings.matches(query, item.name);
+    }
+}

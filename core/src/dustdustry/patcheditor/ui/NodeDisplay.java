@@ -1,0 +1,217 @@
+package dustdustry.patcheditor.ui;
+
+import arc.graphics.*;
+import arc.scene.*;
+import arc.scene.event.*;
+import arc.scene.style.*;
+import dustdustry.patcheditor.core.*;
+import arc.*;
+import arc.graphics.g2d.*;
+import arc.scene.ui.*;
+import arc.scene.ui.layout.*;
+import arc.struct.*;
+import arc.util.*;
+import mindustry.*;
+import mindustry.ctype.*;
+import mindustry.editor.data.*;
+import mindustry.entities.*;
+import mindustry.entities.part.DrawPart.*;
+import mindustry.gen.*;
+import mindustry.graphics.*;
+import mindustry.logic.LogicFx.*;
+import mindustry.type.*;
+import mindustry.ui.*;
+
+/**
+ * @author minri2
+ * Create by 2024/2/15
+ */
+public class NodeDisplay{
+    public static final float labelWidth = 100f;
+    public static final float imageSize = Vars.iconLarge;
+    public static ObjectMap<ContentType, TextureRegionDrawable> contentSymbolMap;
+
+    private static Table table;
+    private static EditorNode node;
+
+    private static void initSymbol(){
+        try{
+            contentSymbolMap = Reflect.get(MapContentView.class, "contentIcons");
+            return;
+        }catch(Exception ignored){
+        }
+
+        contentSymbolMap = ObjectMap.of(
+        ContentType.item, Icon.box,
+        ContentType.liquid, Icon.liquid,
+        ContentType.unit, Icon.units,
+        ContentType.block, Icon.distribution,
+        ContentType.planet, Icon.planet,
+        ContentType.weather, Icon.drizzle,
+        ContentType.status, Icon.power
+        );
+    }
+
+    private static void set(Table table, EditorNode node){
+        NodeDisplay.table = table;
+        NodeDisplay.node = node;
+    }
+
+    private static void reset(){
+        table = null;
+        node = null;
+    }
+
+    public static TextureRegion getDisplayIcon(Object object){
+        if(object == null) return Icon.none.getRegion();
+
+        // when Kotlin...
+        TextureRegion region = null;
+        if(object instanceof ContentType type){
+            if(contentSymbolMap == null) initSymbol();
+            region = contentSymbolMap.get(type, Icon.effect).getRegion();
+        }
+        else if(object instanceof UnlockableContent unlockable) region = unlockable.uiIcon;
+        else if(object instanceof Weapon weapon) region = Core.atlas.find(weapon.name, Icon.none.getRegion());
+        else if(object instanceof ItemStack stack) region = stack.item.uiIcon;
+        else if(object instanceof LiquidStack stack) region = stack.liquid.uiIcon;
+        else if(object instanceof PayloadStack stack) region = stack.item.uiIcon;
+        return region != null && region.found() ? region : Icon.effect.getRegion();
+    }
+
+    public static String getDisplayName(Object object){
+        if(object instanceof ContentType type) return Strings.capitalize(type.name());
+        if(object instanceof Content content){
+            return content instanceof UnlockableContent unlockable ? unlockable.localizedName
+            : content instanceof MappableContent mappable ? mappable.name
+            : String.valueOf(content);
+        }
+        if(object instanceof Weapon weapon) return weapon.name;
+
+        return String.valueOf(object);
+    }
+
+    public static void display(Table table, EditorNode node){
+        set(table, node);
+        displayObject(node.getDisplayValue());
+        reset();
+    }
+
+    public static void displayNameType(Table table, EditorNode node){
+        set(table, node);
+        displayNameType(node.getDisplayValue());
+        reset();
+    }
+
+    private static void displayObject(Object object){
+        if(object == null){
+            displayNameType(object);
+            table.add().expandX();
+            table.table(t -> {
+                t.image(Icon.none).size(imageSize).row();
+                t.add("null").padTop(8f);
+            });
+        }else if(object instanceof UnlockableContent || object instanceof Weapon){
+            displayNameType(object);
+            table.add().expandX();
+            displayInfo(object);
+        }else if(object instanceof ContentType contentType && contentType.contentClass != null){
+            displayNameType(object);
+            table.add().expandX();
+
+            Seq<?> seq = Vars.content.getBy(contentType);
+            if(seq.isEmpty()) return;
+            if(contentSymbolMap == null) initSymbol();
+            displayInfo(contentType);
+        }else if(object instanceof ItemStack || object instanceof LiquidStack || object instanceof PayloadStack){
+            displayNameType(object);
+            table.add().expandX();
+            displayStack(object);
+        }else if(object instanceof Effect effect){
+            displayNameType(object);
+            table.add().expandX();
+            displayEffect(effect);
+        }else if(object instanceof PartProgress progress){
+            displayNameType(object);
+            table.add().expandX();
+            displayProgress(progress);
+        }else{
+            displayNameType(object);
+        }
+    }
+
+    private static void displayNameType(Object object){
+        table.table(nodeInfoTable -> {
+            nodeInfoTable.defaults().minWidth(labelWidth).growX();
+
+            Class<?> type = ClassHelper.actualClass(object == null ? node.getTypeOut() : object.getClass());
+            nodeInfoTable.add(node.getDisplayName()).wrap().tooltip(node.getDisplayName());
+            nodeInfoTable.row();
+            nodeInfoTable.add(ClassHelper.getDisplayName(type)).fontScale(0.85f).color(EPalettes.type).ellipsis(true).wrap().padTop(4f).tooltip(ClassHelper.getDisplayName(type));
+        });
+    }
+
+    private static void displayInfo(Object object){
+        table.table(valueTable -> {
+            valueTable.defaults().right();
+
+            valueTable.image(getDisplayIcon(object)).scaling(Scaling.fit).size(imageSize);
+            valueTable.row();
+            valueTable.add(getDisplayName(object)).labelAlign(Align.right).ellipsis(true).wrap().padTop(8f).minWidth(labelWidth).growX();
+        });
+    }
+
+    private static void displayStack(Object stack){
+        table.table(valueTable -> {
+            valueTable.defaults().right();
+
+            float displayAmount = stack instanceof ItemStack itemStack ? itemStack.amount
+            : stack instanceof LiquidStack liquidStack ? liquidStack.amount * 60f
+            : stack instanceof PayloadStack payloadStack ? payloadStack.amount : 0;
+
+            valueTable.stack(new Image(getDisplayIcon(stack)){{
+                setScaling(Scaling.fit);
+            }}, new Table(t -> {
+                t.right().bottom();
+                t.add(Strings.autoFixed(displayAmount, 2)).fontScale(0.9f).style(Styles.outlineLabel);
+            })).size(imageSize);
+        });
+    }
+
+    private static void displayEffect(Effect effect){
+        table.table(valueTable -> {
+            valueTable.defaults().right();
+
+            ClickListener listener = new ClickListener();
+            EffectEntry entry = new EffectEntry(effect).name(PatchJsonIO.getKeyName(effect));
+            Element element = EffectElems.getEffectElem(entry, listener);
+            valueTable.add(element).size(imageSize);
+
+            Tooltip tooltip = new Tooltip(t -> {
+                t.background(Styles.black3).margin(8f);
+                t.add(EffectElems.getEffectElem(entry, listener)).minSize(imageSize * 5f);
+            });
+            tooltip.allowMobile = true;
+
+            element.addListener(listener);
+            element.addListener(tooltip);
+        });
+    }
+
+    private static void displayProgress(PartProgress progress){
+        table.table(valueTable -> {
+            ProgressElem progressElem = new ProgressElem(progress).hideText();
+            valueTable.add(progressElem).size(imageSize);
+
+            Tooltip tooltip = new Tooltip(t -> {
+                t.background(Styles.black).margin(24f);
+                t.add(new ProgressElem(progress){{
+                    fontColor = Color.white;
+                    boundColor = Pal.gray;
+                }}).size(256f);
+            });
+            tooltip.allowMobile = true;
+            progressElem.addListener(tooltip);
+        });
+    }
+}
