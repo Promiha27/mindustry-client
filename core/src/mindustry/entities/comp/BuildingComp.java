@@ -331,8 +331,6 @@ abstract class BuildingComp implements Posc, Teamc, Healthc, Buildingc, Timerc, 
     }
 
     public void addPlan(boolean checkPrevious, boolean ignoreConditions){
-        if(!ignoreConditions && (!block.rebuildable || (team == state.rules.defaultTeam && state.isCampaign() && !block.isVisible()))) return;
-
         Object overrideConfig = null;
         Block toAdd = this.block;
 
@@ -346,6 +344,11 @@ abstract class BuildingComp implements Posc, Teamc, Healthc, Buildingc, Timerc, 
                 return;
             }
         }
+
+        //sonka: условия проверяются по ЦЕЛЕВОМУ блоку (toAdd), а не по this.block - для стройплощадки
+        //this.block это скрытый технический ConstructBlock ("build1".."buildN"), и в кампании гейт
+        //!block.isVisible() молча отбрасывал план восстановления недостроенных зданий своей команды
+        if(!ignoreConditions && (!toAdd.rebuildable || (team == state.rules.defaultTeam && state.isCampaign() && !toAdd.isVisible()))) return;
 
         TeamData data = team.data();
 
