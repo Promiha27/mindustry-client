@@ -223,6 +223,9 @@ public class PlacementFragment{
             //комбо категория+блок на цифрах отключаются целиком (как в моде, где панель Helium
             //вообще не обрабатывала эти бинды); стрелочная навигация (i > 9) остаётся
             if(i <= 9 && helium.HeVars.getPlacementEnabled()) continue;
+            //sonka schem-table 2.0: во время цепочки "G + две цифры" цифры принадлежат таблице схем -
+            //ваниль-комбо категория+блок на них глушится (тот же приём, что гейт Helium строкой выше)
+            if(i <= 9 && eui.ui.other.SchematicsTableUi.digitChordActive()) continue;
             if(Core.input.keyTap(blockSelect[i])){
                 if(i > 9){ //select block directionally
                     Seq<Block> blocks = getUnlockedByCategory(currentCategory);

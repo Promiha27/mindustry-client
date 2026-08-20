@@ -90,6 +90,7 @@ public class CursorsDialog extends BaseDialog{
             row.defaults().size(48f).pad(2f);
             row.button(Icon.file, Styles.cleari, () -> pickFile(s)).tooltip("@client.sonka.cursors.file");
             row.button(Icon.pick, Styles.cleari, () -> pickColor(s)).tooltip("@client.sonka.cursors.color");
+            row.button(Icon.pencil, Styles.cleari, () -> new CursorEditorDialog(s, this::setup).show()).tooltip("@client.sonka.cursors.editor");
             row.button(Icon.refresh, Styles.cleari, () -> reset(s)).tooltip("@client.sonka.cursors.reset")
                 .disabled(b -> !CursorCustomizer.customFile(s).exists()
                     && !Core.settings.has(CursorCustomizer.tintKey(s))

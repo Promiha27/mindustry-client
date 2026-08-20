@@ -24,6 +24,10 @@ import static mindustry.Vars.ui;
  * move a whole curated table setup between installs/machines instead of rebuilding it by hand. Ported
  * from ui/other/schematics-import-export.js.
  * <p>
+ * С "Таблицы схем 2.0" конфиг сетки - один вложенный документ "table2" (формат
+ * {@link SchemTableData}); импорт СТАРЫХ zip'ов (без "table2") продолжает работать: их легаси-ключи
+ * записываются как раньше, после чего обычная автомиграция SchemTableData собирает из них документ.
+ * <p>
  * Uses the builder {@code mindustry.ui.FileChooser} API ({@code FileChooser.save/open(ext).submit(cons)})
  * - per the memory of this file's own debugging history, the older {@code Platform.showFileChooser(bool,
  * ext, cons)} the source originally called doesn't exist in this engine version at all (removed upstream
@@ -60,40 +64,22 @@ public class SchematicsImportExport{
         settings.put("alpha", Core.settings.getInt("eui-SchematicsTableAlpha", 100));
         settings.put("showPreview", Core.settings.getBool("eui-ShowSchematicsPreview", true));
 
-        Jval categories = Jval.newArray();
-        for(int i = 0; i < 10; i++){
-            String categoryName = Core.settings.getString("category" + i + "name", "");
-            String categoryImage = Core.settings.getString("category" + i + "image", "");
-            if(!categoryName.isEmpty() || !categoryImage.isEmpty()){
-                Jval cat = Jval.newObject();
-                cat.put("id", i);
-                cat.put("name", categoryName);
-                cat.put("image", categoryImage);
-                categories.add(cat);
-            }
-        }
-        settings.put("categories", categories);
+        //"Таблица 2.0": весь конфиг (страницы/ячейки/группы/иконки) - один вложенный документ
+        //в том же формате, что и ключ настроек SchemTableData.SETTINGS_KEY
+        SchemTableData table2 = SchemTableData.get();
+        settings.put("table2", table2.toJson());
 
+        //имена схем всех ячеек - для выгрузки .msch файлов ниже
         Jval schematicsArr = Jval.newArray();
-        for(int cat = 0; cat < 10; cat++){
-            for(int row = 0; row < 20; row++){
-                for(int col = 0; col < 10; col++){
-                    String key = "schematic" + cat + "." + col + "." + row;
-                    String schematicName = Core.settings.getString(key, "");
-                    String schematicImage = Core.settings.getString(key + "image", "");
-                    if(!schematicName.isEmpty() || !schematicImage.isEmpty()){
-                        Jval entry = Jval.newObject();
-                        entry.put("category", cat);
-                        entry.put("column", col);
-                        entry.put("row", row);
-                        entry.put("schematicName", schematicName);
-                        entry.put("schematicImage", schematicImage);
-                        schematicsArr.add(entry);
-                    }
+        for(SchemTableData.Page p : table2.pages){
+            for(arc.struct.IntMap.Entry<SchemTableData.CellData> e : p.cells){
+                if(!e.value.schematic.isEmpty()){
+                    Jval entry = Jval.newObject();
+                    entry.put("schematicName", e.value.schematic);
+                    schematicsArr.add(entry);
                 }
             }
         }
-        settings.put("schematics", schematicsArr);
 
         Fi settingsFile = exportDir.child("settings.json");
         settingsFile.writeString(settings.toString());
@@ -176,6 +162,17 @@ public class SchematicsImportExport{
         Core.settings.put("eui-SchematicsTableY", String.valueOf(intOr(settings, "positionY", 160)));
         Core.settings.putInt("eui-SchematicsTableAlpha", intOr(settings, "alpha", 100));
         Core.settings.put("eui-ShowSchematicsPreview", boolOr(settings, "showPreview", true));
+
+        //новый формат: готовый документ "Таблицы 2.0" кладётся напрямую в ключ настроек
+        if(settings.has("table2")){
+            Core.settings.put(SchemTableData.SETTINGS_KEY, settings.get("table2").toString());
+            SchemTableData.invalidate();
+        }else{
+            //старый zip (легаси-ключи ниже): после их записи сносим документ 2.0 и инвалидируем кэш -
+            //следующее обращение прогонит обычную автомиграцию по свежеимпортированным легаси-ключам
+            Core.settings.remove(SchemTableData.SETTINGS_KEY);
+            SchemTableData.invalidate();
+        }
 
         if(settings.has("categories")){
             for(Jval cat : settings.get("categories").asArray()){

@@ -101,6 +101,10 @@ public class EUIMod{
             return;
         }
 
+        //форс-инициализация EuiBinding: KeyBind.add(...) в его статике должен отработать до
+        //открытия диалога биндов (тот же приём, что у MI2UMod с MBinding)
+        eui.input.EuiBinding.init();
+
         //--- phase A: input/automation ---
         new AutoUnit();
         autofillPriorityDialog = new AutofillPriorityDialog();
@@ -178,6 +182,9 @@ public class EUIMod{
             table.pref(new LabelSetting("eui-schematics-header", Core.bundle.get("eui.schematics.title", "Schematics table")));
             table.checkPref("eui-ShowSchematicsTable", true);
             table.checkPref("eui-ShowSchematicsPreview", true);
+            //порядок цифр цепочки G+две цифры (см. SchematicsTableUi.pollChord)
+            table.checkPref("eui-SchemTableColFirst", false);
+            //размеры теперь у КАЖДОЙ страницы свои (диалог страницы по ПКМ); слайдеры - дефолт для новых страниц
             table.sliderPref("eui-SchematicsTableRows", 4, 2, 20, 1, i -> i + "");
             table.sliderPref("eui-SchematicsTableColumns", 5, 4, 16, 1, i -> i + "");
             table.sliderPref("eui-SchematicsTableButtonSize", 30, 20, 80, 2, i -> i + "");
