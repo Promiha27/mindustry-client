@@ -47,6 +47,13 @@ import static mindustry.Vars.ui;
 public final class CursorPackIO{
     static final int VERSION = 1;
 
+    /** Провалидированная запись одного слота из пака (собирается ДО применения). */
+    static final class Entry{
+        @Nullable byte[] png;
+        @Nullable Integer tint;
+        int hotspot = -1;
+    }
+
     private CursorPackIO(){
     }
 
@@ -104,25 +111,48 @@ public final class CursorPackIO{
             Jval cursors = root.get("cursors");
             if(cursors == null || !cursors.isObject()) throw new IOException("invalid cursors.json: no \"cursors\" object");
 
-            //валидация всех PNG до каких-либо изменений: битый пак не должен покорёжить полнабора
-            ObjectMap<String, byte[]> pngs = new ObjectMap<>();
+            //валидация ВСЕГО (png + tint + hotspot из json) строго до каких-либо изменений:
+            //битый пак либо отклоняется целиком, либо набор применяется целиком - полуимпорта нет
+            ObjectMap<String, Entry> entries = new ObjectMap<>();
+            int scale = -1;
+            try{
+                if(root.has("scale")) scale = Mathf.clamp(root.getInt("scale", 100), CursorCustomizer.MIN_PERCENT, CursorCustomizer.MAX_PERCENT);
+            }catch(Throwable t){
+                throw new IOException("invalid \"scale\" in cursors.json");
+            }
             for(Slot s : CursorCustomizer.slots){
                 Jval e = cursors.get(s.name);
-                if(e == null || !e.isObject() || !e.getBool("custom", false)) continue;
-                Fi png = zip.child(s.name + ".png");
-                if(!png.exists()) throw new IOException("missing " + s.name + ".png declared in cursors.json");
-                byte[] bytes = png.readBytes();
-                Pixmap p;
+                if(e == null || !e.isObject()) continue;
+                Entry entry = new Entry();
                 try{
-                    p = new Pixmap(bytes);
+                    if(e.getBool("custom", false)){
+                        Fi png = zip.child(s.name + ".png");
+                        if(!png.exists()) throw new IOException("missing " + s.name + ".png declared in cursors.json");
+                        byte[] bytes = png.readBytes();
+                        Pixmap p;
+                        try{
+                            p = new Pixmap(bytes);
+                        }catch(Throwable t){
+                            throw new IOException(s.name + ".png is not a valid PNG");
+                        }
+                        boolean ok = p.width > 0 && p.height > 0
+                            && p.width <= CursorCustomizer.MAX_SOURCE_SIZE && p.height <= CursorCustomizer.MAX_SOURCE_SIZE;
+                        p.dispose();
+                        if(!ok) throw new IOException(s.name + ".png has unsupported size (max " + CursorCustomizer.MAX_SOURCE_SIZE + "px per side)");
+                        entry.png = bytes;
+                    }
+                    String tint = e.getString("tint", null);
+                    if(tint != null) entry.tint = Color.valueOf(tint).rgba();
+                    int hx = e.getInt("hotx", -1), hy = e.getInt("hoty", -1);
+                    if(hx >= 0 && hy >= 0 && hx <= CursorCustomizer.MAX_SOURCE_SIZE && hy <= CursorCustomizer.MAX_SOURCE_SIZE){
+                        entry.hotspot = Point2.pack(hx, hy);
+                    }
+                }catch(IOException ioe){
+                    throw ioe;
                 }catch(Throwable t){
-                    throw new IOException(s.name + ".png is not a valid PNG");
+                    throw new IOException("invalid entry for cursor \"" + s.name + "\": " + t.getMessage());
                 }
-                boolean ok = p.width > 0 && p.height > 0
-                    && p.width <= CursorCustomizer.MAX_SOURCE_SIZE && p.height <= CursorCustomizer.MAX_SOURCE_SIZE;
-                p.dispose();
-                if(!ok) throw new IOException(s.name + ".png has unsupported size (max " + CursorCustomizer.MAX_SOURCE_SIZE + "px per side)");
-                pngs.put(s.name, bytes);
+                entries.put(s.name, entry);
             }
 
             if(backup){
@@ -135,41 +165,16 @@ public final class CursorPackIO{
 
             //применение: пак - полный снимок; слоты без записи в манифесте сбрасываются к ванили
             CursorCustomizer.cursorsDir().mkdirs();
-            if(root.has("scale")){
-                Core.settings.put(CursorCustomizer.scaleKey,
-                    Mathf.clamp(root.getInt("scale", 100), CursorCustomizer.MIN_PERCENT, CursorCustomizer.MAX_PERCENT));
-            }
+            if(scale != -1) Core.settings.put(CursorCustomizer.scaleKey, scale);
             for(Slot s : CursorCustomizer.slots){
-                Jval e = cursors.get(s.name);
+                Entry e = entries.get(s.name);
                 Fi dst = CursorCustomizer.customFile(s);
-                if(e == null || !e.isObject()){
-                    dst.delete();
-                    Core.settings.remove(CursorCustomizer.tintKey(s));
-                    Core.settings.remove(CursorCustomizer.hotspotKey(s));
-                    continue;
-                }
-                if(pngs.containsKey(s.name)){
-                    dst.writeBytes(pngs.get(s.name));
-                }else{
-                    dst.delete();
-                }
-                String tint = e.getString("tint", null);
-                boolean tintOk = false;
-                if(tint != null){
-                    try{
-                        Core.settings.put(CursorCustomizer.tintKey(s), Color.valueOf(tint).rgba());
-                        tintOk = true;
-                    }catch(Throwable t){
-                        Log.warn("[sonka-cursors] pack has bad tint '@' for '@', skipped", tint, s.name);
-                    }
-                }
-                if(!tintOk) Core.settings.remove(CursorCustomizer.tintKey(s));
-                int hx = e.getInt("hotx", -1), hy = e.getInt("hoty", -1);
-                if(hx >= 0 && hy >= 0 && hx <= CursorCustomizer.MAX_SOURCE_SIZE && hy <= CursorCustomizer.MAX_SOURCE_SIZE){
-                    Core.settings.put(CursorCustomizer.hotspotKey(s), Point2.pack(hx, hy));
-                }else{
-                    Core.settings.remove(CursorCustomizer.hotspotKey(s));
-                }
+                if(e != null && e.png != null) dst.writeBytes(e.png);
+                else dst.delete();
+                if(e != null && e.tint != null) Core.settings.put(CursorCustomizer.tintKey(s), (int)e.tint);
+                else Core.settings.remove(CursorCustomizer.tintKey(s));
+                if(e != null && e.hotspot != -1) Core.settings.put(CursorCustomizer.hotspotKey(s), e.hotspot);
+                else Core.settings.remove(CursorCustomizer.hotspotKey(s));
             }
 
             CursorCustomizer.rebuild();
