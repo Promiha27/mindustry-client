@@ -153,10 +153,10 @@ public class UI implements ApplicationListener, Loadable{
 
         ClickListener.clicked = () -> Sounds.uiButton.play();
 
-        drillCursor = Core.graphics.newCursor("drill", Fonts.cursorScale());
-        unloadCursor = Core.graphics.newCursor("unload", Fonts.cursorScale());
-        targetCursor = Core.graphics.newCursor("target", Fonts.cursorScale());
-        repairCursor = Core.graphics.newCursor("repair", Fonts.cursorScale());
+        //sonka: все курсоры игры (эти четыре контекстных + системные arrow/hand/ibeam) создаёт
+        //модуль кастомизации курсоров - масштаб/замена текстур/тинт/хотспот из настроек; настройки
+        //к моменту loadSync уже загружены (Vars-ассет грузится раньше UI). На мобиле - ваниль.
+        sonkaextras.cursors.CursorCustomizer.load();
     }
 
     @Override

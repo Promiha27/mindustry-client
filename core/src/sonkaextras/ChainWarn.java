@@ -120,6 +120,12 @@ public final class ChainWarn{
             t.sliderPref(PanelScale.WAVES_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%", v -> PanelScale.invalidate(PanelScale.WAVES_KEY));
             t.sliderPref(PanelScale.COREITEMS_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%", v -> PanelScale.invalidate(PanelScale.COREITEMS_KEY));
             t.sliderPref(PanelScale.PALETTE_KEY, 100, PanelScale.MIN, PanelScale.MAX, 5, v -> v + "%", v -> PanelScale.invalidate(PanelScale.PALETTE_KEY));
+            //кастомизация курсоров мыши (sonkaextras.cursors): масштаб применяется вживую, а
+            //замена текстур/тинт/паки/редактор - в отдельном диалоге. Пересоздание курсоров идёт
+            //только из changed-колбэка/диалога - на кадровый цикл нагрузки нет
+            t.sliderPref(sonkaextras.cursors.CursorCustomizer.scaleKey, 100,
+                sonkaextras.cursors.CursorCustomizer.MIN_PERCENT, sonkaextras.cursors.CursorCustomizer.MAX_PERCENT, 10,
+                v -> v + "%", v -> sonkaextras.cursors.CursorCustomizer.rebuild());
         }));
 
         Events.on(WorldLoadEvent.class, e -> {
