@@ -1,0 +1,55 @@
+# Автослежение за апстримом (Foo's Client v8, который сам тащит BE-обновления движка):
+# раз в сутки пробует смержить upstream/v8 в нашу ветку. Чистый мерж -> пуш + новый тег
+# custom-bN (это триггерит release-custom.yml -> игровой апдейтер увидит сборку).
+# Конфликт -> открывается issue, мерж делается вручную в сессии Claude.
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge upstream v8
+        id: merge
+        run: |
+          git config user.name "upstream-sync"
+          git config user.email "actions@github.com"
+          git remote add upstream https://github.com/mindustry-antigrief/mindustry-client.git
+          git fetch upstream v8
+          if git merge-base --is-ancestor upstream/v8 HEAD; then
+            echo "result=uptodate" >> "$GITHUB_OUTPUT"
+          elif git merge --no-edit upstream/v8; then
+            echo "result=merged" >> "$GITHUB_OUTPUT"
+          else
+            git merge --abort
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push and tag
+        if: steps.merge.outputs.result == 'merged'
+        run: |
+          git push origin HEAD
+          n=$(git tag -l 'custom-b*' | sed 's/custom-b//' | sort -n | tail -1)
+          next=$(( ${n:-0} + 1 ))
+          git tag "custom-b$next"
+          git push origin "custom-b$next"
+
+      - name: Open conflict issue
+        if: steps.merge.outputs.result == 'conflict'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Upstream merge conflict ($(date +%F))" \
+            --body "Автомерж upstream/v8 конфликтует - нужен ручной мерж в сессии Claude." || true

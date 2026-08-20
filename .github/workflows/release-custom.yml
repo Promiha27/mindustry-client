@@ -1,0 +1,39 @@
+# Сборка релиза кастомного клиента: на пуш тега custom-b* собирает desktop-джарник и публикует
+# GitHub Release. Имя релиза = запечённый clientVersion (BeControl сравнивает именно имя релиза
+# с Version.clientVersion, см. core/src/mindustry/net/BeControl.java), поэтому апдейтер в игре
+# видит новую сборку сразу после публикации.
+name: Release custom client
+
+on:
+  push:
+    tags:
+      - 'custom-b*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Build desktop jar
+        run: |
+          ./gradlew desktop:dist --console=plain \
+            -PclientVersion="${{ github.ref_name }}" \
+            -PupdateUrl="${{ github.repository }}"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp desktop/build/libs/Mindustry.jar Mindustry-custom-desktop.jar
+          gh release create "${{ github.ref_name }}" Mindustry-custom-desktop.jar \
+            --title "${{ github.ref_name }}" \
+            --notes "Автосборка кастомного клиента (${{ github.sha }})."
