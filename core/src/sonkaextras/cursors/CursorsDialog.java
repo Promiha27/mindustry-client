@@ -51,6 +51,13 @@ public class CursorsDialog extends BaseDialog{
 
         cont.add("@client.sonka.cursors.hint").width(620f).wrap().pad(6f).row();
 
+        //паки курсоров: весь набор (pngs + json с масштабом/тинтами/хотспотами) одним zip
+        cont.table(t -> {
+            t.defaults().growX().height(50f).pad(4f);
+            t.button("@client.sonka.cursors.export", Icon.export, CursorPackIO::showExportDialog);
+            t.button("@client.sonka.cursors.import", Icon.download, () -> CursorPackIO.showImportDialog(this::setup));
+        }).growX().row();
+
         cont.pane(p -> {
             for(Slot s : CursorCustomizer.slots){
                 buildRow(p, s);
