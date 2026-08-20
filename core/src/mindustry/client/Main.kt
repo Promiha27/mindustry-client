@@ -111,6 +111,12 @@ object Main : ApplicationListener {
         // see HeliumMod's javadoc for the adaptation notes and the self-disable guard.
         helium.HeliumMod()
 
+        // Port of the third-party "Extra Editor" mod (KlasterX, v1.0) - MAP EDITOR utilities:
+        // tile copy/cut/paste with rotate/flip and ghost preview, custom brush shapes, block
+        // replace mode, advanced grid, undo list with per-operation revert. Lives entirely
+        // inside MapEditorDialog - see ExtraEditorMod's javadoc for the adaptation notes.
+        extraeditor.ExtraEditorMod()
+
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
             communicationSystem.init()

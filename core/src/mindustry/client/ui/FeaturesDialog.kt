@@ -143,6 +143,10 @@ object FeaturesDialog : BaseDialog("@client.features") {
                 btns.button("@client.features.helium.mods", Icon.book) { he?.show() }
                     .disabled { he == null }.standdownTooltip(he != null)
             }
+
+            // extraeditor: тулбар живёт только внутри редактора карт, диалогов нет - строка без кнопок
+            modRow(list, Core.bundle["client.setting.modsec-extraeditor.category"], Core.bundle["client.features.mod.extraeditor.desc"],
+                Vars.mods.locateMod("extra-editor") == null)
         }.growX().row()
 
         return t
