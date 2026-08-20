@@ -82,6 +82,14 @@ public class BeControl{
             .submit(res -> {
                 Jval val = Jval.read(res.getResultAsString());
                 String newBuild = val.getString("name");
+                //sonka: второй предохранитель после инцидента 2026-08-20 (апдейтер подменил кастомную
+                //сборку стоковым Foo). Наш канал релизов именует сборки "custom-bN" - всё остальное
+                //(включая релизы mindustry-antigrief, если их URL вбить руками) не принимается.
+                if(!newBuild.startsWith("custom-")){
+                    Log.warn("[updater] release '@' is not from the custom channel (custom-b*), ignoring", newBuild);
+                    Core.app.post(() -> done.get(false));
+                    return;
+                }
                 if(!newBuild.trim().isEmpty() && !Version.clientVersion.equals(newBuild)){
                     Jval asset = val.get("assets").asArray().find(v -> v.getString("name", "").toLowerCase().contains("desktop"));
                     if (asset == null) asset = val.get("assets").asArray().find(v -> v.getString("name", "").toLowerCase().contains("mindustry"));
