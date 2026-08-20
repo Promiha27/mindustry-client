@@ -117,6 +117,12 @@ object Main : ApplicationListener {
         // inside MapEditorDialog - see ExtraEditorMod's javadoc for the adaptation notes.
         extraeditor.ExtraEditorMod()
 
+        // Port of the third-party "New Console Hardline" mod (Mnemotechnician/SMOLKEYS, v2.3) -
+        // advanced JS console: syntax-highlighting code editor, log panel, execution history,
+        // saved scripts, event-driven autorun and a file browser. Coexists with the native F8
+        // console (shared JS scope) - see NewConsoleMod's javadoc for the adaptation notes.
+        newconsole.NewConsoleMod()
+
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
             communicationSystem.init()

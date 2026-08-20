@@ -1,0 +1,40 @@
+[green]
+##########################
+#  Welcome to NewConsole,#
+# The first and the most #
+#  advanced JS console.  #
+##########################
+
+NewConsole is a mindustry mod adding a new console UI,
+superior to that of the vanilla game.
+
+Here, on the left side, is an output log.
+Everything the game logs appears here. Additionally,
+every executed script and its output i also sent here.
+The scrollback is limited to 30000 characters
+for performance reasons.
+
+On the right side is a console input. The buttons above it
+enable you to do the following things:
+
+"Run" -> execute the current script
+"Prev" -> view the previous script in the history
+"Next" -> view the next one or clear the input area
+(scripts are saved to history when you run them or navigate in the history)
+"Scripts" -> view/run saved scripts or save the current one
+"Files" -> open the file browser
+"Events" -> view the script autorun menu
+
+[]
+You can use the [blue]NewConsole[] object to access NewConsole stuff.
+Available methods of the NewConsole object (self-explanatory):
+
+@
+
+[blue]Default functions:[]
+NCHelp() — show this help
+append(value) — append a value directly to the log. [red]Does not print to last_log.txt![]
+println(value) — same as append() but add a newline at the end
+backread() — read last_log.txt and override the output;
+---
+importCls(name) - import any (even modded) class by its fully-qualified name.

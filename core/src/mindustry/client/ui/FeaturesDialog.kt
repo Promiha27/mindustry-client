@@ -147,6 +147,15 @@ object FeaturesDialog : BaseDialog("@client.features") {
             // extraeditor: тулбар живёт только внутри редактора карт, диалогов нет - строка без кнопок
             modRow(list, Core.bundle["client.setting.modsec-extraeditor.category"], Core.bundle["client.features.mod.extraeditor.desc"],
                 Vars.mods.locateMod("extra-editor") == null)
+
+            // newconsole: consoles непусто <=> guard пройден и ClientLoadEvent отработал; кнопка -
+            // запасной вход в консоль на случай спрятанной настройкой плавающей кнопки
+            val ncOk = !newconsole.ConsoleVars.consoles.isEmpty
+            modRow(list, Core.bundle["client.setting.modsec-newconsole.category"], Core.bundle["client.features.mod.newconsole.desc"], ncOk) { btns ->
+                btns.button("@client.features.newconsole.open", Icon.terminal) {
+                    if (ncOk) newconsole.ConsoleVars.getCurrentConsole().show()
+                }.disabled { !ncOk }.standdownTooltip(ncOk)
+            }
         }.growX().row()
 
         return t
