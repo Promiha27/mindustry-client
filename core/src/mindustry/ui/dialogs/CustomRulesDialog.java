@@ -145,6 +145,7 @@ public class CustomRulesDialog extends BaseDialog{
 
     void setupMain(){
         categories.clear();
+        categoryNames.clear(); //client: без этого имена копятся между пересборками, и category()-lookup расширений (mu) едет
         main.clear();
         main.left().defaults().fillX().left();
         main.row();

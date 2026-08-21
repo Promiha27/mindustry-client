@@ -164,6 +164,10 @@ object FeaturesDialog : BaseDialog("@client.features") {
                 btns.button("@patch-editor.settings", Icon.settings) { dustdustry.patcheditor.ui.EUI.settings?.show() }
                     .disabled { !peOk }.standdownTooltip(peOk)
             }
+
+            // mu: всё живёт внутри диалогов правил/ресайза редактора, своих диалогов-входов нет - строка без кнопок
+            modRow(list, Core.bundle["client.setting.modsec-mu.category"], Core.bundle["client.features.mod.mu.desc"],
+                mu.MappingUtilitiesMod.enabled)
         }.growX().row()
 
         return t

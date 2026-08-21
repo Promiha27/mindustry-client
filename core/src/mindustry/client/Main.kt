@@ -133,6 +133,13 @@ object Main : ApplicationListener {
         // package) for the adaptation notes.
         dustdustry.patcheditor.Main()
 
+        // Port of the third-party "Mapping Utilities" mod (ApsZoldat, v1.9) - MAP EDITOR dialog
+        // extensions: hidden map rules (fog colors, border darkness, drag, Env flags, any-team
+        // rules 0-255, mode name, mission...), planet-background editor, better banned/revealed
+        // content dialogs (planet tab filter), map resize limit bypass. Its own WIP editor is
+        // disabled upstream and skipped - see MappingUtilitiesMod's javadoc.
+        mu.MappingUtilitiesMod()
+
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
             communicationSystem.init()
