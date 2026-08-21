@@ -2,6 +2,7 @@ package eui.ui.other;
 
 import arc.Core;
 import arc.Events;
+import arc.func.Boolf;
 import arc.func.Cons;
 import arc.func.Intc;
 import arc.func.Intp;
@@ -1430,14 +1431,17 @@ public class SchematicsTableUi{
                 }).size(44f);
             }).padTop(6f).row();
 
-            //sonka: раньше был отдельный "центральный" слот + 4 угловых со своим размером у
-            //каждого - убрано вместе с раскладкой "1 крупная + мелкие по углам" (см. draw()):
-            //теперь просто 4 РАВНОЗНАЧНЫХ слота иконок (как в Extended UI++), без размера -
-            //отрисовка сама решает как их показать по количеству. slot=-1 (main) остался ПЕРВЫМ
-            //слотом ради обратной совместимости хранения/миграции (у существующих ячеек с одной
-            //иконкой она лежит именно в main) - просто без спецлейбла "основная".
-            int[] slots = {-1, 0, 1, 2};
-            for(int i = 0; i < slots.length; i++) iconSlotRow(t, row, col, slots[i], i + 1, rebuild);
+            //sonka: "сделай выбор иконок как в Extended UI++, а не менять каждую отдельно" -
+            //вместо 4 отдельных строк "Иконка N: [Превью] [Выбрать]" (каждая - свой попап) теперь
+            //ОДИН тоггл-браузер прямо в диалоге ячейки, как в оригинале (addEditImageTable c
+            //multiSelect=true): клик по иконке добавляет/убирает её из набора ячейки (до 4 штук),
+            //уже выбранные подсвечены. Хранилище (main+corners[0..2]) не поменялось - см.
+            //cellIconNames/applyCellIconNames ниже, это чисто смена UI поверх тех же данных.
+            t.add(Core.bundle.get("schematics-table.dialog.cell.icons") + ":").padTop(10f).row();
+            t.table(icons -> addIconPickTable(icons, mobile ? 150f : 350f,
+                name -> toggleCellIcon(row, col, name, rebuild),
+                name -> cellIconNames(page().cell(row, col)).contains(name)
+            )).growX().padTop(4f).row();
 
             t.button(Core.bundle.get("schematics-table.dialog.clear-cell"), Icon.trash, () -> {
                 page().removeCell(row, col);
@@ -1445,52 +1449,56 @@ public class SchematicsTableUi{
                 ui.announce(Core.bundle.get("schematics-table.dialog.clear-cell-announce"));
                 rebuild.run();
             }).width(240f).height(50f).padTop(12f).row();
-        }).size(mobile ? 400f : 760f, mobile ? 400f : 560f);
+        }).size(mobile ? 420f : 800f, mobile ? 620f : 820f);
     }
 
     /**
-     * Строка одного слота иконки (slot -1 = main-хранилище, 0..3 = corners-хранилище - смысл
-     * ровно как раньше, только UI больше их не различает): превью, выбор, снятие. Без слайдера
-     * размера - sonka попросил убрать (раскладка "как в EUI++" размер иконки не настраивает,
-     * решает только их количество, см. {@link CellIconsElement#draw()}).
+     * Текущие выбранные иконки ячейки в виде плоского списка (как в оригинале EUI++ - там это
+     * был один comma-разделённый список в настройке, здесь эквивалент собирается на лету из
+     * main+corners[0..2]; corners[3] намеренно не используется - ограничение MAX_CELL_ICONS=4,
+     * как и в оригинале).
      */
-    void iconSlotRow(Table t, int row, int col, int slot, int displayNumber, Runnable rebuild){
-        t.table(sr -> {
-            sr.left();
-            Page p = page();
-            CellData cell = p.cell(row, col);
-            IconRef ref = cell == null ? null : (slot < 0 ? cell.main : cell.corners[slot]);
+    Seq<String> cellIconNames(CellData c){
+        Seq<String> names = new Seq<>();
+        if(c != null){
+            if(c.main != null) names.add(c.main.name);
+            for(int i = 0; i < 3; i++) if(c.corners[i] != null) names.add(c.corners[i].name);
+        }
+        return names;
+    }
 
-            sr.add(Core.bundle.format("schematics-table.dialog.cell.icon-n", displayNumber) + ":").width(mobile ? 130f : 170f).left();
+    /** Записывает плоский список обратно в main+corners[0..2] (порядок = порядок в списке); corners[3] всегда очищается. */
+    void applyCellIconNames(CellData cc, Seq<String> names){
+        cc.main = names.size > 0 ? new IconRef(names.get(0), SchemTableData.MAIN_ICON_DEFAULT_SIZE) : null;
+        for(int i = 0; i < 3; i++) cc.corners[i] = names.size > i + 1 ? new IconRef(names.get(i + 1), SchemTableData.CORNER_ICON_DEFAULT_SIZE) : null;
+        cc.corners[3] = null;
+    }
 
-            Drawable icon = ref != null ? Icons.getIconDrawable(ref.name) : null;
-            sr.image(icon != null ? icon : defaultSchematicImage()).size(32f).padRight(6f);
+    static final int MAX_CELL_ICONS = 4;
 
-            sr.button(Core.bundle.get("schematics-table.dialog.cell.pick"), () -> showIconPickDialog(name -> {
-                CellData cc = page().cellForWrite(row, col);
-                if(slot < 0){
-                    if(cc.main == null) cc.main = new IconRef(name, SchemTableData.MAIN_ICON_DEFAULT_SIZE);
-                    else cc.main.name = name;
-                }else{
-                    if(cc.corners[slot] == null) cc.corners[slot] = new IconRef(name, SchemTableData.CORNER_ICON_DEFAULT_SIZE);
-                    else cc.corners[slot].name = name;
-                }
-                data().save();
-                rebuild.run();
-            })).width(110f).height(40f).padRight(6f);
-
-            if(ref != null){
-                sr.button(Icon.cancelSmall, Styles.clearNonei, () -> {
-                    CellData cc = page().cell(row, col);
-                    if(cc != null){
-                        if(slot < 0) cc.main = null;
-                        else cc.corners[slot] = null;
-                        data().save();
-                    }
-                    rebuild.run();
-                }).size(36f);
+    /** Тоггл иконки в наборе ячейки - клик добавляет/убирает, до MAX_CELL_ICONS штук (ровно как toggleImageName в оригинале). */
+    void toggleCellIcon(int row, int col, String name, Runnable rebuild){
+        CellData cc = page().cellForWrite(row, col);
+        Seq<String> names = cellIconNames(cc);
+        int idx = names.indexOf(name);
+        boolean added;
+        if(idx >= 0){
+            names.remove(idx);
+            added = false;
+        }else{
+            if(names.size >= MAX_CELL_ICONS){
+                ui.announce(Core.bundle.format("schematics-table.dialog.change-image.max-icons-announce-text", MAX_CELL_ICONS), 3f);
+                return;
             }
-        }).growX().padTop(4f).row();
+            names.add(name);
+            added = true;
+        }
+        applyCellIconNames(cc, names);
+        data().save();
+        ui.announce(Core.bundle.get(added
+            ? "schematics-table.dialog.change-image.added-announce-text"
+            : "schematics-table.dialog.change-image.removed-announce-text") + " " + name, 2f);
+        rebuild.run();
     }
 
     String currentSchematicLabelText(String name){
@@ -1597,16 +1605,22 @@ public class SchematicsTableUi{
         float size = mobile ? 320f : 640f;
         BaseDialog dialog = new BaseDialog(Core.bundle.get("schematics-table.dialog.change-image.title"));
         dialog.addCloseButton();
-        addIconPickTable(dialog, size, name -> {
+        addIconPickTable(dialog.cont, size, name -> {
             onPicked.get(name);
             dialog.hide();
-        });
+        }, null);
         dialog.show();
     }
 
-    /** Браузер иконок по сворачиваемым категориям; один клик = один выбор через колбэк (мульти-выбора больше нет: угловые слоты назначаются по одному из диалога ячейки). */
-    void addIconPickTable(BaseDialog dialog, float size, Cons<String> onPicked){
-        dialog.cont.pane(table -> {
+    /**
+     * Браузер иконок по сворачиваемым категориям, встраивается прямо в переданный контейнер
+     * (как в оригинале EUI++ - {@code addEditImageTable}). {@code isSelected == null} - режим
+     * "один клик = один выбор" (страницы, старый {@link #showIconPickDialog}); иначе - режим
+     * мульти-тоггла (диалог ячейки): кнопки становятся переключателями, подсвечивают уже
+     * выбранные иконки, клик просто вызывает {@code onPicked} без закрытия контейнера.
+     */
+    void addIconPickTable(Table cont, float size, Cons<String> onPicked, Boolf<String> isSelected){
+        cont.pane(table -> {
             for(Category category : IconCategoriesConfig.CATEGORIES){
                 if(IconCategoriesConfig.isErrorCategory(category.name)) continue;
 
@@ -1629,8 +1643,10 @@ public class SchematicsTableUi{
                 for(String iconName : iconsToDisplay){
                     Drawable iconDrawable = Icons.getIconDrawable(iconName);
 
-                    var imageButton = iconsContent.button(iconDrawable, Styles.cleari, () -> onPicked.get(iconName))
-                        .size(48f).pad(4f).get();
+                    var cell = iconsContent.button(iconDrawable, isSelected != null ? Styles.clearTogglei : Styles.cleari, () -> onPicked.get(iconName))
+                        .size(48f).pad(4f);
+                    if(isSelected != null) cell.update(btn -> btn.setChecked(isSelected.get(iconName)));
+                    var imageButton = cell.get();
                     imageButton.resizeImage(48f * 0.8f);
 
                     if(++col[0] % IconCategoriesConfig.ICONS_PER_ROW == 0) iconsContent.row();
