@@ -533,6 +533,16 @@ public class SchematicsTableUi{
 
                 //built manually (new Button + Table.add) - proven simple and correct since the port
                 Button btn = new Button(Styles.defaulti);
+                //sonka 2026-08-21: НАЙДЕНА настоящая причина "мелких иконок" (диагностический лог
+                //это подтвердил: elW/H=13 при заявленной кнопке 48!) - Table.setBackground()
+                //(вызывается конструктором Button) автоматически выставляет margin ПО ВСТРОЕННЫМ
+                //отступам NinePatch-фона стиля Styles.defaulti ("button" - декоративная рамка под
+                //обычные текстовые кнопки, ~17-18px на сторону при их UI-масштабе), а не по размеру
+                //самой кнопки. Вся наша многодневная возня с frac/буст/дефолтным размером ячейки
+                //рисовала идеальные 85-98% от ЭТОЙ урезанной области - формула была верна с самого
+                //начала, просто область для неё была в разы меньше кнопки. Фиксированный маленький
+                //margin вместо авто-производного от фона - и иконка получает почти всю клетку.
+                btn.margin(3f);
 
                 try{
                     buildCellContent(btn, cellData);
@@ -651,7 +661,6 @@ public class SchematicsTableUi{
      * повёрнутой на N x 90 (тот же смысл, что у rotatePlans).
      */
     static class CellIconsElement extends Element{
-        static long lastDebugLogMs = 0;
         Drawable main;
         float mainFrac = 0.6f;
         /** true - иконка контентная (блок/юнит/предмет/...), не "значок" - см. {@link Icons#isGlyphIcon}. */
@@ -702,16 +711,6 @@ public class SchematicsTableUi{
                     if(slots[i] == null) continue;
                     float frac = boosts[i] ? Math.min(fracs[i] * CONTENT_ICON_BOOST, MAX_SINGLE_FRAC) : fracs[i];
                     float s = Math.min(w, h) * frac;
-                    //sonka 2026-08-21: временный диагностический лог - на скриншотах доля иконки
-                    //визуально мельче, чем должна быть по формуле (85-98%), а причина по коду не
-                    //находится; печатаем реальные числа раз в 3с, чтобы увидеть где расходится
-                    //факт с ожиданием (el.getWidth()/Height() против заявленного размера кнопки, и
-                    //сам frac/s) - убрать после диагностики.
-                    if(Time.timeSinceMillis(lastDebugLogMs) > 3000){
-                        lastDebugLogMs = Time.millis();
-                        Log.info("[eui] cell-icon debug: elW=@ elH=@ frac=@ boost=@ s=@ (s/minWH=@%)",
-                            w, h, frac, boosts[i], s, Math.round(100f * s / Math.min(w, h)));
-                    }
                     slots[i].draw(x + (w - s) / 2f, y + (h - s) / 2f, s, s);
                     break;
                 }
