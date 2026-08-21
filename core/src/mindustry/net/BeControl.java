@@ -69,7 +69,14 @@ public class BeControl{
 
 
     public void checkUpdate(Boolc done) {
-        checkUpdate(done, Core.settings.getString("updateurl"));
+        String repo = Core.settings.getString("updateurl");
+        //sonka: канал обновлений пуст, пока не залит на GitHub (см. апдейтер-предохранители) -
+        //запрос ".../repos//releases/latest" на пустой repo молча 404-ил каждый запуск, засоряя лог
+        if(repo == null || repo.isEmpty()){
+            done.get(false);
+            return;
+        }
+        checkUpdate(done, repo);
     }
 
     /** asynchronously checks for updates. */
