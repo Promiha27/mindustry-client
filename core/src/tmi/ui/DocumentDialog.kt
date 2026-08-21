@@ -41,14 +41,16 @@ class DocumentDialog : BaseDialog("") {
   }
 
   /**
-   * Markdown-страницы. UniverseKit-рендер (universe.ui.markdown) не вендорится - как и в
-   * helium, документ идёт через клиентский StupidMarkupParser (заголовки/списки/жирный);
-   * встроенные base64-картинки из документов мода вырезаны ещё на этапе копирования ассетов.
+   * Markdown-страницы. UniverseKit-рендер (universe.ui.markdown) не вендорится - документ идёт
+   * через свой мини-рендер [TmiMarkdown] (заголовки/абзацы/списки/цитаты/линии/инлайн-жирный).
+   * Клиентский StupidMarkupParser здесь НЕ годится: он понимает только «# » и « * » и показывал
+   * справку калькулятора пустой. Встроенные base64-картинки из документов мода вырезаны ещё на
+   * этапе копирования ассетов. При любом сбое рендера - сырой текст одним Label.
    */
   fun showMarkdown(title: String, vararg markdowns: String) {
     val pages = markdowns.map { md ->
       try {
-        mindustry.client.ui.StupidMarkupParser.format(md)
+        TmiMarkdown.format(md)
       } catch (e: Throwable) {
         Table().also { t -> t.add(md).wrap().growX().labelAlign(arc.util.Align.topLeft) }
       }

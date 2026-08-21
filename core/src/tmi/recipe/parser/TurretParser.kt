@@ -62,7 +62,7 @@ abstract class TurretParser<T: Turret>: ConsumerParser<T>() {
   ): RecipeItem<BulletType>(bullet) {
     override val ordinal: Int = item.id.toInt()
     override val typeID: Int = ContentType.bullet.ordinal
-    override val typeTag: String = "Bullet"
+    override val typeTag: String by lazy { Core.bundle["type.bullet.name"] }
     override val ownMod: String = bullet.minfo.mod?.name?: Consts.VANILLA
     override val name: String = "${owner.name}-${bulletType.name}-$ordinal"
     override val localizedName: String = bulletType.localizedName
