@@ -15,7 +15,7 @@ import mindustry.content.UnitTypes;
  * их в Core.atlas сама через PixmapPacker - в отличие от простого addRegion (паттерн
  * MI2UMod.loadSprites) это даёт и nine-patch'и ({@code *.9.png}: суффикс ".9" в имени региона
  * заставляет пакер вычислить splits/pads, а {@code atlas.drawable()} потом отдаёт NinePatch).
- * Страница одна, 256x256 - иконок 14 штук по 32px плюс 11 крошечных рамок.
+ * Страница одна, 512x512 (с запасом) - 14 иконок по 38-48px плюс 11 крошечных рамок.
  */
 public class TUIcons{
     public static TextureRegionDrawable
@@ -66,7 +66,7 @@ public class TUIcons{
         if(Core.atlas.has("test-utils-clone")) return;
 
         //явные списки имён: Fi.list() по internal-папке внутри desktop-jar пуст
-        PixmapPacker packer = new PixmapPacker(256, 256, 2, true);
+        PixmapPacker packer = new PixmapPacker(512, 512, 2, true);
         try{
             for(String name : ICONS){
                 pack(packer, "test-utils-" + name, Core.files.internal("testing/icons/" + name + ".png"));

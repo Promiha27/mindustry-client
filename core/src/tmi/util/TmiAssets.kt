@@ -19,13 +19,13 @@ object TmiAssets {
   /**
    * Спрайты мода под оригинальными именами атласа (tmi-*). У обычного мода их пакует
    * спрайт-пакер Mods; вшитая копия несёт png в core/assets/tmi/ui/ и пакует их в Core.atlas
-   * через PixmapPacker (паттерн testing.util.TUIcons). Одна страница 512x512: 24 иконки
+   * через PixmapPacker (паттерн testing.util.TUIcons). Одна страница 1024x1024 (с запасом): 24 иконки
    * по 64px + логотип 256px.
    */
   fun loadSprites() {
     if (Core.atlas.has("tmi-tmi")) return
 
-    val packer = arc.graphics.g2d.PixmapPacker(512, 512, 2, true)
+    val packer = arc.graphics.g2d.PixmapPacker(1024, 1024, 2, true)
     try {
       SPRITES.forEach { name ->
         val pix = arc.graphics.Pixmap(Core.files.internal("tmi/ui/$name.png"))
