@@ -119,7 +119,7 @@ public final class CampaignProfiles{
             for(Fi f : CampaignInventory.sectorFiles(liveSavesDir())){
                 String p = CampaignInventory.planetOf(f.name());
                 if(p == null || !names.add(p)) continue;
-                Planet planet = content.planet(p);
+                Planet planet = content != null ? content.planet(p) : null;
                 out.add(planet != null ? planet.localizedName : p);
             }
             return out;
@@ -149,7 +149,7 @@ public final class CampaignProfiles{
 
     /** Можно ли сейчас трогать кампанию: главное меню, не в сети, сейвы не грузятся асинхронно. */
     public static boolean canSwitch(){
-        return state.isMenu() && !net.active() && !control.saves.loading;
+        return state.isMenu() && !net.active() && (control == null || !control.saves.loading);
     }
 
     /**
@@ -371,7 +371,7 @@ public final class CampaignProfiles{
 
         //отпустить кэш сейвов (текстуры превью, SaveSlot'ы) - файлы сейчас поедут
         try{
-            control.saves.unload();
+            if(control != null) control.saves.unload();
         }catch(Throwable ignored){
         }
 

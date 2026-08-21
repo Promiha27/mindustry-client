@@ -198,7 +198,7 @@ public final class DataIODialog{
         d.addCloseButton();
         Table t = d.cont;
         t.defaults().left().pad(3f);
-        t.add(Core.bundle.format("client.sonka.dataio.result.summary", r.total(r.imported), r.replaced.size == 0 ? 0 : r.total(r.replaced), r.total(r.skipped))).row();
+        t.add(Core.bundle.format("client.sonka.dataio.result.summary", r.total(r.imported), r.total(r.replaced), r.total(r.skipped))).row();
         for(DataCategory c : DataCategory.all){
             int i = r.imported.get(c, 0), rp = r.replaced.get(c, 0), s = r.skipped.get(c, 0);
             if(i + rp + s == 0) continue;
