@@ -131,6 +131,9 @@ public final class ChainWarn{
                 sonkaextras.cursors.CursorCustomizer.MIN_PERCENT, sonkaextras.cursors.CursorCustomizer.MAX_PERCENT, 10,
                 v -> v + "%", v -> sonkaextras.cursors.CursorCustomizer.rebuild());
             t.pref(new qol.core.ButtonSetting("sonka-cursor-configure", () -> new sonkaextras.cursors.CursorsDialog().show()));
+            //выбор админ-панели HUD: Scheme Size (top-left) / Testing Utilities (bottom-left) / обе
+            //(см. AdminPanel) - гейтит только видимость панелей, диалоги остаются в FeaturesDialog
+            t.sliderPref(AdminPanel.KEY, AdminPanel.BOTH, 0, 2, 1, AdminPanel::label, v -> AdminPanel.invalidate());
         }));
 
         Events.on(WorldLoadEvent.class, e -> {

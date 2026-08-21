@@ -168,6 +168,22 @@ object FeaturesDialog : BaseDialog("@client.features") {
             // mu: всё живёт внутри диалогов правил/ресайза редактора, своих диалогов-входов нет - строка без кнопок
             modRow(list, Core.bundle["client.setting.modsec-mu.category"], Core.bundle["client.features.mod.mu.desc"],
                 mu.MappingUtilitiesMod.enabled)
+
+            // testing: диалоги доступны отсюда НЕЗАВИСИМО от выбора админ-панели (sonkaextras.AdminPanel
+            // гейтит только HUD-панель); внутриигровые меню - только в игре (они читают state/player)
+            val tuOk = testing.TestUtilsMod.enabled
+            modRow(list, Core.bundle["client.setting.modsec-testing.category"], Core.bundle["client.features.mod.testing.desc"], tuOk) { btns ->
+                btns.button("@tu-unit-menu.name", Icon.units) { if (tuOk) testing.ui.TUDialogs.unitDialog.show() }
+                    .disabled { !tuOk || !Vars.state.isGame() }.standdownTooltip(tuOk)
+                btns.button("@tu-block-menu.name", Icon.hammer) { if (tuOk) testing.ui.TUDialogs.blockDialog.show() }
+                    .disabled { !tuOk || !Vars.state.isGame() }.standdownTooltip(tuOk)
+                btns.button("@tu-world-menu.name", Icon.planet) { if (tuOk) testing.ui.TUDialogs.worldDialog.show() }
+                    .disabled { !tuOk || !Vars.state.isGame() }.standdownTooltip(tuOk)
+                btns.button("@tu-interp-menu.name", Icon.line) { if (tuOk) testing.ui.TUDialogs.interpDialog.show() }
+                    .disabled { !tuOk }.standdownTooltip(tuOk)
+                btns.button("@tu-sound-menu.name", Icon.effect) { if (tuOk) testing.ui.TUDialogs.soundDialog.show() }
+                    .disabled { !tuOk }.standdownTooltip(tuOk)
+            }
         }.growX().row()
 
         return t

@@ -1,0 +1,360 @@
+package testing.editor;
+
+import arc.*;
+import arc.func.*;
+import arc.math.*;
+import arc.math.geom.*;
+import arc.struct.*;
+import mindustry.content.*;
+import mindustry.editor.*;
+import mindustry.game.EventType.*;
+import mindustry.game.*;
+import mindustry.world.*;
+import mindustry.world.blocks.environment.*;
+import testing.util.*;
+
+import static mindustry.Vars.*;
+import static testing.util.TUVars.*;
+
+/** Based on {@link MapEditor}. Made to operate in a live map instead of the map editor. */
+public class TerrainPainter{
+    private final PaintOperationStack stack = new PaintOperationStack();
+    private PaintOperation currentOp;
+    private PaintedTileData[][] data;
+    private boolean loading;
+
+    public final Seq<Tile> pendingCliffs = new Seq<>();
+    public float brushSize = 1;
+    public int rotation;
+    public Block drawBlock = Blocks.boulder;
+    public Team drawTeam = Team.sharded;
+    public boolean lockData, lockFloor, lockOverlay, lockExtra;
+    public byte dataData, floorData, overlayData;
+    public int extraData;
+
+    public boolean isLoading(){
+        return loading;
+    }
+
+    private void reset(){
+        flushCliffs();
+        clearOp();
+    }
+
+    public void beginEditing(){
+        loading = true;
+        Tiles tiles = tiles();
+        data = new PaintedTileData[width()][height()];
+        for(int x = 0; x < width(); x++){
+            for(int y = 0; y < height(); y++){
+                Tile t = tiles.get(x, y);
+                data[x][y] = new PaintedTileData(t);
+            }
+        }
+        loading = false;
+    }
+
+    /** Converts all tiles in the world to normal {@link Tile}s. */
+    public void endEditing(){
+        data = null;
+        reset();
+        paintbrush.drawGrid = false;
+        Events.fire(new WorldLoadEvent());
+    }
+
+    public void load(Runnable r){
+        loading = true;
+        r.run();
+        loading = false;
+    }
+
+    public Tiles tiles(){
+        return world.tiles;
+    }
+
+    public Tile tile(int x, int y){
+        return world.rawTile(x, y);
+    }
+
+    public int width(){
+        return world.width();
+    }
+
+    public int height(){
+        return world.height();
+    }
+
+    public float brushSize(){
+        return drawBlock instanceof SteamVent ? 2 : brushSize;
+    }
+
+    public void setDrawBlock(Block block){
+        drawBlock = block;
+        Setup.terrainFrag.updateMenu();
+    }
+
+    public void setData(byte data, byte floor, byte overlay, int extra){
+        dataData = data;
+        floorData = floor;
+        overlayData = overlay;
+        extraData = extra;
+
+        Setup.terrainFrag.updateFields();
+    }
+
+    public void drawBlocksReplace(int x, int y){
+        drawBlocks(x, y, data -> data.block() != Blocks.air || drawBlock.isFloor());
+    }
+
+    public void drawBlocks(int x, int y){
+        drawBlocks(x, y, false, false, data -> true);
+    }
+
+    public void drawBlocks(int x, int y, Boolf<PaintedTileData> tester){
+        drawBlocks(x, y, false, false, tester);
+    }
+
+    public void drawBlocks(int x, int y, boolean square, boolean forceOverlay, Boolf<PaintedTileData> tester){
+        if(drawBlock.isMultiblock()){
+            x = Mathf.clamp(x, (drawBlock.size - 1) / 2, width() - drawBlock.size / 2 - 1);
+            y = Mathf.clamp(y, (drawBlock.size - 1) / 2, height() - drawBlock.size / 2 - 1);
+            if(!hasOverlap(x, y)){
+                data(x, y).setBlock(drawBlock, drawTeam, rotation);
+            }
+        }else{
+            boolean isFloor = drawBlock.isFloor() && drawBlock != Blocks.air;
+
+            Cons<PaintedTileData> drawer = tile -> {
+                if(!tester.get(tile)) return;
+                boolean changed = false;
+
+                boolean didDataOp = false;
+                int oldData1 = 0, oldData2 = 0;
+
+                if(drawBlock.saveData || tile.shouldSaveData()){
+                    addPaintOp(PaintOp.get(tile.x(), tile.y(), PaintOperation.opData, PaintOpData.get(tile.data(), tile.floorData(), tile.overlayData())));
+                    addPaintOp(PaintOp.get(tile.x(), tile.y(), PaintOperation.opExtraData, tile.extraData()));
+
+                    oldData1 = PaintOpData.get(tile.data(), tile.floorData(), tile.overlayData());
+                    oldData2 = tile.extraData();
+                    didDataOp = true;
+                }
+
+                int preDataOps = ops();
+
+                if(isFloor){
+                    if(forceOverlay){
+                        tile.setOverlay(drawBlock.asFloor());
+                        changed = true;
+                    }else{
+                        if(!(drawBlock.asFloor().wallOre && !tile.block().solid)){
+                            tile.setFloor(drawBlock.asFloor());
+                            changed = true;
+                        }
+                    }
+                }else if(!(tile.block().isMultiblock() && !drawBlock.isMultiblock())){
+                    if(drawBlock.rotate && tile.build() != null && tile.build().rotation != rotation){
+                        addPaintOp(PaintOp.get(tile.x(), tile.y(), PaintOperation.opRotation, rotation));
+                    }
+
+                    tile.setBlock(drawBlock, drawTeam, rotation);
+                    changed = !drawBlock.synthetic();
+
+                    if(drawBlock.synthetic()){
+                        addPaintOp(PaintOp.get(tile.x(), tile.y(), PaintOperation.opTeam, drawTeam.id));
+                    }
+                }
+
+                if(changed && drawBlock.saveConfig){
+                    drawBlock.placeEnded(tile.tile, null, rotation, drawBlock.lastConfig);
+                    tile.tile.recache();
+                    tile.tile.recacheWall();
+                }
+
+                //data and block did not change, undo the data ops
+                if(didDataOp && ops() == preDataOps && oldData1 == PaintOpData.get(tile.data(), tile.floorData(), tile.overlayData()) && oldData2 == tile.extraData()){
+                    removeLastOps(2);
+                }
+            };
+
+            if(drawBlock instanceof SteamVent){ //Always draw a single vent
+                drawSquare(x, y, 1, drawer);
+            }else if(square){
+                drawSquare(x, y, brushSize, drawer);
+            }else{
+                drawCircle(x, y, brushSize, drawer);
+            }
+        }
+    }
+
+    public void drawData(int x, int y){
+        if(lockFloor && lockOverlay && lockExtra) return; //Nothing happens
+
+        drawCircle(x, y, brushSize, tile -> {
+            tile.setData(
+                lockData ? tile.data() : dataData,
+                lockFloor ? tile.floorData() : floorData,
+                lockOverlay ? tile.overlayData() : overlayData
+            );
+            if(!lockExtra) tile.setExtraData(extraData);
+        });
+    }
+
+    boolean hasOverlap(int x, int y){
+        Tile tile = world.tile(x, y);
+        //allow direct replacement of blocks of the same size
+        if(tile != null && tile.isCenter() && tile.block() != drawBlock && tile.block().size == drawBlock.size && tile.x == x && tile.y == y){
+            return false;
+        }
+
+        //else, check for overlap
+        int offsetx = -(drawBlock.size - 1) / 2;
+        int offsety = -(drawBlock.size - 1) / 2;
+        for(int dx = 0; dx < drawBlock.size; dx++){
+            for(int dy = 0; dy < drawBlock.size; dy++){
+                int worldx = dx + offsetx + x;
+                int worldy = dy + offsety + y;
+                Tile other = world.tile(worldx, worldy);
+
+                if(other != null && other.block().isMultiblock()){
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public void drawCircle(int x, int y, float brushSize, Cons<PaintedTileData> drawer){
+        int clamped = (int)brushSize;
+        for(int rx = -clamped; rx <= clamped; rx++){
+            for(int ry = -clamped; ry <= clamped; ry++){
+                if(Mathf.within(rx, ry, brushSize - 0.5f + 0.0001f)){
+                    int wx = x + rx, wy = y + ry;
+
+                    if(wx < 0 || wy < 0 || wx >= width() || wy >= height()){
+                        continue;
+                    }
+
+                    drawer.get(data(wx, wy));
+                }
+            }
+        }
+    }
+
+    public void drawSquare(int x, int y, float brushSize, Cons<PaintedTileData> drawer){
+        int clamped = (int)brushSize;
+        for(int rx = -clamped; rx <= clamped; rx++){
+            for(int ry = -clamped; ry <= clamped; ry++){
+                int wx = x + rx, wy = y + ry;
+
+                if(wx < 0 || wy < 0 || wx >= width() || wy >= height()){
+                    continue;
+                }
+
+                drawer.get(data(wx, wy));
+            }
+        }
+    }
+
+    public void flushCliffs(){
+        flushCliffs(false);
+    }
+
+    public void flushCliffs(boolean indent){
+        if(pendingCliffs.isEmpty()) return;
+
+        for(Tile tile : pendingCliffs){
+            if(!tile.block().isStatic() || tile.block() != Blocks.cliff) continue;
+            int rotation = 0;
+            for(int i = 0; i < 8; i++){
+                Tile other = world.tiles.get(tile.x + Geometry.d8[i].x, tile.y + Geometry.d8[i].y);
+                if(other != null && !other.block().isStatic()){
+                    rotation |= (1 << i);
+                }
+            }
+            addPaintOp(PaintOp.get(tile.x, tile.y, PaintOperation.opBlock, tile.blockID()));
+            addPaintOp(PaintOp.get(tile.x, tile.y, PaintOperation.opData, PaintOpData.get(tile.data, tile.floorData, tile.overlayData)));
+
+            tile.data = (byte)rotation;
+        }
+        for(Tile tile : pendingCliffs){
+            if(tile.block() instanceof Cliff && tile.data == 0){
+                tile.setBlock(Blocks.air);
+            }
+        }
+        if(indent){ //Invert in a 3rd pass.
+            for(Tile tile : pendingCliffs){
+                int rotation = tile.data;
+                if(tile.block() instanceof Cliff){
+                    for(int i = 0; i < 8; i++){
+                        Tile other = world.tiles.get(tile.x + Geometry.d8[i].x, tile.y + Geometry.d8[i].y);
+                        if(other != null && other.block() != Blocks.cliff){
+                            rotation ^= (1 << i);
+                        }
+                    }
+                }
+                tile.data = (byte)rotation;
+            }
+        }
+
+        flushOp();
+        pendingCliffs.clear();
+    }
+
+    public void clearOp(){
+        stack.clear();
+    }
+
+    public void undo(){
+        if(stack.canUndo()){
+            stack.undo();
+        }
+    }
+
+    public void redo(){
+        if(stack.canRedo()){
+            stack.redo();
+        }
+    }
+
+    public boolean canUndo(){
+        return stack.canUndo();
+    }
+
+    public boolean canRedo(){
+        return stack.canRedo();
+    }
+
+    public void flushOp(){
+        if(currentOp == null || currentOp.isEmpty()) return;
+        stack.add(currentOp);
+        currentOp = null;
+    }
+
+    public void addPaintOp(long op){
+        if(loading) return;
+
+        if(currentOp == null) currentOp = new PaintOperation();
+        currentOp.addOperation(op);
+    }
+
+    public int ops(){
+        if(currentOp == null) return 0;
+        return currentOp.size();
+    }
+
+    public void removeLastOps(int amount){
+        if(currentOp == null || loading) return;
+
+        currentOp.remove(amount);
+    }
+
+    public PaintedTileData data(int x, int y){
+        return data[x][y];
+    }
+
+    public PaintedTileData data(Tile tile){
+        return data(tile.x, tile.y);
+    }
+}

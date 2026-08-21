@@ -1,0 +1,195 @@
+package testing.util;
+
+import arc.Core;
+import arc.Events;
+import arc.scene.ui.Label;
+import arc.scene.ui.layout.Table;
+import arc.util.Align;
+import arc.util.Reflect;
+import arc.util.Strings;
+import mindustry.core.World;
+import mindustry.game.EventType.WorldLoadEvent;
+import mindustry.gen.Tex;
+import mindustry.maps.Map;
+import mindustry.world.Tile;
+import testing.TestUtilsMod;
+import testing.blui.BLSetup;
+import testing.buttons.*;
+import testing.ui.TUDialogs;
+import testing.ui.TUStyles;
+import testing.ui.TerrainPainterFragment;
+
+import static arc.Core.settings;
+import static mindustry.Vars.*;
+
+/**
+ * Сборка HUD мода: страницы BLUI-панели (горизонтальная/вертикальная раскладка), подмена
+ * текста позиции под миникартой (мировые координаты + инфо о тайле под курсором), фрагмент
+ * террейн-пейнтера, кампанийные карты в списке кастомных игр.
+ * <p>
+ * Отличия от оригинала: интеграция с модом Time Control (yoinkTimeSlider) выброшена - мода
+ * в клиенте нет, а свой тайм-контрол есть у вшитого mindustrytool; текст позиции в этом
+ * форке свой (игрок + [coral]курсор), поэтому подмена включается только когда включена
+ * хотя бы одна из настроек tu-wu-coords/tu-tile-info (обе по умолчанию выключены, чтобы не
+ * менять HUD sonka без спроса); кампанийные карты в кастомных играх (tu-load-vanilla) по той
+ * же причине по умолчанию выключены.
+ */
+public class Setup{
+    public static TerrainPainterFragment terrainFrag;
+    private static boolean posLabelAligned = false;
+    private static float startX = Float.MIN_VALUE, startY = Float.MIN_VALUE;
+
+    private Setup(){
+    }
+
+    public static void init(){
+        TUDialogs.load();
+
+        BLSetup.addTable(table -> {
+            if(settings.getBool("tu-vertical", mobile)){
+                vertTables(table);
+            }else{
+                horiTables(table);
+            }
+        }, () -> !net.client() && !TestUtilsMod.disableCampaign());
+
+        //в кампании без tu-cheating остаётся только самоуничтожение (как в оригинале)
+        BLSetup.addTable(table -> table.table(Tex.pane, Death::seppuku), () -> !net.client() && state.isCampaign() && TestUtilsMod.disableCampaign());
+
+        setupPositionLabel();
+
+        terrainFrag = new TerrainPainterFragment();
+        Core.app.post(() -> {
+            terrainFrag.build(ui.hudGroup);
+            BLSetup.finish();
+            setOffsetX(settings.getFloat("tu-offset-x", 0f));
+            setOffsetY(settings.getFloat("tu-offset-y", 0f));
+        });
+
+        //кампанийные карты в списке кастомных (флаг custom снимается reflection'ом, как в оригинале)
+        if(settings.getBool("tu-load-vanilla", false)){
+            try{
+                content.sectors().each(s -> {
+                    Map map = s.generator.map;
+                    if(map == null || maps.all().contains(map)) return;
+                    Reflect.set(map, "custom", false);
+                    maps.all().add(map);
+                    maps.queueNewPreview(map);
+                });
+                maps.all().sort();
+                Reflect.invoke(maps, "createAllPreviews");
+            }catch(Throwable t){
+                arc.util.Log.err("[testing] Failed to add campaign maps to the custom list", t);
+            }
+        }
+    }
+
+    private static void setupPositionLabel(){
+        Table miniPos = ui.hudGroup.find("minimap/position");
+        if(miniPos == null) return;
+        Label pos = miniPos.find("position");
+        if(pos == null) return;
+
+        pos.setText(() -> {
+            boolean wu = settings.getBool("tu-wu-coords", false), info = settings.getBool("tu-tile-info", false);
+            int tx = World.toTile(Core.input.mouseWorldX()), ty = World.toTile(Core.input.mouseWorldY());
+            if(!wu && !info){
+                //формат форка как был: игрок + [coral]курсор
+                return player.tileX() + ", " + player.tileY() + "\n[coral]" + tx + ", " + ty;
+            }
+
+            String playerPos = player.tileX() + ", " + player.tileY() + "\n";
+            if(wu){
+                playerPos += "[accent]" + fix(player.x) + ", " + fix(player.y) + "\n";
+            }
+
+            String cursorPos = "[coral]" + tx + ", " + ty + "\n";
+            if(wu){
+                cursorPos += "[#d4816b]" + fix(Core.input.mouseWorldX()) + ", " + fix(Core.input.mouseWorldY()) + "\n";
+            }
+
+            if(info){
+                Tile tile = world.tile(tx, ty);
+                cursorPos += "[#a9d8ff]";
+                if(tile == null){
+                    cursorPos += "-----";
+                }else{
+                    cursorPos += tile.floor().localizedName
+                    + " | " + tile.overlay().localizedName
+                    + " | " + tile.block().localizedName
+                    + " | data = ";
+                    StringBuilder data = new StringBuilder();
+                    for(int i = 7; i >= 0; i--){
+                        data.append((tile.data & (1 << i)) != 0 ? '1' : '0');
+                    }
+                    cursorPos += data;
+                }
+            }
+
+            return playerPos + cursorPos;
+        });
+
+        Events.on(WorldLoadEvent.class, e -> {
+            if(posLabelAligned) return;
+            pos.setAlignment(Align.right, Align.right);
+            posLabelAligned = true;
+        });
+    }
+
+    private static void horiTables(Table table){
+        table.table(Tex.buttonEdge3, t -> {
+            Spawn.addButtons(t);
+            Environment.worldButton(t);
+            Effect.statusButton(t);
+            Sandbox.addButtons(t);
+        }).row();
+
+        table.table(Tex.pane, t -> {
+            TeamChanger.addButton(t);
+            Health.addButtons(t);
+            Death.addButtons(t);
+            LightSwitch.lightButton(t);
+        });
+    }
+
+    private static void vertTables(Table table){
+        table.table(Tex.buttonEdge3, Spawn::addButtons).row();
+        table.table(Tex.pane, t -> {
+            Environment.worldButton(t);
+            LightSwitch.lightButton(t);
+        }).row();
+        table.table(Tex.buttonEdge3, Sandbox::addButtons).row();
+        table.table(TUStyles.buttonRight, t -> {
+            Health.addButtons(t);
+            Effect.statusButton(t);
+        }).row();
+        table.table(Tex.buttonEdge3, Death::addButtons).row();
+        table.table(Tex.buttonEdge3, TeamChanger::addButton).row();
+    }
+
+    private static float startX(){
+        if(startX == Float.MIN_VALUE) startX = ui.hudGroup.find("blui").x;
+        return startX;
+    }
+
+    private static float startY(){
+        if(startY == Float.MIN_VALUE) startY = ui.hudGroup.find("blui").y;
+        return startY;
+    }
+
+    public static void setOffsetX(float x){
+        Table blui = ui.hudGroup.find("blui");
+        if(blui == null) return;
+        blui.x = startX() + x;
+    }
+
+    public static void setOffsetY(float y){
+        Table blui = ui.hudGroup.find("blui");
+        if(blui == null) return;
+        blui.y = startY() + y;
+    }
+
+    private static String fix(float f){
+        return Strings.autoFixed(f, 1);
+    }
+}

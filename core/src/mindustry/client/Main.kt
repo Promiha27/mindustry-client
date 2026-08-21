@@ -140,6 +140,15 @@ object Main : ApplicationListener {
         // disabled upstream and skipped - see MappingUtilitiesMod's javadoc.
         mu.MappingUtilitiesMod()
 
+        // Port of the third-party "Testing Utilities" mod (MEEPofFaith, v69.10) IN FULL - sandbox
+        // panel in the bottom-left HUD corner (BLUI): unit spawner + wave picker, block placer,
+        // in-game terrain painter, status effects, world/weather menu, sandbox toggle, fill/dump
+        // core, team changer, heal/invincibility, clone/self-destruct, light switch, Alt+click
+        // teleport; plus the Interp visualizer and the sound room. Overlaps with scheme admin
+        // tools / agzam4 spawner are kept on purpose - sonkaextras.AdminPanel lets sonka pick
+        // which HUD panel is shown. See TestUtilsMod's javadoc for the inventory and skip-list.
+        testing.TestUtilsMod()
+
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
             communicationSystem.init()

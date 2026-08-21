@@ -141,7 +141,8 @@ public class HudFragment{
             cont.top().left();
 
             //ключ настройки оригинальный ("mobilebuttons") - сохранённое значение sonka из мода подхватится
-            cont.visible(() -> ui.hudfrag.shown && !ui.minimapfrag.shown() && (settings.getBool("mobilebuttons", false) || mobile));
+            //sonka: плюс выбор админ-панели (sonkaextras.AdminPanel) - «Testing Utilities» прячет эту панель
+            cont.visible(() -> ui.hudfrag.shown && !ui.minimapfrag.shown() && (settings.getBool("mobilebuttons", false) || mobile) && sonkaextras.AdminPanel.schemeEnabled());
 
             cont.table(Tex.buttonEdge4, pad -> {
                 //ряд 1 виден всегда (шеврон + быстрые действия), в свёрнутом виде панель подъезжает вверх
