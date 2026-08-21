@@ -140,6 +140,10 @@ public final class ChainWarn{
             t.pref(new qol.core.ButtonSetting("sonka-dataio-import", sonkaextras.dataio.DataIODialog::showImport));
             //профили кампании (sonkaextras.campaign): несколько независимых кампаний с переключением
             t.pref(new qol.core.ButtonSetting("sonka-campaign-profiles", () -> new sonkaextras.campaign.CampaignProfilesDialog().show()));
+            //теги карт (sonkaextras.maptags.MapTags): дублирующая точка входа в тот же диалог
+            //управления тегами, что открывается карандашом у фильтра в списке карт - для тех, кто
+            //прибирается в тегах не из контекста выбора карты (см. javadoc MapTagsDialog)
+            t.pref(new qol.core.ButtonSetting("sonka-maptags-manage", () -> new sonkaextras.maptags.MapTagsDialog().show()));
         }));
 
         Events.on(WorldLoadEvent.class, e -> {
