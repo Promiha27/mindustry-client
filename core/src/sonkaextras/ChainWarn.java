@@ -134,6 +134,10 @@ public final class ChainWarn{
             //выбор админ-панели HUD: Scheme Size (top-left) / Testing Utilities (bottom-left) / обе
             //(см. AdminPanel) - гейтит только видимость панелей, диалоги остаются в FeaturesDialog
             t.sliderPref(AdminPanel.KEY, AdminPanel.BOTH, 0, 2, 1, AdminPanel::label, v -> AdminPanel.invalidate());
+            //гранулярный экспорт/импорт данных (sonkaextras.dataio): схемы/карты/моды/сейвы/кампания/
+            //настройки по отдельности, мерж без затирания, бэкапы; ванильные кнопки в «Game Data» не трогаем
+            t.pref(new qol.core.ButtonSetting("sonka-dataio-export", sonkaextras.dataio.DataIODialog::showExport));
+            t.pref(new qol.core.ButtonSetting("sonka-dataio-import", sonkaextras.dataio.DataIODialog::showImport));
         }));
 
         Events.on(WorldLoadEvent.class, e -> {

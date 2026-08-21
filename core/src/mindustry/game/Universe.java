@@ -295,6 +295,18 @@ public class Universe{
         Core.settings.put("turn", turn);
     }
 
+    /**
+     * sonka (dataio/campaign profiles): перечитать время/ход вселенной и сбросить кэш лоадаута и
+     * лаунч-груза после подмены ключей кампании в settings. Только из меню.
+     */
+    public void reload(){
+        load();
+        secondCounter = 0f;
+        turnCounter = 0f;
+        lastLoadout = null;
+        lastLaunchResources = Core.settings.getJson("launch-resources-seq", ItemSeq.class, ItemSeq::new);
+    }
+
     private void load(){
         seconds = Core.settings.getInt("utimei");
         turn = Core.settings.getInt("turn");

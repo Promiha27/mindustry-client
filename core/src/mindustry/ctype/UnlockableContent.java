@@ -284,6 +284,14 @@ public abstract class UnlockableContent extends MappableContent{
             unlocked || alwaysUnlocked;
     }
 
+    /**
+     * sonka (dataio/campaign profiles): перечитать флаг анлока из settings после того, как ключи
+     * кампании подменили на диске/в памяти (импорт прогресса, смена профиля). Событий не фаерит.
+     */
+    public void reloadUnlock(){
+        unlocked = Core.settings != null && Core.settings.getBool(name + "-unlocked", false);
+    }
+
     /** Locks this content again. */
     public void clearUnlock(){
         if(unlocked){

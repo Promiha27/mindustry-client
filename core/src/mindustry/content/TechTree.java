@@ -174,6 +174,17 @@ public class TechTree{
             }
         }
 
+        /**
+         * sonka (dataio/campaign profiles): перечитать вложенные ресурсы из settings после подмены
+         * ключей кампании (обратное к {@link #save()}, ничего не пишет).
+         */
+        public void reloadRequirements(){
+            if(Core.settings == null || finishedRequirements == null) return;
+            for(ItemStack stack : finishedRequirements){
+                stack.amount = Core.settings.getInt("req-" + content.name + "-" + stack.item.name);
+            }
+        }
+
         /** Resets finished requirements and saves. */
         public void reset(){
             for(ItemStack stack : finishedRequirements){
