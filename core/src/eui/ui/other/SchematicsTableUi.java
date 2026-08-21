@@ -1403,9 +1403,14 @@ public class SchematicsTableUi{
                 }).size(44f);
             }).padTop(6f).row();
 
-            //иконки: основная + 4 угла, у каждой свой размер
-            iconSlotRow(t, row, col, -1, rebuild);
-            for(int i = 0; i < 4; i++) iconSlotRow(t, row, col, i, rebuild);
+            //sonka: раньше был отдельный "центральный" слот + 4 угловых со своим размером у
+            //каждого - убрано вместе с раскладкой "1 крупная + мелкие по углам" (см. draw()):
+            //теперь просто 4 РАВНОЗНАЧНЫХ слота иконок (как в Extended UI++), без размера -
+            //отрисовка сама решает как их показать по количеству. slot=-1 (main) остался ПЕРВЫМ
+            //слотом ради обратной совместимости хранения/миграции (у существующих ячеек с одной
+            //иконкой она лежит именно в main) - просто без спецлейбла "основная".
+            int[] slots = {-1, 0, 1, 2};
+            for(int i = 0; i < slots.length; i++) iconSlotRow(t, row, col, slots[i], i + 1, rebuild);
 
             t.button(Core.bundle.get("schematics-table.dialog.clear-cell"), Icon.trash, () -> {
                 page().removeCell(row, col);
@@ -1416,16 +1421,20 @@ public class SchematicsTableUi{
         }).size(mobile ? 400f : 760f, mobile ? 400f : 560f);
     }
 
-    /** Строка одного слота иконки (slot -1 = основная, 0..3 = углы): превью, выбор, слайдер размера, снятие. */
-    void iconSlotRow(Table t, int row, int col, int slot, Runnable rebuild){
+    /**
+     * Строка одного слота иконки (slot -1 = main-хранилище, 0..3 = corners-хранилище - смысл
+     * ровно как раньше, только UI больше их не различает): превью, выбор, снятие. Без слайдера
+     * размера - sonka попросил убрать (раскладка "как в EUI++" размер иконки не настраивает,
+     * решает только их количество, см. {@link CellIconsElement#draw()}).
+     */
+    void iconSlotRow(Table t, int row, int col, int slot, int displayNumber, Runnable rebuild){
         t.table(sr -> {
             sr.left();
             Page p = page();
             CellData cell = p.cell(row, col);
             IconRef ref = cell == null ? null : (slot < 0 ? cell.main : cell.corners[slot]);
 
-            String key = slot < 0 ? "schematics-table.dialog.cell.main-icon" : "schematics-table.dialog.cell.corner-" + slot;
-            sr.add(Core.bundle.get(key) + ":").width(mobile ? 130f : 170f).left();
+            sr.add(Core.bundle.format("schematics-table.dialog.cell.icon-n", displayNumber) + ":").width(mobile ? 130f : 170f).left();
 
             Drawable icon = ref != null ? Icons.getIconDrawable(ref.name) : null;
             sr.image(icon != null ? icon : defaultSchematicImage()).size(32f).padRight(6f);
@@ -1444,13 +1453,6 @@ public class SchematicsTableUi{
             })).width(110f).height(40f).padRight(6f);
 
             if(ref != null){
-                IconRef liveRef = ref;
-                int min = slot < 0 ? 20 : 15, max = slot < 0 ? 100 : 70;
-                sr.slider(min, max, 5, liveRef.size, v -> {
-                    liveRef.size = (int)v;
-                    data().save();
-                }).width(mobile ? 120f : 180f).padRight(4f);
-                sr.label(() -> liveRef.size + "%").width(52f);
                 sr.button(Icon.cancelSmall, Styles.clearNonei, () -> {
                     CellData cc = page().cell(row, col);
                     if(cc != null){
