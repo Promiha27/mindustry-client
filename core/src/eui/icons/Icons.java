@@ -70,6 +70,19 @@ public class Icons{
         return modIcons.keys().toSeq();
     }
 
+    /**
+     * true - иконка из "значков" ({@code Icon.icons}: Icon.star, Icon.pencil и т.п.) - плотно
+     * обрезанные глифы, занимающие почти весь квадрат региона. false - контентная иконка (блок/
+     * юнит/предмет/жидкость/эффект через {@code uiIcon}) - в спрайте обычно заложен заметный
+     * отступ вокруг самой картинки (особенно у блоков), из-за чего при одинаковом коэффициенте
+     * растяжения контентные иконки визуально мельче значков (sonka: "иконки блоков слишком
+     * мелкие, а значки нормального размера"). Используется вызывающим кодом, чтобы компенсировать
+     * коэффициентом побольше именно контентные иконки, не трогая уже нормальные значки.
+     */
+    public static boolean isGlyphIcon(String iconName){
+        return iconName != null && Icon.icons.containsKey(iconName);
+    }
+
     public static Drawable getIconDrawable(String iconName){
         if(iconName == null || iconName.isEmpty()) return pencil();
 

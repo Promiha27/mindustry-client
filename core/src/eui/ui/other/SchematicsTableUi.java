@@ -628,12 +628,25 @@ public class SchematicsTableUi{
     static class CellIconsElement extends Element{
         Drawable main;
         float mainFrac = 0.6f;
+        /** true - иконка контентная (блок/юнит/предмет/...), не "значок" - см. {@link Icons#isGlyphIcon}. */
+        boolean mainBoost;
         final Drawable[] corners = new Drawable[4];
         final float[] cornerFracs = new float[4];
+        final boolean[] cornerBoost = new boolean[4];
         int rotation;
 
         /** Единый размер грид-иконок при 2-4 штуках сразу (старый EUI++ стиль) - 46%, безопасно помещает пару бок о бок с отступом даже если индивидуальные размеры икон настроены больше. */
         static final float GRID_FRAC = 0.46f;
+        /**
+         * sonka: "иконки блоков слишком мелкие, а значки нормального размера" - у контентных
+         * иконок (block/unit/item/... uiIcon) в спрайте обычно заложен заметный отступ вокруг
+         * самой картинки, у "значков" (Icon.star и т.п.) его почти нет - при одинаковом
+         * коэффициенте контентные иконки визуально мельче. Компенсация - только для одиночной
+         * иконки в центре (там есть запас до края клетки); в сетке 2-4 иконок трогать рискованно -
+         * поднять размер там значит рисковать наложением соседних иконок друг на друга.
+         */
+        static final float CONTENT_ICON_BOOST = 1.3f;
+        static final float MAX_SINGLE_FRAC = 0.95f;
 
         @Override
         public void draw(){
@@ -650,13 +663,15 @@ public class SchematicsTableUi{
             //перерисовка, старые сохранённые размеры остаются на месте на случай отката.
             Drawable[] slots = {main, corners[0], corners[1], corners[2], corners[3]};
             float[] fracs = {mainFrac, cornerFracs[0], cornerFracs[1], cornerFracs[2], cornerFracs[3]};
+            boolean[] boosts = {mainBoost, cornerBoost[0], cornerBoost[1], cornerBoost[2], cornerBoost[3]};
             int count = 0;
             for(Drawable d : slots) if(d != null) count++;
 
             if(count == 1){
                 for(int i = 0; i < slots.length; i++){
                     if(slots[i] == null) continue;
-                    float s = Math.min(w, h) * fracs[i];
+                    float frac = boosts[i] ? Math.min(fracs[i] * CONTENT_ICON_BOOST, MAX_SINGLE_FRAC) : fracs[i];
+                    float s = Math.min(w, h) * frac;
                     slots[i].draw(x + (w - s) / 2f, y + (h - s) / 2f, s, s);
                     break;
                 }
@@ -695,6 +710,7 @@ public class SchematicsTableUi{
                 if(d != null){
                     el.main = d;
                     el.mainFrac = iconFrac(c.main.size);
+                    el.mainBoost = !Icons.isGlyphIcon(c.main.name);
                     any = true;
                 }
             }
@@ -704,6 +720,7 @@ public class SchematicsTableUi{
                 if(d != null){
                     el.corners[i] = d;
                     el.cornerFracs[i] = iconFrac(c.corners[i].size);
+                    el.cornerBoost[i] = !Icons.isGlyphIcon(c.corners[i].name);
                     any = true;
                 }
             }
@@ -716,6 +733,7 @@ public class SchematicsTableUi{
             //настройку вместо константы (слайдер добавлен в addSettings)
             el.main = defaultSchematicImage();
             el.mainFrac = iconFrac(Core.settings.getInt("eui-SchematicsTableDefaultIconSize", SchemTableData.MAIN_ICON_DEFAULT_SIZE));
+            el.mainBoost = true; //Blocks.empty.uiIcon - тоже контентная (блочная) иконка
         }
         btn.add(el).grow();
     }
