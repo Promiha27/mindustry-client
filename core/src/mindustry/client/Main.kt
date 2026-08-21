@@ -108,6 +108,10 @@ object Main : ApplicationListener {
         // sonka: метка над юнитом с ником последнего управлявшего им игрока (sonkaextras.LastController)
         sonkaextras.LastController.init()
 
+        // sonka: профили кампании - только стартовая сверка маркера активного профиля с settings
+        // (sonkaextras.campaign.CampaignProfiles, раздел «Маркер» в javadoc); сам диалог - по кнопкам
+        sonkaextras.campaign.CampaignProfiles.init()
+
         // Port of the third-party "Helium" mod (EB-wilson, beta-1.6) SELECTION - gauss-blur UI
         // background, quick block palette in the placement panel, reworked mods manager/browser.
         // Attack/effect range outlines and shield stacks deliberately skipped (sonka's call) -

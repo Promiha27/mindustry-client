@@ -302,16 +302,24 @@ public class PlanetDialog extends BaseDialog implements PlanetInterfaceRenderer{
         buttons.bottom();
 
         if(Core.graphics.isPortrait()){
-            buttons.add(sectorTop).colspan(2).fillX().row();
+            buttons.add(sectorTop).colspan(3).fillX().row();
             addBack();
             addTech();
+            addProfiles();
         }else{
             addBack();
             buttons.add().growX();
             buttons.add(sectorTop).minWidth(230f);
             buttons.add().growX();
             addTech();
+            addProfiles();
         }
+    }
+
+    /** sonka: профили кампании (sonkaextras.campaign) - рядом с техдеревом, тоже только в режиме look. */
+    void addProfiles(){
+        buttons.button("@client.sonka.campaign.title", Icon.planet, () -> new sonkaextras.campaign.CampaignProfilesDialog().show())
+            .size(200f, 54f).visible(() -> mode == look).pad(2).bottom();
     }
 
     void addBack(){

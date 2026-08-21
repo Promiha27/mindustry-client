@@ -138,6 +138,8 @@ public final class ChainWarn{
             //настройки по отдельности, мерж без затирания, бэкапы; ванильные кнопки в «Game Data» не трогаем
             t.pref(new qol.core.ButtonSetting("sonka-dataio-export", sonkaextras.dataio.DataIODialog::showExport));
             t.pref(new qol.core.ButtonSetting("sonka-dataio-import", sonkaextras.dataio.DataIODialog::showImport));
+            //профили кампании (sonkaextras.campaign): несколько независимых кампаний с переключением
+            t.pref(new qol.core.ButtonSetting("sonka-campaign-profiles", () -> new sonkaextras.campaign.CampaignProfilesDialog().show()));
         }));
 
         Events.on(WorldLoadEvent.class, e -> {
