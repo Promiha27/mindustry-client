@@ -149,6 +149,13 @@ object Main : ApplicationListener {
         // which HUD panel is shown. See TestUtilsMod's javadoc for the inventory and skip-list.
         testing.TestUtilsMod()
 
+        // Port of the third-party "Too Many Items" mod (EB-wilson, v3.2, Kotlin) - NEI/JEI-style
+        // recipe browser (what produces X / where X is used / what a factory does, all vanilla
+        // block types parsed, mod recipe API kept) plus the Schematic Calculator (recipe-graph
+        // planner with balancing, statistics, PNG/text export). UniverseKit markdown/reflection
+        // replaced by client StupidMarkupParser/arc Reflect - see TooManyItems' KDoc.
+        tmi.TooManyItems()
+
         if (Core.app.isDesktop) {
             communicationSystem = SwitchableCommunicationSystem(BlockCommunicationSystem, PluginCommunicationSystem) // FINISHME: Profile this, it takes ~40ms which it really shouldn't
             communicationSystem.init()

@@ -184,6 +184,16 @@ object FeaturesDialog : BaseDialog("@client.features") {
                 btns.button("@tu-sound-menu.name", Icon.effect) { if (tuOk) testing.ui.TUDialogs.soundDialog.show() }
                     .disabled { !tuOk }.standdownTooltip(tuOk)
             }
+
+            // tmi: браузер рецептов и калькулятор схем - оба диалога работают и из меню
+            val tmiOk = tmi.TooManyItems.enabled
+            modRow(list, Core.bundle["client.setting.modsec-tmi.category"], Core.bundle["client.features.mod.tmi.desc"], tmiOk) { btns ->
+                btns.button("@client.features.tmi.open", Icon.book) {
+                    if (tmiOk) { tmi.ui.TmiUI.recipesDialog.currentSelect = null; tmi.ui.TmiUI.recipesDialog.show() }
+                }.disabled { !tmiOk }.standdownTooltip(tmiOk)
+                btns.button("@client.features.tmi.calculator", Icon.tree) { if (tmiOk) tmi.ui.TmiUI.recipeGraph.show() }
+                    .disabled { !tmiOk }.standdownTooltip(tmiOk)
+            }
         }.growX().row()
 
         return t

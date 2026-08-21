@@ -1,0 +1,95 @@
+package tmi.recipe.parser
+
+import arc.Core
+import arc.func.Boolf
+import arc.graphics.g2d.TextureRegion
+import mindustry.content.StatusEffects
+import mindustry.ctype.ContentType
+import mindustry.entities.bullet.*
+import mindustry.entities.pattern.ShootPattern
+import mindustry.type.Liquid
+import mindustry.type.unit.MissileUnitType
+import mindustry.world.blocks.defense.turrets.Turret
+import mindustry.world.consumers.ConsumeLiquidBase
+import tmi.recipe.AmountFormatter
+import tmi.recipe.Recipe
+import tmi.recipe.types.RecipeItem
+import tmi.recipe.types.RecipeItemType
+import tmi.util.Consts
+
+abstract class TurretParser<T: Turret>: ConsumerParser<T>() {
+  companion object {
+    private val bulletTypes = mutableListOf<Pair<Boolf<BulletType>, BulletItemType>>()
+
+    fun registerBulletType(bulletType: BulletItemType, matcher: Boolf<BulletType>) {
+      bulletTypes.add(0, matcher to bulletType) //JVM 17: без SequencedCollection.addFirst
+    }
+  }
+
+  protected fun registerCoolant(recipe: Recipe, coolant: ConsumeLiquidBase, base: Float, multiplier: Float) {
+    coolant.also { coolant->
+      registerCons(recipe, { _, s ->
+        val liquid = s.item.item as Liquid
+        val eff = base + s.amount*multiplier*liquid.heatCapacity
+        s.setType(RecipeItemType.BOOSTER)
+          .setEfficiency(eff)
+          .setFormat(AmountFormatter.unitTimedFormatter())
+          .boostAndConsFormat(eff)
+      }, coolant)
+    }
+  }
+
+  protected fun matchBulletType(bulletType: BulletType, shoot: ShootPattern): BulletItemType {
+    bulletTypes.find { it.first.get(bulletType) }?.let { return it.second }
+
+    return when {
+      bulletType is ContinuousFlameBulletType -> DefaultBulletType.FLAME_AMMO
+      bulletType is MissileBulletType || bulletType.spawnUnit is MissileUnitType -> DefaultBulletType.MISSILE_AMMO
+      bulletType is LaserBulletType || bulletType is ContinuousLaserBulletType || bulletType is PointLaserBulletType ->
+        if (shoot.shots > 1) DefaultBulletType.CANISTER_LASER_AMMO else DefaultBulletType.LASER_AMMO
+      bulletType is LightningBulletType -> DefaultBulletType.LIGHTNING_AMMO
+      shoot.shots > 1 -> if (shoot.shotDelay > 0) DefaultBulletType.SPATE_AMMO else DefaultBulletType.CANISTER_AMMO
+      bulletType.status == StatusEffects.burning -> DefaultBulletType.FLAME_AMMO
+      bulletType.pierce && bulletType.pierceCap > 0 -> DefaultBulletType.PIERCE_AMMO
+      else -> DefaultBulletType.NORMAL_AMMO
+    }
+  }
+
+  class AmmoRecipeItem(
+    private val owner: RecipeItem<*>,
+    bullet: BulletType,
+    val bulletType: BulletItemType
+  ): RecipeItem<BulletType>(bullet) {
+    override val ordinal: Int = item.id.toInt()
+    override val typeID: Int = ContentType.bullet.ordinal
+    override val typeTag: String = "Bullet"
+    override val ownMod: String = bullet.minfo.mod?.name?: Consts.VANILLA
+    override val name: String = "${owner.name}-${bulletType.name}-$ordinal"
+    override val localizedName: String = bulletType.localizedName
+    override val icon: TextureRegion = bulletType.icon
+    override val hidden: Boolean = true
+    override val hasDetails: Boolean get() = owner.hasDetails
+    override val locked: Boolean get() = owner.locked
+  }
+
+  interface BulletItemType {
+    val name: String
+    val localizedName: String
+    val icon: TextureRegion
+  }
+
+  enum class DefaultBulletType(
+    override val localizedName: String,
+    override val icon: TextureRegion
+  ) : BulletItemType {
+    NORMAL_AMMO(Core.bundle["misc.ammo_normal"], Consts.ammo_normal),
+    PIERCE_AMMO(Core.bundle["misc.ammo_pierce"], Consts.ammo_pierce),
+    MISSILE_AMMO(Core.bundle["misc.ammo_missile"], Consts.ammo_missile),
+    SPATE_AMMO(Core.bundle["misc.ammo_spate"], Consts.ammo_spate),
+    CANISTER_AMMO(Core.bundle["misc.ammo_canister"], Consts.ammo_canister),
+    LASER_AMMO(Core.bundle["misc.ammo_laser"], Consts.ammo_laser),
+    CANISTER_LASER_AMMO(Core.bundle["misc.ammo_canister_laser"], Consts.ammo_canister_laser),
+    LIGHTNING_AMMO(Core.bundle["misc.ammo_lightning"], Consts.ammo_lightning),
+    FLAME_AMMO(Core.bundle["misc.ammo_flame"], Consts.ammo_flame),
+  }
+}
