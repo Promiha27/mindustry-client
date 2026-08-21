@@ -1105,6 +1105,42 @@ public class SettingsMenuDialog extends BaseDialog{
             public void addDesc(Element elem){
                 ui.addDescTooltip(elem, description);
             }
+
+            //sonka: один битый ключ (settings-значение неверного типа - строка там, где ждали int/
+            //bool, обычно от переиспользованного/переименованного имени настройки где-то среди
+            //вшитых модов) раньше ронял ClassCastException'ом ВЕСЬ экран настроек целиком, при
+            //перерисовке ЛЮБОГО SettingsTable - до этого места было не добраться, чтобы починить
+            //ключ руками. Самолечение: при плохом типе - вернуть дефолт И сразу перезаписать ключ
+            //валидным значением, чтобы следующая перерисовка больше не падала на нём же.
+            int safeInt(String name, int def){
+                try{
+                    return settings.getInt(name, def);
+                }catch(ClassCastException e){
+                    Log.warn("[settings] key '@' had a wrong-typed value, resetting to default @", name, def);
+                    settings.put(name, def);
+                    return def;
+                }
+            }
+
+            boolean safeBool(String name, boolean def){
+                try{
+                    return settings.getBool(name, def);
+                }catch(ClassCastException e){
+                    Log.warn("[settings] key '@' had a wrong-typed value, resetting to default @", name, def);
+                    settings.put(name, def);
+                    return def;
+                }
+            }
+
+            String safeString(String name, String def){
+                try{
+                    return settings.getString(name, def);
+                }catch(ClassCastException e){
+                    Log.warn("[settings] key '@' had a wrong-typed value, resetting to default '@'", name, def);
+                    settings.put(name, def);
+                    return def;
+                }
+            }
         }
 
         public static class CheckSetting extends Setting{
@@ -1128,7 +1164,7 @@ public class SettingsMenuDialog extends BaseDialog{
 
                 box.add(title);
 
-                box.update(() -> box.setChecked(settings.getBool(name)));
+                box.update(() -> box.setChecked(safeBool(name, def)));
 
                 box.clicked(() -> {
                     settings.put(name, box.isChecked());
@@ -1162,7 +1198,7 @@ public class SettingsMenuDialog extends BaseDialog{
             public void add(SettingsTable table){
                 Slider slider = new Slider(min, max, step, false);
 
-                slider.setValue(settings.getInt(name));
+                slider.setValue(safeInt(name, def));
 
                 Label value = new Label("", Styles.outlineLabel);
                 Table content = new Table();
@@ -1258,7 +1294,7 @@ public class SettingsMenuDialog extends BaseDialog{
                         }).update(u -> u.setChecked(becontrol.isUpdateAvailable() || urlChanged)).padRight(4);
                         Label label = new Label(title);
                         t.add(label).minWidth(label.getPrefWidth() / Scl.scl(1.0F) + 25.0F);
-                        t.field(settings.getString(name), text -> {
+                        t.field(safeString(name, ""), text -> {
                             becontrol.setUpdateAvailable(false); // Set this to false as we don't know if this is even a valid URL.
                             urlChanged = true;
                             settings.put(name, text);
@@ -1282,7 +1318,7 @@ public class SettingsMenuDialog extends BaseDialog{
 
             @Override
             public void add(SettingsTable table){
-                TextField field = new TextField(settings.getString(name));
+                TextField field = new TextField(safeString(name, def));
                 field.setMessageText(def);
                 field.changed(() -> {
                     settings.put(name, field.getText());
@@ -1306,7 +1342,7 @@ public class SettingsMenuDialog extends BaseDialog{
 
             @Override
             public void add(SettingsTable table){
-                TextArea area = new TextArea(settings.getString(name));
+                TextArea area = new TextArea(safeString(name, def));
                 area.setPrefRows(5);
 
                 area.changed(() -> {
