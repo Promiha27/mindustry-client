@@ -635,18 +635,22 @@ public class SchematicsTableUi{
         final boolean[] cornerBoost = new boolean[4];
         int rotation;
 
-        /** Единый размер грид-иконок при 2-4 штуках сразу (старый EUI++ стиль) - 46%, безопасно помещает пару бок о бок с отступом даже если индивидуальные размеры икон настроены больше. */
+        /** Единый размер грид-иконок при 2-4 штуках сразу (старый EUI++ стиль) - безопасно помещает пару бок о бок с отступом даже с учётом буста контентных иконок ниже. */
         static final float GRID_FRAC = 0.46f;
         /**
          * sonka: "иконки блоков слишком мелкие, а значки нормального размера" - у контентных
          * иконок (block/unit/item/... uiIcon) в спрайте обычно заложен заметный отступ вокруг
          * самой картинки, у "значков" (Icon.star и т.п.) его почти нет - при одинаковом
-         * коэффициенте контентные иконки визуально мельче. Компенсация - только для одиночной
-         * иконки в центре (там есть запас до края клетки); в сетке 2-4 иконок трогать рискованно -
-         * поднять размер там значит рисковать наложением соседних иконок друг на друга.
+         * коэффициенте контентные иконки визуально мельче (проверено: Table.image()+.size() у
+         * оригинального EUI++ и наш прямой Drawable.draw(x,y,w,h) идентичны по факту - оба через
+         * Scaling.stretch, дело не в алгоритме масштабирования, а в самом спрайте). Первая версия
+         * бустила только одиночную иконку - оказалось мало, если у ячейки заявлено 2-4 иконки
+         * (частый случай), буст туда вообще не доходил. Теперь применяется в ОБОИХ режимах.
          */
-        static final float CONTENT_ICON_BOOST = 1.3f;
-        static final float MAX_SINGLE_FRAC = 0.95f;
+        static final float CONTENT_ICON_BOOST = 1.6f;
+        static final float MAX_SINGLE_FRAC = 0.98f;
+        /** Геометрический потолок для сетки - 2 иконки в ряд должны поместиться бок о бок с отступом даже если обе бустнуты. */
+        static final float MAX_GRID_FRAC = 0.49f;
 
         @Override
         public void draw(){
@@ -677,12 +681,17 @@ public class SchematicsTableUi{
                 }
             }else if(count > 1){
                 float pad = 1f;
-                float s = Math.min(w, h) * GRID_FRAC;
+                float minwh = Math.min(w, h);
                 int placed = 0;
-                for(Drawable d : slots){
+                for(int j = 0; j < slots.length; j++){
+                    Drawable d = slots[j];
                     if(d == null) continue;
                     if(placed >= 4) break; //старый EUI++ лимит - до 4 иконок в сетке
                     int i = placed++;
+                    //контентные иконки (блок/юнит/предмет) бустятся и в сетке, но зажаты
+                    //MAX_GRID_FRAC - геометрия строки/колонки из двух ячеек не даёт разъехаться
+                    float frac = boosts[j] ? Math.min(GRID_FRAC * CONTENT_ICON_BOOST, MAX_GRID_FRAC) : GRID_FRAC;
+                    float s = minwh * frac;
                     float cx = (i % 2 == 0) ? x + pad : x + w - s - pad;
                     float cy = (i < 2) ? y + h - s - pad : y + pad;
                     d.draw(cx, cy, s, s);
