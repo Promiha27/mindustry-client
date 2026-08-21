@@ -48,6 +48,9 @@ public abstract class MapListDialog extends BaseDialog{
     //персистится между запусками: теги - пользовательская таксономия, которая меняется чаще, чем
     //набор карт, стойкий фильтр скорее прятал бы карты неожиданно, чем помогал
     private Seq<String> selectedMapTags = new Seq<>();
+    /** sonka: пересобрать постоянную строку тегов под поиском (по образцу SchematicsDialog.rebuildTags) */
+    private Runnable rebuildMapTags = () -> {};
+    private static final float mapTagH = 42f;
 
     public MapListDialog(String title, boolean displayType){
         super(title);
@@ -110,6 +113,54 @@ public abstract class MapListDialog extends BaseDialog{
 
         cont.add(search).growX();
         cont.row();
+
+        //sonka: постоянная строка тегов карт под поиском - по образцу SchematicsDialog (там теги
+        //видны всегда, не спрятаны в оверлей фильтров); первая версия прятала их в showMapFilters(),
+        //sonka попросил вынести на видное место, как у схем
+        cont.table(in -> {
+            in.left();
+            in.add("@client.sonka.maptags.filter").padRight(4);
+
+            in.pane(Styles.noBarPane, t -> {
+                rebuildMapTags = () -> {
+                    t.clearChildren();
+                    t.left();
+
+                    ObjectMap<String, Integer> counts = MapTags.allTags();
+                    Seq<String> known = counts.keys().toSeq();
+                    known.sort();
+
+                    t.defaults().pad(2).height(mapTagH);
+                    if(known.isEmpty()){
+                        t.add("@client.sonka.maptags.none").color(Color.lightGray).padRight(6f);
+                    }else{
+                        for(String tag : known){
+                            t.button(tag, Styles.togglet, () -> {
+                                if(selectedMapTags.contains(tag)) selectedMapTags.remove(tag);
+                                else selectedMapTags.add(tag);
+                                rebuildMaps();
+                            }).checked(selectedMapTags.contains(tag)).with(c -> c.getLabel().setWrap(false));
+                        }
+                    }
+                };
+                rebuildMapTags.run();
+            }).fillX().height(mapTagH).scrollY(false);
+
+            in.button(Icon.pencilSmall, Styles.emptyi, mapTagH * 0.4f, () -> {
+                MapTagsDialog dialog = new MapTagsDialog();
+                //переименование/удаление тега могло затронуть выбранные фильтры - вычищаем то,
+                //чего больше не существует, иначе фильтр молча продолжит требовать удалённый тег
+                dialog.onChange = () -> {
+                    ObjectMap<String, Integer> fresh = MapTags.allTags();
+                    selectedMapTags.removeAll(s -> !fresh.containsKey(s));
+                    rebuildMapTags.run();
+                    rebuildMaps();
+                };
+                dialog.show();
+            }).size(mapTagH).tooltip("@client.sonka.maptags.manage");
+        }).height(mapTagH).fillX().padBottom(4);
+        cont.row();
+
         cont.add(pane).padLeft(28f).uniformX().grow().padBottom(64f);
     }
 
@@ -210,7 +261,9 @@ public abstract class MapListDialog extends BaseDialog{
                 //аналогии с кнопкой "тег-редактора" у схем
                 t.add().growX();
                 t.button(Icon.pencilSmall, Styles.emptyi, 12f, () -> new MapTagEditDialog(map){{
-                    onChange = () -> rebuildMaps();
+                    //новый тег на карточке мог быть первым использованием этого имени - строка тегов
+                    //под поиском должна узнать о нём сразу, не дожидаясь переоткрытия диалога
+                    onChange = () -> { rebuildMaps(); rebuildMapTags.run(); };
                 }}.show()).size(20f).tooltip("@client.sonka.maptags.edit");
             }).left().growX().row();
 
@@ -391,46 +444,8 @@ public abstract class MapListDialog extends BaseDialog{
                 }).size(150f, 60f).checked(searchModname);
             });
             menu.row();
-
-            //sonka: фильтр по тегам карт (MapTags) добавлен именно СЮДА, в уже существующий
-            //оверлей фильтров, а не постоянной строкой в основной сетке карт (как персистентная
-            //строка тегов у SchematicsDialog) - основной layout MapListDialog (поиск + сетка карт,
-            //ресайз portrait/landscape) остаётся нетронутым, риск сломать его - нулевой. Этот
-            //диалог и так пересобирается заново при каждом открытии, поэтому статичный список
-            //тегов (без реактивного rebuild после rename/delete "на лету") не проблема
-            menu.add("@client.sonka.maptags.filter").width(120f).left().row();
-            menu.table(Tex.button, t -> {
-                t.left();
-
-                ObjectMap<String, Integer> counts = MapTags.allTags();
-                Seq<String> known = counts.keys().toSeq();
-                known.sort();
-
-                t.defaults().pad(2).height(42f);
-                if(known.isEmpty()){
-                    t.add("@client.sonka.maptags.none").color(Color.lightGray).padRight(6f);
-                }else{
-                    for(String tag : known){
-                        t.button(tag, Styles.togglet, () -> {
-                            if(selectedMapTags.contains(tag)) selectedMapTags.remove(tag);
-                            else selectedMapTags.add(tag);
-                            rebuildMaps();
-                        }).checked(selectedMapTags.contains(tag)).with(c -> c.getLabel().setWrap(false));
-                    }
-                }
-
-                t.button(Icon.pencilSmall, Styles.emptyi, 16f, () -> {
-                    MapTagsDialog dialog = new MapTagsDialog();
-                    //переименование/удаление тега могло затронуть выбранные фильтры - вычищаем то,
-                    //чего больше не существует, иначе фильтр молча продолжит требовать удалённый тег
-                    dialog.onChange = () -> {
-                        ObjectMap<String, Integer> fresh = MapTags.allTags();
-                        selectedMapTags.removeAll(s -> !fresh.containsKey(s));
-                        rebuildMaps();
-                    };
-                    dialog.show();
-                }).size(42f).tooltip("@client.sonka.maptags.manage");
-            }).growX().left().padBottom(10f);
+            //sonka: строка тегов карт переехала на постоянное место под поиском (build()) - здесь
+            //больше не нужна, sonka попросил видимость как у схем, а не спрятанной в этот оверлей
         });
 
         activeDialog.show();
