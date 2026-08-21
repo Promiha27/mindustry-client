@@ -632,24 +632,46 @@ public class SchematicsTableUi{
         final float[] cornerFracs = new float[4];
         int rotation;
 
+        /** Единый размер грид-иконок при 2-4 штуках сразу (старый EUI++ стиль) - 46%, безопасно помещает пару бок о бок с отступом даже если индивидуальные размеры икон настроены больше. */
+        static final float GRID_FRAC = 0.46f;
+
         @Override
         public void draw(){
             float w = getWidth(), h = getHeight();
             Draw.color(color.r, color.g, color.b, color.a * parentAlpha);
 
-            if(main != null){
-                float s = Math.min(w, h) * mainFrac;
-                main.draw(x + (w - s) / 2f, y + (h - s) / 2f, s, s);
-            }
+            //sonka: вернули раскладку "как в Extended UI++" вместо "1 крупная в центре + до 4
+            //мелких по углам" - единый список до 4 иконок (main + corners по порядку), 1 штука
+            //рисуется крупно по центру её СОБСТВЕННЫМ настроенным размером (сохраняет ценность
+            //слайдера для самого частого случая - одна иконка на схему), 2-4 штуки - равномерная
+            //сетка по тем же угловым позициям, единого безопасного размера (индивидуальные
+            //размеры игнорируются в этом режиме - при разных настроенных % иконки бы налезали
+            //друг на друга в сетке). Данные (main/corners/их size) не менялись - это чисто
+            //перерисовка, старые сохранённые размеры остаются на месте на случай отката.
+            Drawable[] slots = {main, corners[0], corners[1], corners[2], corners[3]};
+            float[] fracs = {mainFrac, cornerFracs[0], cornerFracs[1], cornerFracs[2], cornerFracs[3]};
+            int count = 0;
+            for(Drawable d : slots) if(d != null) count++;
 
-            float pad = 1f;
-            for(int i = 0; i < 4; i++){
-                Drawable d = corners[i];
-                if(d == null) continue;
-                float s = Math.min(w, h) * cornerFracs[i];
-                float cx = (i % 2 == 0) ? x + pad : x + w - s - pad;
-                float cy = (i < 2) ? y + h - s - pad : y + pad;
-                d.draw(cx, cy, s, s);
+            if(count == 1){
+                for(int i = 0; i < slots.length; i++){
+                    if(slots[i] == null) continue;
+                    float s = Math.min(w, h) * fracs[i];
+                    slots[i].draw(x + (w - s) / 2f, y + (h - s) / 2f, s, s);
+                    break;
+                }
+            }else if(count > 1){
+                float pad = 1f;
+                float s = Math.min(w, h) * GRID_FRAC;
+                int placed = 0;
+                for(Drawable d : slots){
+                    if(d == null) continue;
+                    if(placed >= 4) break; //старый EUI++ лимит - до 4 иконок в сетке
+                    int i = placed++;
+                    float cx = (i % 2 == 0) ? x + pad : x + w - s - pad;
+                    float cy = (i < 2) ? y + h - s - pad : y + pad;
+                    d.draw(cx, cy, s, s);
+                }
             }
 
             int rot = ((rotation % 4) + 4) % 4;
