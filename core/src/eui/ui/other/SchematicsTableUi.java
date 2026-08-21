@@ -229,7 +229,7 @@ public class SchematicsTableUi{
 
         if(!settingsPolled || settingsPoll.get(0, 30f)){
             settingsPolled = true;
-            schematicButtonSize = Core.settings.getInt("eui-SchematicsTableButtonSize", 30);
+            schematicButtonSize = Core.settings.getInt("eui-SchematicsTableButtonSize", 48);
             categoryButtonSize = schematicButtonSize + 2;
             posOffsetX = clamp(parseIntSetting("eui-SchematicsTableX", 10), 0, 5000);
             posOffsetY = clamp(parseIntSetting("eui-SchematicsTableY", 160), 0, 5000);

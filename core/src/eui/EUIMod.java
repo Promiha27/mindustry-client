@@ -187,7 +187,11 @@ public class EUIMod{
             //размеры теперь у КАЖДОЙ страницы свои (диалог страницы по ПКМ); слайдеры - дефолт для новых страниц
             table.sliderPref("eui-SchematicsTableRows", 4, 2, 20, 1, i -> i + "");
             table.sliderPref("eui-SchematicsTableColumns", 5, 4, 16, 1, i -> i + "");
-            table.sliderPref("eui-SchematicsTableButtonSize", 30, 20, 80, 2, i -> i + "");
+            //sonka 2026-08-21: дефолт был 30 - при 20-80 диапазоне это близко к минимуму, из-за чего
+            //ВСЕ ячейки (не только сетки 2-4 иконок) выходили мелкими независимо от буста доли иконки
+            //внутри клетки (та доля уже упёрлась в потолок 98%/49% - см. CellIconsElement); подняли
+            //дефолт и потолок слайдера, чтобы было куда расти без правки диапазона повторно
+            table.sliderPref("eui-SchematicsTableButtonSize", 48, 20, 100, 2, i -> i + "");
             //sonka: размер иконки-заглушки ("нет вручную выбранной иконки" - у большинства ячеек)
             //раньше был жёстко зашит на 60% и никак не менялся; теперь общий слайдер на всю таблицу
             table.sliderPref("eui-SchematicsTableDefaultIconSize", eui.ui.other.SchemTableData.MAIN_ICON_DEFAULT_SIZE, 20, 100, 5, i -> i + "%");

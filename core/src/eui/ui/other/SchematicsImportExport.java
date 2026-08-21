@@ -58,7 +58,7 @@ public class SchematicsImportExport{
         Jval settings = Jval.newObject();
         settings.put("rows", Core.settings.getInt("eui-SchematicsTableRows", 4));
         settings.put("columns", Core.settings.getInt("eui-SchematicsTableColumns", 5));
-        settings.put("buttonSize", Core.settings.getInt("eui-SchematicsTableButtonSize", 30));
+        settings.put("buttonSize", Core.settings.getInt("eui-SchematicsTableButtonSize", 48));
         settings.put("positionX", SchematicsTableUi.parseIntSetting("eui-SchematicsTableX", 10));
         settings.put("positionY", SchematicsTableUi.parseIntSetting("eui-SchematicsTableY", 160));
         settings.put("alpha", Core.settings.getInt("eui-SchematicsTableAlpha", 100));
@@ -157,7 +157,7 @@ public class SchematicsImportExport{
 
         Core.settings.putInt("eui-SchematicsTableRows", intOr(settings, "rows", 4));
         Core.settings.putInt("eui-SchematicsTableColumns", intOr(settings, "columns", 5));
-        Core.settings.putInt("eui-SchematicsTableButtonSize", intOr(settings, "buttonSize", 30));
+        Core.settings.putInt("eui-SchematicsTableButtonSize", intOr(settings, "buttonSize", 48));
         Core.settings.put("eui-SchematicsTableX", String.valueOf(intOr(settings, "positionX", 10)));
         Core.settings.put("eui-SchematicsTableY", String.valueOf(intOr(settings, "positionY", 160)));
         Core.settings.putInt("eui-SchematicsTableAlpha", intOr(settings, "alpha", 100));
