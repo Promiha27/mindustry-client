@@ -719,7 +719,14 @@ public class SchematicsTableUi{
                 Drawable d = Icons.getIconDrawable(c.main.name);
                 if(d != null){
                     el.main = d;
-                    el.mainFrac = iconFrac(c.main.size);
+                    //sonka 2026-08-21: НЕ c.main.size - слайдер размера отдельной иконки убрали ещё в
+                    //c55ad8d, но поле в данных осталось (обратная совместимость), и у ячеек, к которым
+                    //с тех пор не притрагивались через новый диалог (или мигрировавших из совсем старых
+                    //сохранений), там могли лежать древние мелкие значения - тогда даже ОДИНОКАЯ иконка
+                    //рисовалась мелкой, хотя её место в раскладке (count==1) рассчитано на почти всю
+                    //клетку. Раскладка и так уже не читает per-icon размер в режиме сетки (GRID_FRAC) -
+                    //здесь та же логика: размер одиночной иконки решает счётчик, а не хранилище.
+                    el.mainFrac = iconFrac(SchemTableData.MAIN_ICON_DEFAULT_SIZE);
                     el.mainBoost = !Icons.isGlyphIcon(c.main.name);
                     any = true;
                 }
@@ -729,7 +736,7 @@ public class SchematicsTableUi{
                 Drawable d = Icons.getIconDrawable(c.corners[i].name);
                 if(d != null){
                     el.corners[i] = d;
-                    el.cornerFracs[i] = iconFrac(c.corners[i].size);
+                    el.cornerFracs[i] = iconFrac(SchemTableData.CORNER_ICON_DEFAULT_SIZE);
                     el.cornerBoost[i] = !Icons.isGlyphIcon(c.corners[i].name);
                     any = true;
                 }
