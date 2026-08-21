@@ -524,8 +524,55 @@ object ModsDialogHelper{
             ){
                 downloading = true
 
+                //sonka: скачивание в файл + импорт - вынесено в общую лямбду, т.к. теперь два пути
+                //к ней ведут (Java-релиз и script-архив ветки, см. ниже)
+                fun finishDownload(url: String, suffix: String){
+                    val fi = Vars.modDirectory.child("tmp").child(modInfo.internalName + suffix)
+                    Downloader.downloadToFile(
+                        url, fi, true,
+                        { p -> progress = p },
+                        { e ->
+                            if(e is InterruptedException) return@downloadToFile
+                            Log.err(e)
+                            Core.app.post{
+                                UIUtils.showException(e, Core.bundle["dialog.mods.downloadFailed"])
+                            }
+                        }
+                    ){
+                        Core.app.post{
+                            try{
+                                if(isUpdate && loaded != null){
+                                    Vars.mods.removeMod(loaded)
+                                }
+                                Vars.mods.importMod(fi)
+                                fi.delete()
+                                complete = true
+                                callback.run()
+
+                                it.hide()
+                                UIUtils.showPane(
+                                    Core.bundle[if(isUpdate) "dialog.mods.updateMod" else "dialog.mods.downloadMod"],
+                                    ButtonEntry(Core.bundle["confirm"], Icon.ok){ d ->
+                                        callback.run()
+                                        d.hide()
+                                    }
+                                ){ t -> buildContent(t) }
+                            }catch(e: Exception){
+                                Log.err(e)
+                                UIUtils.showException(e, Core.bundle["dialog.mods.downloadFailed"])
+                            }
+                        }
+                    }
+                }
+
                 task = exec.submit{
-                    Http.get(Vars.ghApi + "/repos/" + modInfo.repo + "/releases/latest")
+                    //sonka: узнаём язык репозитория ПЕРЕД выбором стратегии скачивания - ровно как
+                    //ваниль-браузер (ModsDialog.githubImport/githubImportJavaMod/githubImportBranch).
+                    //Порт Helium раньше ВСЕГДА бил в /releases/latest - для script-модов (JS, не
+                    //JVM-язык) это 404, если автор не публиковал GitHub Release (частый случай, см.
+                    //aazamitsu/anime-units-display - ни одного релиза и ни одного тега), и установка
+                    //ЛЮБОГО такого мода падала с "Failed to check for updates"-подобной ошибкой.
+                    Http.get(Vars.ghApi + "/repos/" + modInfo.repo)
                         .error{ e ->
                             downloading = false
                             if(e is InterruptedException) return@error
@@ -534,65 +581,88 @@ object ModsDialogHelper{
                                 UIUtils.showException(e, Core.bundle["dialog.mods.checkFailed"])
                             }
                         }
-                        .block{ result ->
-                            val json = Jval.read(result.resultAsString)
-                            val assets = json.get("assets").asArray()
+                        .block{ repoRes ->
+                            val repoJson = Jval.read(repoRes.resultAsString)
+                            val language = repoJson.getString("language", "<none>")
+                            val defaultBranch = repoJson.getString("default_branch")
+                            val isJvm = language == "Java" || language == "Kotlin" || language == "Groovy" || language == "Scala"
 
-                            val dexedAsset = assets.find{ j ->
-                                j.getString("name").startsWith("dexed")
-                                && j.getString("name").endsWith(".jar")
-                            }
-                            val jarAssets = dexedAsset ?: assets.find{ j ->
-                                j.getString("name").endsWith(".jar")
-                            }
-                            val asset = jarAssets ?: assets.find{ j ->
-                                j.getString("name").endsWith(".zip")
+                            if(!isJvm){
+                                //ваниль-фоллбек: архив ветки по умолчанию, без releases/latest
+                                Http.get(Vars.ghApi + "/repos/" + modInfo.repo + "/zipball/" + defaultBranch)
+                                    .error{ e ->
+                                        downloading = false
+                                        if(e is InterruptedException) return@error
+                                        Log.err(e)
+                                        Core.app.post{
+                                            UIUtils.showException(e, Core.bundle["dialog.mods.checkFailed"])
+                                        }
+                                    }
+                                    .block{ loc ->
+                                        val redirect = loc.getHeader("Location")
+                                        if(redirect != null){
+                                            //Downloader сам качает по готовому URL - переиспользуем его (ретраи+прогресс)
+                                            finishDownload(redirect, ".zip")
+                                        }else{
+                                            //редиректа не было - тело уже финальное, сохраняем как есть
+                                            val fi = Vars.modDirectory.child("tmp").child(modInfo.internalName + ".zip")
+                                            fi.write(false).use{ out -> loc.resultAsStream.copyTo(out) }
+                                            Core.app.post{
+                                                try{
+                                                    if(isUpdate && loaded != null) Vars.mods.removeMod(loaded)
+                                                    Vars.mods.importMod(fi)
+                                                    fi.delete()
+                                                    complete = true
+                                                    callback.run()
+                                                    it.hide()
+                                                    UIUtils.showPane(
+                                                        Core.bundle[if(isUpdate) "dialog.mods.updateMod" else "dialog.mods.downloadMod"],
+                                                        ButtonEntry(Core.bundle["confirm"], Icon.ok){ d -> callback.run(); d.hide() }
+                                                    ){ t -> buildContent(t) }
+                                                }catch(e: Exception){
+                                                    Log.err(e)
+                                                    UIUtils.showException(e, Core.bundle["dialog.mods.downloadFailed"])
+                                                }
+                                            }
+                                        }
+                                    }
+                                return@block
                             }
 
-                            val suffix = if(dexedAsset == null && jarAssets == null) ".zip" else ".jar"
-
-                            val url = if(asset != null){
-                                asset.getString("browser_download_url")
-                            }else{
-                                json.getString("zipball_url")
-                            }
-
-                            val fi = Vars.modDirectory.child("tmp").child(modInfo.internalName + suffix)
-                            Downloader.downloadToFile(
-                                url, fi, true,
-                                { p -> progress = p },
-                                { e ->
-                                    if(e is InterruptedException) return@downloadToFile
+                            Http.get(Vars.ghApi + "/repos/" + modInfo.repo + "/releases/latest")
+                                .error{ e ->
+                                    downloading = false
+                                    if(e is InterruptedException) return@error
                                     Log.err(e)
                                     Core.app.post{
-                                        UIUtils.showException(e, Core.bundle["dialog.mods.downloadFailed"])
+                                        UIUtils.showException(e, Core.bundle["dialog.mods.checkFailed"])
                                     }
                                 }
-                            ){
-                                Core.app.post{
-                                    try{
-                                        if(isUpdate && loaded != null){
-                                            Vars.mods.removeMod(loaded)
-                                        }
-                                        Vars.mods.importMod(fi)
-                                        fi.delete()
-                                        complete = true
-                                        callback.run()
+                                .block{ result ->
+                                    val json = Jval.read(result.resultAsString)
+                                    val assets = json.get("assets").asArray()
 
-                                        it.hide()
-                                        UIUtils.showPane(
-                                            Core.bundle[if(isUpdate) "dialog.mods.updateMod" else "dialog.mods.downloadMod"],
-                                            ButtonEntry(Core.bundle["confirm"], Icon.ok){ d ->
-                                                callback.run()
-                                                d.hide()
-                                            }
-                                        ){ t -> buildContent(t) }
-                                    }catch(e: Exception){
-                                        Log.err(e)
-                                        UIUtils.showException(e, Core.bundle["dialog.mods.downloadFailed"])
+                                    val dexedAsset = assets.find{ j ->
+                                        j.getString("name").startsWith("dexed")
+                                        && j.getString("name").endsWith(".jar")
                                     }
+                                    val jarAssets = dexedAsset ?: assets.find{ j ->
+                                        j.getString("name").endsWith(".jar")
+                                    }
+                                    val asset = jarAssets ?: assets.find{ j ->
+                                        j.getString("name").endsWith(".zip")
+                                    }
+
+                                    val suffix = if(dexedAsset == null && jarAssets == null) ".zip" else ".jar"
+
+                                    val url = if(asset != null){
+                                        asset.getString("browser_download_url")
+                                    }else{
+                                        json.getString("zipball_url")
+                                    }
+
+                                    finishDownload(url, suffix)
                                 }
-                            }
                         }
                 }
             }
