@@ -651,6 +651,7 @@ public class SchematicsTableUi{
      * повёрнутой на N x 90 (тот же смысл, что у rotatePlans).
      */
     static class CellIconsElement extends Element{
+        static long lastDebugLogMs = 0;
         Drawable main;
         float mainFrac = 0.6f;
         /** true - иконка контентная (блок/юнит/предмет/...), не "значок" - см. {@link Icons#isGlyphIcon}. */
@@ -701,6 +702,16 @@ public class SchematicsTableUi{
                     if(slots[i] == null) continue;
                     float frac = boosts[i] ? Math.min(fracs[i] * CONTENT_ICON_BOOST, MAX_SINGLE_FRAC) : fracs[i];
                     float s = Math.min(w, h) * frac;
+                    //sonka 2026-08-21: временный диагностический лог - на скриншотах доля иконки
+                    //визуально мельче, чем должна быть по формуле (85-98%), а причина по коду не
+                    //находится; печатаем реальные числа раз в 3с, чтобы увидеть где расходится
+                    //факт с ожиданием (el.getWidth()/Height() против заявленного размера кнопки, и
+                    //сам frac/s) - убрать после диагностики.
+                    if(Time.timeSinceMillis(lastDebugLogMs) > 3000){
+                        lastDebugLogMs = Time.millis();
+                        Log.info("[eui] cell-icon debug: elW=@ elH=@ frac=@ boost=@ s=@ (s/minWH=@%)",
+                            w, h, frac, boosts[i], s, Math.round(100f * s / Math.min(w, h)));
+                    }
                     slots[i].draw(x + (w - s) / 2f, y + (h - s) / 2f, s, s);
                     break;
                 }
