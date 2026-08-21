@@ -110,6 +110,9 @@ public final class ChainWarn{
             t.pref(new qol.core.ButtonSetting("sonka-linerotate-configure", () -> new LineRotate.PickerDialog().show()));
             //автосейв на старте волны для кнопки «Повторить волну» (CampaignRetry)
             t.checkPref(CampaignRetry.autosaveKey, true);
+            //метка над юнитом с ником последнего управлявшего (LastController): тогл + время показа
+            t.checkPref(LastController.settingKey, true);
+            t.sliderPref(LastController.timeoutKey, 0, 0, 600, 30, v -> v == 0 ? Core.bundle.get("client.sonka.lastcontroller.forever") : v + " s");
             //пер-панельный масштаб нативных HUD-панелей (PanelScale/ChatFragment.draw). Секция
             //Sonka Extras, а не вкладка Graphics: все sonka-фичи движка живут одной секцией, а поиск
             //настроек всё равно находит их с любой вкладки. Всё применяется вживую, без рестарта
