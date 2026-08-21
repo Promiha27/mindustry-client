@@ -229,6 +229,7 @@ public class SchematicsTableUi{
 
         if(!settingsPolled || settingsPoll.get(0, 30f)){
             settingsPolled = true;
+            migrateButtonSizeDefault();
             schematicButtonSize = Core.settings.getInt("eui-SchematicsTableButtonSize", 48);
             categoryButtonSize = schematicButtonSize + 2;
             posOffsetX = clamp(parseIntSetting("eui-SchematicsTableX", 10), 0, 5000);
@@ -253,6 +254,29 @@ public class SchematicsTableUi{
         }else{
             hovered = null;
             lastHoveredPreview = null;
+        }
+    }
+
+    private boolean buttonSizeMigrationChecked = false;
+
+    /**
+     * sonka 2026-08-21: одноразовый апгрейд дефолта 30→48 (см. коммит про schematicButtonSize) для
+     * УЖЕ существующих сохранений. Проблема: {@code SliderSetting.add()} (mindustry.ui.dialogs.
+     * SettingsMenuDialog) дергает {@code slider.change()} сразу при ПОСТРОЕНИИ виджета настроек, а
+     * колбэк слайдера безусловно пишет {@code settings.put(name, value)} - то есть просто открыть
+     * вкладку настроек мода (ничего не двигая) уже молча сохраняет старый дефолт 30 на диск. После
+     * этого явно сохранённое значение навсегда перекрывает новый дефолт в {@code getInt(key, 48)} -
+     * поэтому чистая правка дефолта в коде не помогает тем, кто хоть раз открывал настройки.
+     * Флаг-метка гарантирует, что бамп применится РОВНО один раз - если пользователь потом сам
+     * уменьшит слайдер, повторно мы это не перезапишем.
+     */
+    void migrateButtonSizeDefault(){
+        if(buttonSizeMigrationChecked) return;
+        buttonSizeMigrationChecked = true;
+        if(Core.settings.getBool("eui-SchemTableButtonSize48Migrated", false)) return;
+        Core.settings.put("eui-SchemTableButtonSize48Migrated", true);
+        if(Core.settings.getInt("eui-SchematicsTableButtonSize", 48) < 48){
+            Core.settings.putInt("eui-SchematicsTableButtonSize", 48);
         }
     }
 
