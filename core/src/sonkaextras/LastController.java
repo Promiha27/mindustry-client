@@ -28,7 +28,9 @@ import static mindustry.Vars.*;
  * юнита - видно и после того, как игрок его отпустил. Пока юнит под прямым управлением, ваниль сама
  * рисует живой ник ({@code PlayerComp.drawName}) - наша метка показывается только после отпускания.
  * <p>
- * Два источника данных:
+ * Главный сценарий (уточнение sonka): RTS-ПРИКАЗЫ ПАЧКОЙ - remote-тела {@code InputHandler.commandUnits}
+ * и {@code setUnitCommand} зовут {@link #record} на каждого затронутого юнита (на хосте - для всех,
+ * на чужом сервере - для всех других игроков, см. ниже). Плюс прямое вселение:
  * <ul>
  * <li>{@link UnitControlEvent} - стреляет {@code InputHandler.unitControl} (remote, called=server,
  *     forward=true): на хосте/в одиночке срабатывает для всех, на чужом сервере приходит для ВСЕХ
@@ -50,9 +52,12 @@ import static mindustry.Vars.*;
 public final class LastController{
     public static final String settingKey = "sonka-lastcontroller";
     public static final String timeoutKey = "sonka-lastcontroller-timeout";
+    /** Показывать ли метки СВОИХ приказов (на своей армии это шум; на чужих серверах свои и так не приходят). */
+    public static final String selfKey = "sonka-lastcontroller-self";
 
     static class Entry{
         Unit unit;
+        boolean self; //метка локального игрока (скрывается тоглом selfKey)
         String label;
         final Color color = new Color();
         long since;
@@ -93,44 +98,39 @@ public final class LastController{
         Events.run(Trigger.drawOver, LastController::draw);
     }
 
-    static void record(Player p, Unit unit){
-        if(p.name == null) return;
+    /** Кэш готовых строк метки по нику: RTS-приказ на 200 юнитов не должен плодить 200 строк. */
+    static final arc.struct.ObjectMap<String, String> labelCache = new arc.struct.ObjectMap<>();
+
+    /**
+     * Запомнить, что игрок {@code p} управлял юнитом. Зовётся из {@link UnitControlEvent}, локального
+     * детекта своего юнита и из remote-тел {@code InputHandler.commandUnits}/{@code setUnitCommand}
+     * (RTS-приказы пачкой - главный сценарий sonka).
+     */
+    public static void record(Player p, Unit unit){
+        if(p == null || unit == null || p.name == null) return;
         Entry entry = byUnit.get(unit.id);
         if(entry == null){
             entry = new Entry();
             byUnit.put(unit.id, entry);
         }
         entry.unit = unit;
+        entry.self = p == player;
         //"↺ Ник" - стрелка-возврат как знак "здесь побывал"
-        entry.label = "↺ " + p.name;
+        String label = labelCache.get(p.name);
+        if(label == null){
+            label = "↺ " + p.name;
+            labelCache.put(p.name, label);
+        }
+        entry.label = label;
         entry.color.set(p.color);
         entry.since = Time.millis();
-        //ВРЕМЕННАЯ диагностика - убрать после подтверждения
-        arc.util.Log.info("[lastctl] record unit=@ (@) by @, entries=@", unit.id, unit.type, p.plainName(), byUnit.size);
     }
 
-    static long lastDiag;
-
     static void draw(){
-        //ВРЕМЕННАЯ диагностика раз в 2с - убрать после подтверждения
-        boolean diag = Time.millis() - lastDiag > 2000;
-        if(diag){
-            lastDiag = Time.millis();
-            if(!byUnit.isEmpty()){
-                StringBuilder sb = new StringBuilder();
-                for(IntMap.Entry<Entry> kv : byUnit){
-                    Unit u = kv.value.unit;
-                    sb.append(kv.key).append(':')
-                      .append(u == null ? "null" : (!u.isValid() ? "invalid" : u.isPlayer() ? "player" : u.inFogTo(player.team()) ? "fog" : "DRAW"))
-                      .append(' ');
-                }
-                arc.util.Log.info("[lastctl] draw tick: enabled=@ menu=@ entries=@ -> @",
-                    Core.settings.getBool(settingKey, true), state.isMenu(), byUnit.size, sb);
-            }
-        }
         if(byUnit.isEmpty() || state.isMenu() || !Core.settings.getBool(settingKey, true)) return;
 
         long timeoutMs = Core.settings.getInt(timeoutKey, 0) * 1000L;
+        boolean showSelf = Core.settings.getBool(selfKey, true);
         long now = Time.millis();
         Core.camera.bounds(Tmp.r1);
 
@@ -157,6 +157,7 @@ public final class LastController{
             }
             //пока юнитом управляет игрок - ваниль рисует живой ник, наша метка не нужна
             if(unit.isPlayer()) continue;
+            if(entry.self && !showSelf) continue;
 
             float clip = unit.type.hitSize * 2f;
             if(!Tmp.r1.overlaps(unit.x - clip / 2f, unit.y - clip / 2f, clip, clip)) continue;

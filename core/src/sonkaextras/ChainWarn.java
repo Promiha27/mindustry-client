@@ -112,6 +112,7 @@ public final class ChainWarn{
             t.checkPref(CampaignRetry.autosaveKey, true);
             //метка над юнитом с ником последнего управлявшего (LastController): тогл + время показа
             t.checkPref(LastController.settingKey, true);
+            t.checkPref(LastController.selfKey, true);
             t.sliderPref(LastController.timeoutKey, 0, 0, 600, 30, v -> v == 0 ? Core.bundle.get("client.sonka.lastcontroller.forever") : v + " s");
             //пер-панельный масштаб нативных HUD-панелей (PanelScale/ChatFragment.draw). Секция
             //Sonka Extras, а не вкладка Graphics: все sonka-фичи движка живут одной секцией, а поиск

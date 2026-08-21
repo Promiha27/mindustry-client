@@ -369,6 +369,8 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         for(int id : unitIds){
             Unit unit = Groups.unit.getByID(id);
             if(unit != null && unit.team == player.team()){
+                //sonka: метка «кто двигал» над юнитом (sonkaextras.LastController) - RTS-приказ пачкой
+                sonkaextras.LastController.record(player, unit);
 
                 if(unit.controller() instanceof CommandAI ai){
                     //implicitly order it to move
@@ -460,6 +462,8 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         for(int id : unitIds){
             Unit unit = Groups.unit.getByID(id);
             if(unit != null && unit.team == player.team() && unit.controller() instanceof CommandAI ai && unit.type.allowCommand(unit, command)){
+                //sonka: метка «кто двигал» (sonkaextras.LastController) - смена команды тоже приказ
+                sonkaextras.LastController.record(player, unit);
                 boolean reset = command.resetTarget || ai.currentCommand().resetTarget;
                 ai.command(command);
                 if(reset){
