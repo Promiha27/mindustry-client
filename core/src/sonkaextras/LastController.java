@@ -105,9 +105,29 @@ public final class LastController{
         entry.label = "↺ " + p.name;
         entry.color.set(p.color);
         entry.since = Time.millis();
+        //ВРЕМЕННАЯ диагностика - убрать после подтверждения
+        arc.util.Log.info("[lastctl] record unit=@ (@) by @, entries=@", unit.id, unit.type, p.plainName(), byUnit.size);
     }
 
+    static long lastDiag;
+
     static void draw(){
+        //ВРЕМЕННАЯ диагностика раз в 2с - убрать после подтверждения
+        boolean diag = Time.millis() - lastDiag > 2000;
+        if(diag){
+            lastDiag = Time.millis();
+            if(!byUnit.isEmpty()){
+                StringBuilder sb = new StringBuilder();
+                for(IntMap.Entry<Entry> kv : byUnit){
+                    Unit u = kv.value.unit;
+                    sb.append(kv.key).append(':')
+                      .append(u == null ? "null" : (!u.isValid() ? "invalid" : u.isPlayer() ? "player" : u.inFogTo(player.team()) ? "fog" : "DRAW"))
+                      .append(' ');
+                }
+                arc.util.Log.info("[lastctl] draw tick: enabled=@ menu=@ entries=@ -> @",
+                    Core.settings.getBool(settingKey, true), state.isMenu(), byUnit.size, sb);
+            }
+        }
         if(byUnit.isEmpty() || state.isMenu() || !Core.settings.getBool(settingKey, true)) return;
 
         long timeoutMs = Core.settings.getInt(timeoutKey, 0) * 1000L;
