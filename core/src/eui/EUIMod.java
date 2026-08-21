@@ -188,6 +188,9 @@ public class EUIMod{
             table.sliderPref("eui-SchematicsTableRows", 4, 2, 20, 1, i -> i + "");
             table.sliderPref("eui-SchematicsTableColumns", 5, 4, 16, 1, i -> i + "");
             table.sliderPref("eui-SchematicsTableButtonSize", 30, 20, 80, 2, i -> i + "");
+            //sonka: размер иконки-заглушки ("нет вручную выбранной иконки" - у большинства ячеек)
+            //раньше был жёстко зашит на 60% и никак не менялся; теперь общий слайдер на всю таблицу
+            table.sliderPref("eui-SchematicsTableDefaultIconSize", eui.ui.other.SchemTableData.MAIN_ICON_DEFAULT_SIZE, 20, 100, 5, i -> i + "%");
             table.sliderPref("eui-SchematicsTableX", 10, 0, 2000, 10, i -> i + "px");
             table.sliderPref("eui-SchematicsTableY", 160, 0, 2000, 10, i -> i + "px");
             table.sliderPref("eui-SchematicsTableAlpha", 100, 0, 100, 5, i -> i + "%");

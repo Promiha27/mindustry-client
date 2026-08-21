@@ -35,8 +35,10 @@ import arc.util.serialization.Jval;
  */
 public class SchemTableData{
     public static final String SETTINGS_KEY = "eui-schemtable2";
-    public static final int MAIN_ICON_DEFAULT_SIZE = 60;
-    public static final int CORNER_ICON_DEFAULT_SIZE = 42;
+    //sonka: подняты с 60/42 - слишком мелко смотрелось по умолчанию (пределы слайдеров - 100/70,
+    //поднять дефолт можно было без какой-либо доп. правки диапазона)
+    public static final int MAIN_ICON_DEFAULT_SIZE = 85;
+    public static final int CORNER_ICON_DEFAULT_SIZE = 55;
     public static final int MAX_ROWS = 30, MAX_COLS = 30;
 
     public final Seq<Page> pages = new Seq<>();

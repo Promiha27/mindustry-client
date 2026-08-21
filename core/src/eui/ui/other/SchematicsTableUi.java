@@ -688,8 +688,12 @@ public class SchematicsTableUi{
             el.rotation = c.rotation;
         }
         if(!any && el.main == null){
+            //sonka: раньше был жёстко зашит 0.6f - у большинства ячеек нет вручную выбранной
+            //иконки (просто привязана схема), так что ИМЕННО этот путь рисует большинство ячеек
+            //таблицы, и раньше ни на что не влиять размером было нельзя - теперь читает общую
+            //настройку вместо константы (слайдер добавлен в addSettings)
             el.main = defaultSchematicImage();
-            el.mainFrac = 0.6f;
+            el.mainFrac = iconFrac(Core.settings.getInt("eui-SchematicsTableDefaultIconSize", SchemTableData.MAIN_ICON_DEFAULT_SIZE));
         }
         btn.add(el).grow();
     }
