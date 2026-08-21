@@ -1232,6 +1232,10 @@ public class SettingsMenuDialog extends BaseDialog{
             //апдейтер молчит, пока не задан НАШ репозиторий релизов (через -PupdateUrl при сборке
             //или руками в этом поле настроек)
             settings.defaults("updateurl", "");
+            //у старых пользователей (в т.ч. sonka) URL Foo уже СОХРАНЁН в settings.bin - дефолт его не
+            //перекрывает, апдейтер каждый запуск стучался в их репозиторий (второй предохранитель
+            //отбивал, но зачем стучаться). Разовая чистка именно этого значения
+            if("mindustry-antigrief/mindustry-client-v8-builds".equals(settings.getString("updateurl"))) settings.put("updateurl", "");
             if (!Version.updateUrl.isEmpty()) settings.put("updateurl", Version.updateUrl); // overwrites updateurl on every boot, shouldn't be a real issue
             pref(new Setting("updateurl") {
                 boolean urlChanged;

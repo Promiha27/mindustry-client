@@ -11,11 +11,11 @@ import arc.scene.ui.layout.Scl;
 import arc.struct.IntMap;
 import arc.struct.IntSeq;
 import arc.util.Align;
-import arc.util.pooling.Pools;
 import arc.util.Time;
 import arc.util.Tmp;
+import arc.util.pooling.Pools;
 import mindustry.game.EventType.*;
-import mindustry.gen.Groups;
+import mindustry.gen.Player;
 import mindustry.gen.Unit;
 import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
@@ -28,21 +28,31 @@ import static mindustry.Vars.*;
  * юнита - видно и после того, как игрок его отпустил. Пока юнит под прямым управлением, ваниль сама
  * рисует живой ник ({@code PlayerComp.drawName}) - наша метка показывается только после отпускания.
  * <p>
- * Источник данных - {@link UnitControlEvent}: его стреляет {@code InputHandler.unitControl} (remote,
- * forward=true), т.е. событие приходит и на клиентах в мультиплеере для ЛЮБОГО игрока, не только
- * локального. Респавн из ядра через это событие не идёт - и правильно: свой свежий юнит никто не
- * "угонял". Ник и цвет копируются в момент захвата (игрок может выйти с сервера - метка останется).
+ * Два источника данных:
+ * <ul>
+ * <li>{@link UnitControlEvent} - стреляет {@code InputHandler.unitControl} (remote, called=server,
+ *     forward=true): на хосте/в одиночке срабатывает для всех, на чужом сервере приходит для ВСЕХ
+ *     ДРУГИХ игроков (сервер не пересылает пакет отправителю - свои захваты через событие на клиенте
+ *     не видны).</li>
+ * <li>поэтому для ЛОКАЛЬНОГО игрока - прямое отслеживание смены {@code player.unit()} раз в тик:
+ *     новый юнит, не заспавненный ядром ({@code spawnedByCore}), = мы его взяли под контроль.</li>
+ * </ul>
+ * Ник и цвет копируются в момент захвата (игрок может выйти с сервера - метка останется).
+ * <p>
+ * ВАЖНО (урок первой версии): юнит хранится ПРЯМОЙ ССЫЛКОЙ, а не ищется через
+ * {@code Groups.unit.getByID} - на этом форке реестр Groups бывает неполным (фог/кэширование, см.
+ * аналогичные заметки в qol), и поиск по id возвращал null, из-за чего метка гасла мгновенно.
  * <p>
  * Настройки: {@link #settingKey} (вкл/выкл), {@link #timeoutKey} - через сколько секунд метка гаснет
  * (0 = пока юнит жив). Рисуется в стиле ванильного ника (Fonts.outline, scale 0.25, Layer.playerName),
- * приглушённо, с камера-куллингом и без аллокаций в кадре (строка метки собрана при захвате,
- * GlyphLayout из пула, как у ванили).
+ * приглушённо, с камера-куллингом и без аллокаций в кадре.
  */
 public final class LastController{
     public static final String settingKey = "sonka-lastcontroller";
     public static final String timeoutKey = "sonka-lastcontroller-timeout";
 
     static class Entry{
+        Unit unit;
         String label;
         final Color color = new Color();
         long since;
@@ -50,6 +60,8 @@ public final class LastController{
 
     static final IntMap<Entry> byUnit = new IntMap<>();
     static final IntSeq toRemove = new IntSeq();
+    /** Последний известный юнит локального игрока - для детекта своих захватов на чужих серверах. */
+    static Unit lastLocalUnit;
 
     private LastController(){
     }
@@ -57,24 +69,42 @@ public final class LastController{
     /** Вызывается из Main.kt до ClientLoadEvent - только вешает слушатели. */
     public static void init(){
         Events.on(UnitControlEvent.class, e -> {
-            if(e.player == null || e.unit == null || e.player.name == null) return;
-            Entry entry = byUnit.get(e.unit.id);
-            if(entry == null){
-                entry = new Entry();
-                byUnit.put(e.unit.id, entry);
+            if(e.player != null && e.unit != null) record(e.player, e.unit);
+        });
+
+        Events.run(Trigger.update, () -> {
+            if(player == null || state.isMenu()) return;
+            Unit u = player.unit();
+            if(u != lastLocalUnit){
+                lastLocalUnit = u;
+                //свежий юнит из ядра - респавн, а не захват; остальное = взяли под контроль
+                if(u != null && !u.spawnedByCore) record(player, u);
             }
-            //"↺ Ник" - стрелка-возврат как знак "здесь побывал"
-            entry.label = "↺ " + e.player.name;
-            entry.color.set(e.player.color);
-            entry.since = Time.millis();
         });
 
         Events.on(UnitDestroyEvent.class, e -> {
             if(e.unit != null) byUnit.remove(e.unit.id);
         });
-        Events.on(WorldLoadEvent.class, e -> byUnit.clear());
+        Events.on(WorldLoadEvent.class, e -> {
+            byUnit.clear();
+            lastLocalUnit = null;
+        });
 
         Events.run(Trigger.drawOver, LastController::draw);
+    }
+
+    static void record(Player p, Unit unit){
+        if(p.name == null) return;
+        Entry entry = byUnit.get(unit.id);
+        if(entry == null){
+            entry = new Entry();
+            byUnit.put(unit.id, entry);
+        }
+        entry.unit = unit;
+        //"↺ Ник" - стрелка-возврат как знак "здесь побывал"
+        entry.label = "↺ " + p.name;
+        entry.color.set(p.color);
+        entry.since = Time.millis();
     }
 
     static void draw(){
@@ -96,7 +126,7 @@ public final class LastController{
         toRemove.clear();
         for(IntMap.Entry<Entry> kv : byUnit){
             Entry entry = kv.value;
-            Unit unit = Groups.unit.getByID(kv.key);
+            Unit unit = entry.unit;
             if(unit == null || !unit.isValid()){
                 toRemove.add(kv.key);
                 continue;
