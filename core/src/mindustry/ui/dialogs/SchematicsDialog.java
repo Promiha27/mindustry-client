@@ -870,7 +870,9 @@ public class SchematicsDialog extends BaseDialog{
                     any = true;
 
                     var card = p.button(b -> {
-                        b.margin(0f);
+                        //margin>0 - иначе превью вплотную к краю кнопки полностью закрывает фон
+                        //(Tex.pane), и подсветка тегнутой карточки просто не видна
+                        b.margin(5f);
                         b.stack(new SchematicImage(s).setScaling(Scaling.fit), new Table(n -> {
                             n.top();
                             n.table(Styles.black3, c -> {
