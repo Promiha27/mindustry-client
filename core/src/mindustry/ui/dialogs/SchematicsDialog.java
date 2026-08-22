@@ -52,6 +52,7 @@ public class SchematicsDialog extends BaseDialog{
     //попадания курсора в коробку (тот же InputListener + Core.scene.hit паттерн, что и drag-swap
     //ячеек в SchematicsTableUi).
     private String dragTagSource, dragTagHover;
+    private boolean dragTagAfter;
     private final ObjectMap<Table, String> tagBoxMap = new ObjectMap<>();
     private final ItemSeq reusableItemSeq = new ItemSeq();
     private ScrollPane pane;
@@ -728,10 +729,13 @@ public class SchematicsDialog extends BaseDialog{
 
     /**
      * Ручка-хендл драга коробки тега: {@code touchDown} ловится на самой ручке ({@code grip} -
-     * узкая, чтобы не конфликтовать с кликами по остальным кнопкам коробки), а хит-тест цели во
-     * время {@code touchDragged}/{@code touchUp} - по площади ВСЕЙ коробки через {@link #hitTag}
-     * (иначе поймать курсором узкую ручку соседней коробки было бы неудобно). Тот же
-     * InputListener + DRAG_SLOP паттерн, что у drag-swap ячеек в SchematicsTableUi.
+     * узкая, чтобы не конфликтовать с кликами по остальным кнопкам коробки), а цель во время
+     * {@code touchDragged}/{@code touchUp} - БЛИЖАЙШАЯ к курсору коробка ({@link #nearestTag}),
+     * а не та, что ровно под курсором - между коробками есть зазоры (pad), и точный хит-тест там
+     * возвращал null, из-за чего drop в зазоре (частый случай - коробки узкие) улетал не туда,
+     * куда целились ("криво"). Левая половина ближайшей коробки - встать перед ней, правая -
+     * после (см. {@link #dragTagAfter}). Тот же InputListener + DRAG_SLOP паттерн, что у
+     * drag-swap ячеек в SchematicsTableUi.
      */
     void attachTagDrag(Element grip, String tag, Runnable onReorder){
         boolean[] dragging = {false};
@@ -757,8 +761,13 @@ public class SchematicsDialog extends BaseDialog{
                     }
                     if(!dragging[0]) return;
 
-                    String hover = hitTag(event.stageX, event.stageY);
+                    String hover = nearestTag(event.stageX, event.stageY);
                     dragTagHover = tag.equals(hover) ? null : hover;
+                    if(dragTagHover != null){
+                        Table box = tagBoxFor(dragTagHover);
+                        float centerX = box.localToStageCoordinates(Tmp.v1.set(box.getWidth() / 2f, 0f)).x;
+                        dragTagAfter = event.stageX > centerX;
+                    }
                 }catch(Throwable t){
                     Log.err("[eui] schematic tag drag failed", t);
                 }
@@ -767,9 +776,13 @@ public class SchematicsDialog extends BaseDialog{
             @Override
             public void touchUp(InputEvent event, float x, float y, int pointer, KeyCode button){
                 try{
-                    if(dragging[0]){
-                        //над другой коробкой - встать перед ней; отпустили в пустом месте - в конец списка
-                        moveTag(tag, dragTagHover);
+                    if(dragging[0] && dragTagHover != null){
+                        String before = dragTagHover;
+                        if(dragTagAfter){
+                            int idx = tags.indexOf(dragTagHover);
+                            before = (idx >= 0 && idx + 1 < tags.size) ? tags.get(idx + 1) : null;
+                        }
+                        moveTag(tag, before);
                         onReorder.run();
                     }
                 }catch(Throwable t){
@@ -782,12 +795,24 @@ public class SchematicsDialog extends BaseDialog{
         });
     }
 
-    /** Какой коробке тега принадлежит элемент экрана под курсором ({@code null} - никакой). */
-    String hitTag(float stageX, float stageY){
-        var hit = Core.scene.hit(stageX, stageY, true);
-        if(hit == null) return null;
+    /** Тег коробки, до чьего ЦЕНТРА от курсора ближе всего ({@code null}, только если коробок вообще нет). */
+    String nearestTag(float stageX, float stageY){
+        String best = null;
+        float bestDist = Float.MAX_VALUE;
         for(var e : tagBoxMap.entries()){
-            if(e.key == hit || hit.isDescendantOf(e.key)) return e.value;
+            Vec2 c = e.key.localToStageCoordinates(Tmp.v2.set(e.key.getWidth() / 2f, e.key.getHeight() / 2f));
+            float dist = c.dst2(stageX, stageY);
+            if(dist < bestDist){
+                bestDist = dist;
+                best = e.value;
+            }
+        }
+        return best;
+    }
+
+    Table tagBoxFor(String tag){
+        for(var e : tagBoxMap.entries()){
+            if(e.value.equals(tag)) return e.key;
         }
         return null;
     }
@@ -840,12 +865,13 @@ public class SchematicsDialog extends BaseDialog{
 
                     p.table(row -> {
                         row.left();
-                        row.stack(new SchematicImage(s).setScaling(Scaling.fit)).size(32f).padRight(6f);
+                        row.table(Tex.pane, img -> img.stack(new SchematicImage(s).setScaling(Scaling.fit)).grow().margin(4f))
+                            .size(80f).padRight(8f);
                         row.check(s.name(), s.labels.contains(tag), checked -> {
                             if(checked) addTag(s, tag); else removeTag(s, tag);
                             onChange.run();
                         }).left().growX();
-                    }).growX().pad(2).row();
+                    }).growX().pad(3).row();
                 }
 
                 if(!any) p.add("@none.found").color(Color.lightGray);
