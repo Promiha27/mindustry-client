@@ -116,7 +116,7 @@ public class Binding{
     paste = KeyBind.add("paste", KeyCode.v, KeyCode.controlLeft),
     save = KeyBind.add("save", KeyCode.s, KeyCode.controlLeft),
     undo = KeyBind.add("undo", KeyCode.z, KeyCode.controlLeft),
-    redo = KeyBind.add("save", KeyCode.y, KeyCode.controlLeft),
+    redo = KeyBind.add("redo", KeyCode.y, KeyCode.controlLeft),
     
     //Map editor
     editorGrid = KeyBind.add("editor_grid", KeyCode.g, KeyCode.controlLeft),
@@ -176,7 +176,10 @@ public class Binding{
     assistPlayerCursor = KeyBind.add("assist_player_cursor", KeyCode.mouseLeft, KeyCode.controlLeft),
     assistPlayerBuildpath = KeyBind.add("assist_player_buildpath", KeyCode.mouseLeft, KeyCode.controlLeft, KeyCode.altLeft),
     assistPlayerFreemove = KeyBind.add("assist_player_freemove", KeyCode.mouseLeft, KeyCode.shiftLeft, KeyCode.altLeft),
-    runJS = KeyBind.add("run_js", KeyCode.u)
+    runJS = KeyBind.add("run_js", KeyCode.u),
+    //sonka: единый список хоткеев всех пакетов (sonkaextras.hotkeys.HotkeysDialog); F2 - свободна
+    //и в ванили, и у вшитых модов (F1 block_info, F3 масс-драйверы, F5-F12 заняты)
+    monolithHotkeys = KeyBind.add("monolith_hotkeys", KeyCode.f2)
     ;
 
     //dummy static class initializer

@@ -17,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # полная история + теги: заметки релиза строятся из коммитов между соседними тегами custom-b*
+          fetch-depth: 0
 
       - uses: actions/setup-java@v4
         with:
@@ -29,6 +32,35 @@ jobs:
             -PclientVersion="${{ github.ref_name }}" \
             -PupdateUrl="${{ github.repository }}"
 
+      # Заметки релиза = коммиты ветки между предыдущим тегом custom-b* (ближайший меньший номер)
+      # и этим. Их читает диалог «Что нового» в клиенте (core/src/sonkaextras/WhatsNew.java):
+      # строки «- » - пункты, «  - » - подпункты. --first-parent: мерж апстрима (upstream-sync.yml)
+      # даёт одну строку «Merge ...», а не сотни чужих коммитов. Тело коммита добавляется
+      # подпунктами, если оно само оформлено списком (так пишутся наши коммиты с пачкой фиксов);
+      # трейлеры Co-Authored-By/Claude-Session отбрасываются.
+      - name: Compose release notes
+        run: |
+          TAG="${{ github.ref_name }}"
+          CUR="${TAG#custom-b}"
+          PREV=$(git tag -l 'custom-b*' --sort=-v:refname | awk -v cur="$CUR" '{n=substr($0,9)+0; if(n<cur){print; exit}}')
+          if [ -n "$PREV" ]; then RANGE="$PREV..$TAG"; else RANGE="$TAG"; fi
+          echo "notes range: $RANGE"
+          RS1=$(printf '\036'); FS1=$(printf '\037')
+          {
+            echo "## Изменения"
+            git log "$RANGE" --first-parent --pretty='%x1e%s%x1f%b' | tr -d '\r' \
+              | awk -v RS="$RS1" -v FS="$FS1" 'NF{
+                  sub(/[ \t]+$/, "", $1); print "- " $1;
+                  n=split($2, L, "\n");
+                  for(i=1;i<=n;i++){ l=L[i]; sub(/^[ \t]+/, "", l);
+                    if(l ~ /^[-*] / && l !~ /Co-Authored-By|Claude-Session/){ sub(/^[-*] /, "", l); print "  - " l }
+                  }
+                }' | head -n 150
+            echo
+            echo "Сборка: ${{ github.sha }}"
+          } > release-notes.md
+          cat release-notes.md
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -36,4 +68,4 @@ jobs:
           cp desktop/build/libs/Mindustry.jar Mindustry-custom-desktop.jar
           gh release create "${{ github.ref_name }}" Mindustry-custom-desktop.jar \
             --title "${{ github.ref_name }}" \
-            --notes "Автосборка кастомного клиента (${{ github.sha }})."
+            --notes-file release-notes.md

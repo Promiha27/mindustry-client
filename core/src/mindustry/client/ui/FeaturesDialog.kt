@@ -139,6 +139,8 @@ object FeaturesDialog : BaseDialog("@client.features") {
                 btns.button("@client.sonka.dataio.export.title", Icon.upload) { sonkaextras.dataio.DataIODialog.showExport() }
                 btns.button("@client.sonka.dataio.import.title", Icon.download) { sonkaextras.dataio.DataIODialog.showImport() }
                 btns.button("@client.sonka.campaign.title", Icon.planet) { sonkaextras.campaign.CampaignProfilesDialog().show() }
+                btns.button("@client.sonka.hotkeys.title", Icon.book) { sonkaextras.hotkeys.HotkeysDialog.open() }
+                btns.button("@client.sonka.report.title", Icon.fileText) { sonkaextras.DiagReport.ReportDialog().show() }
             }
 
             val he = HeliumMod.heModsDialog

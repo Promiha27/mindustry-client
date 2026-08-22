@@ -24,6 +24,7 @@ public class KeybindDialog extends Dialog{
     protected Dialog rebindDialog;
     protected Table bindsTable;
     private String searchText = "";
+    private TextField searchField;
 
     public KeybindDialog(){
         super(bundle.get("keybind.title"));
@@ -41,7 +42,7 @@ public class KeybindDialog extends Dialog{
         cont.table(table -> {
             table.left();
             table.image(Icon.zoom);
-            var field = table.field(searchText, res -> {
+            var field = searchField = table.field(searchText, res -> {
                 searchText = res;
                 rebuildBinds();
             }).growX().get();
@@ -66,6 +67,19 @@ public class KeybindDialog extends Dialog{
         keyDown(key -> {
             if(key == KeyCode.escape || key == KeyCode.back) hide();
         });
+    }
+
+    /**
+     * sonka: открыть «Управление» сразу отфильтрованным на один бинд - переназначение из единого
+     * списка хоткеев (sonkaextras.hotkeys.HotkeysDialog) идёт через этот же диалог, а не через
+     * копию его логики захвата клавиш. Фильтр ставится после show(): shown()-колбэк выше сбрасывает
+     * строку поиска в пустую.
+     */
+    public void showFor(KeyBind bind){
+        show();
+        searchText = bundle.get("keybind." + bind.name + ".name", bind.name);
+        if(searchField != null) searchField.setText(searchText);
+        rebuildBinds();
     }
 
     private void rebuildBinds(){

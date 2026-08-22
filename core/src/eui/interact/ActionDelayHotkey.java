@@ -36,7 +36,9 @@ public class ActionDelayHotkey{
     private static final float FEEDBACK_VISIBLE_TIME = 0.8f; //seconds, full visibility
     private static final float FEEDBACK_FADE_TIME = 0.4f; //seconds, fade out
 
-    private static final String KEYBIND_CATEGORY = "Extended UI++";
+    //sonka: та же категория, что у EuiBinding ("extended-ui" -> category.extended-ui.name) - раньше литерал
+    //"Extended UI++" давал вторую безымянную секцию в «Управлении»
+    private static final String KEYBIND_CATEGORY = "extended-ui";
 
     public static final KeyBind increaseBind = KeyBind.add("eui-action-delay-increase", new KeyBind.Axis(KeyCode.equals), KEYBIND_CATEGORY);
     public static final KeyBind decreaseBind = KeyBind.add("eui-action-delay-decrease", new KeyBind.Axis(KeyCode.minus), KEYBIND_CATEGORY);

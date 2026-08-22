@@ -144,6 +144,13 @@ public final class ChainWarn{
             //управления тегами, что открывается карандашом у фильтра в списке карт - для тех, кто
             //прибирается в тегах не из контекста выбора карты (см. javadoc MapTagsDialog)
             t.pref(new qol.core.ButtonSetting("sonka-maptags-manage", () -> new sonkaextras.maptags.MapTagsDialog().show()));
+            //единый список хоткеев всех пакетов (sonkaextras.hotkeys) и отчёт для багрепорта (DiagReport):
+            //те же диалоги, что и в подменю Monolith главного меню - дублирующие точки входа
+            t.pref(new qol.core.ButtonSetting("sonka-hotkeys-open", sonkaextras.hotkeys.HotkeysDialog::open));
+            t.pref(new qol.core.ButtonSetting("sonka-diag-report", () -> new DiagReport.ReportDialog().show()));
+            //авто-показ «что нового» после обновления (WhatsNew) + ручной вход в историю релизов
+            t.checkPref(WhatsNew.autoKey, true);
+            t.pref(new qol.core.ButtonSetting("sonka-whatsnew-history", WhatsNew::showAll));
         }));
 
         Events.on(WorldLoadEvent.class, e -> {

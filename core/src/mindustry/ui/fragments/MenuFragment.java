@@ -286,6 +286,8 @@ public class MenuFragment{
                         }),
                         new MenuButton("@client.changelog", Icon.edit, ChangelogDialog.INSTANCE::show),
                         new MenuButton("@client.features", Icon.list, FeaturesDialog.INSTANCE::show),
+                        new MenuButton("@client.sonka.hotkeys.title", Icon.book, () -> sonkaextras.hotkeys.HotkeysDialog.open()), // sonka: единый список хоткеев всех пакетов
+                        new MenuButton("@client.sonka.report.title", Icon.fileText, () -> new sonkaextras.DiagReport.ReportDialog().show()), // sonka: отчёт для багрепорта
                         new MenuButton("@client.certs.manage.title", Icon.lock, () -> new TLSKeyDialog().show())
                     ), // End of client section
                     new MenuButton("@database.button", Icon.menu,

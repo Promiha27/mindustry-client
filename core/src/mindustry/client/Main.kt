@@ -108,6 +108,13 @@ object Main : ApplicationListener {
         // sonka: метка над юнитом с ником последнего управлявшего им игрока (sonkaextras.LastController)
         sonkaextras.LastController.init()
 
+        // sonka: «что нового» после обновления - заметки релизов custom-b(M..N] с GitHub
+        // (sonkaextras.WhatsNew, правила показа в его javadoc); тоже только вешает слушатель
+        sonkaextras.WhatsNew.init()
+
+        // sonka: единый список хоткеев всех пакетов по F2 (sonkaextras.hotkeys.HotkeysDialog)
+        sonkaextras.hotkeys.HotkeysDialog.init()
+
         // sonka: профили кампании - только стартовая сверка маркера активного профиля с settings
         // (sonkaextras.campaign.CampaignProfiles, раздел «Маркер» в javadoc); сам диалог - по кнопкам
         sonkaextras.campaign.CampaignProfiles.init()
