@@ -126,7 +126,7 @@ public class DesktopLauncher extends ClientLauncher{
                         }
                     }
                 }
-                setWindowIcon(FileType.internal, "icons/foo_64.png"); // FINISHME: Why don't we just replace icon_64.png?
+                setWindowIcon(FileType.internal, "icons/icon_64.png"); //Monolith: иконка клиента лежит прямо в icon_64.png (foo_64.png убран)
             }});
         }catch(Throwable e){
             handleCrash(e);
@@ -134,7 +134,7 @@ public class DesktopLauncher extends ClientLauncher{
     }
 
     private static String getWindowTitle() {
-        return Strings.format("Mindustry (v@) | Foo's Client (@) | @/@ Mods Enabled", Version.buildString(), Version.clientVersion.equals("v0.0.0") ? "Dev" : Version.clientVersion, mods == null ? 0 : mods.mods.count(Mods.LoadedMod::enabled), mods == null ? 0 : mods.mods.size);
+        return Strings.format("Mindustry (v@) | Monolith (@) | @/@ Mods Enabled", Version.buildString(), Version.clientVersion.equals("v0.0.0") ? "Dev" : Version.clientVersion, mods == null ? 0 : mods.mods.count(Mods.LoadedMod::enabled), mods == null ? 0 : mods.mods.size);
     }
 
     @Override

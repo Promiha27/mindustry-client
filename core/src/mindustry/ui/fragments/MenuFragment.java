@@ -68,8 +68,8 @@ public class MenuFragment{
 
         parent.fill(c ->
             c.bottom().left().image(
-                    Core.atlas.find("flarogus")
-            ).tooltip("Foo's Client now includes Flarogus Client and Zxtej's client. Praise the almighty flarogus.")
+                    Core.atlas.find("monolith")
+            ).tooltip("@client.tagline")
             .size(60, 60).pad(5)
         );
 
