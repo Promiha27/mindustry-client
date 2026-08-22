@@ -858,20 +858,36 @@ public class SchematicsDialog extends BaseDialog{
                 Seq<Schematic> shown = schematics.all().copy();
                 shown.sort((a, b) -> a.name().compareTo(b.name()));
 
+                //карточка-кнопка как в основном списке схем (превью + подпись поверх), только клик
+                //сразу переключает тег вместо открытия схемы; несколько карточек в строке по ширине
+                int cardSize = 140;
+                int cols = Math.max((int)(Core.graphics.getWidth() / Scl.scl(cardSize + 50)), 1);
+                int i = 0;
                 boolean any = false;
+
                 for(Schematic s : shown){
                     if(!f.isEmpty() && !ignoreSymbols.matcher(s.name().toLowerCase()).replaceAll("").contains(f)) continue;
                     any = true;
 
-                    p.table(row -> {
-                        row.left();
-                        row.table(Tex.pane, img -> img.stack(new SchematicImage(s).setScaling(Scaling.fit)).grow().margin(4f))
-                            .size(80f).padRight(8f);
-                        row.check(s.name(), s.labels.contains(tag), checked -> {
-                            if(checked) addTag(s, tag); else removeTag(s, tag);
-                            onChange.run();
-                        }).left().growX();
-                    }).growX().pad(3).row();
+                    var card = p.button(b -> {
+                        b.margin(0f);
+                        b.stack(new SchematicImage(s).setScaling(Scaling.fit), new Table(n -> {
+                            n.top();
+                            n.table(Styles.black3, c -> {
+                                Label label = c.add(s.name()).style(Styles.outlineLabel).top().growX().maxWidth(cardSize - 8f).get();
+                                label.setEllipsis(true);
+                                label.setAlignment(Align.center);
+                            }).growX().margin(1).pad(4).maxWidth(Scl.scl(cardSize - 8f)).padBottom(0);
+                        })).size(cardSize);
+                    }, () -> {
+                        if(s.labels.contains(tag)) removeTag(s, tag); else addTag(s, tag);
+                        onChange.run();
+                    }).pad(4).style(Styles.flati).get();
+
+                    card.getStyle().up = Tex.pane;
+                    card.update(() -> card.setColor(s.labels.contains(tag) ? Pal.accent : Color.white));
+
+                    if(++i % cols == 0) p.row();
                 }
 
                 if(!any) p.add("@none.found").color(Color.lightGray);
