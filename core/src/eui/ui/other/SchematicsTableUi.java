@@ -24,6 +24,8 @@ import arc.scene.ui.layout.Table;
 import arc.struct.IntIntMap;
 import arc.struct.IntMap;
 import arc.struct.IntSeq;
+import arc.struct.ObjectIntMap;
+import arc.struct.ObjectSet;
 import arc.struct.Seq;
 import arc.util.Align;
 import arc.util.Interval;
@@ -125,6 +127,8 @@ public class SchematicsTableUi{
 
     //настройки выборочной вставки из внутреннего буфера (живут до конца сессии)
     private static boolean pasteSchematic = true, pasteRotation = true, pasteLabel = true, pasteMainIcon = true, pasteCornerIcons = true;
+    //настройки массового импорта по тегу (живут до конца сессии, как и paste-флаги выше)
+    private static boolean importTagNewPage = false, importTagSkipPresent = true;
 
     // ---- цепочка G+цифры ----
     private int chordStage = 0; //0 - нет, 1 - ждём первую цифру, 2 - вторую
@@ -517,6 +521,7 @@ public class SchematicsTableUi{
             addToolButton(toolbar, Icon.tagSmall, "names", this::showNamesDialog, rowBreak);
             addToolButton(toolbar, Icon.imageSmall, "set-icon", this::setIconForSelection, rowBreak);
             addToolButton(toolbar, Icon.refreshSmall, "auto-icons", this::autoIconsForSelection, rowBreak);
+            addToolButton(toolbar, Icon.downloadSmall, "import-tag", this::showTagImportDialog, rowBreak);
             addToolButton(toolbar, Icon.copySmall, "copy", this::copySelection, rowBreak);
             addToolButton(toolbar, Icon.pasteSmall, "paste", this::showPasteDialog, rowBreak);
             addToolButton(toolbar, Icon.trashSmall, "clear", this::clearSelectionCells, rowBreak);
@@ -1505,6 +1510,120 @@ public class SchematicsTableUi{
         };
         list.sort(cmp);
         return list;
+    }
+
+    // ---------------------------------------------------------------- массовый импорт по тегу схем
+
+    /**
+     * sonka 2026-08-22: "массовый импорт схем из одного тега схем в таблицу" - список всех тегов
+     * ({@code Schematic.labels}) с количеством схем; клик по тегу кладёт все его схемы (по алфавиту)
+     * в таблицу. Куда: при непустом выделении - в выделенные ячейки по порядку (с перезаписью - это
+     * осознанный выбор пользователя), иначе - в ПУСТЫЕ ячейки текущей страницы по рядам;
+     * чекбокс "на новую страницу" создаёт страницу с именем тега и нужным числом рядов. Схемы,
+     * уже лежащие на странице, по умолчанию пропускаются (второй чекбокс). Перезаписанная ячейка
+     * получает чистый CellData (старые иконки/подпись относились к другой схеме) - иконки
+     * дорисует SchemAutoIcons.
+     */
+    void showTagImportDialog(){
+        ObjectIntMap<String> counts = new ObjectIntMap<>();
+        for(Schematic s : schematics.all()){
+            for(String l : s.labels) counts.put(l, counts.get(l, 0) + 1);
+        }
+        if(counts.isEmpty()){
+            ui.announce(Core.bundle.get("schematics-table.import-tag.no-tags"), 2f);
+            return;
+        }
+        Seq<String> tags = counts.keys().toSeq();
+        tags.sort(String.CASE_INSENSITIVE_ORDER);
+
+        BaseDialog dialog = new BaseDialog(Core.bundle.get("schematics-table.import-tag.title"));
+        dialog.addCloseButton();
+        Table t = dialog.cont;
+        t.defaults().left();
+        t.check(Core.bundle.get("schematics-table.import-tag.new-page"), importTagNewPage, v -> importTagNewPage = v).left().row();
+        t.check(Core.bundle.get("schematics-table.import-tag.skip-present"), importTagSkipPresent, v -> importTagSkipPresent = v).left().padTop(4f).row();
+        t.label(() -> selection.isEmpty() || importTagNewPage
+            ? Core.bundle.get("schematics-table.import-tag.target-empty")
+            : Core.bundle.format("schematics-table.import-tag.target-selection", selection.size)
+        ).color(Color.lightGray).padTop(6f).padBottom(6f).row();
+
+        t.pane(list -> {
+            list.defaults().left().growX();
+            for(String tag : tags){
+                int n = counts.get(tag, 0);
+                list.button("[accent]" + tag + "[] (" + n + ")", Styles.flatt, () -> {
+                    importTag(tag, importTagNewPage, importTagSkipPresent);
+                    dialog.hide();
+                }).height(44f).padBottom(2f).row();
+            }
+        }).scrollX(false).size(mobile ? 380f : 520f, mobile ? 360f : 520f);
+        dialog.show();
+    }
+
+    void importTag(String tag, boolean asNewPage, boolean skipPresent){
+        Seq<Schematic> list = schematics.all().select(s -> s.labels.contains(tag));
+        list.sort((a, b) -> String.CASE_INSENSITIVE_ORDER.compare(a.name(), b.name()));
+        if(list.isEmpty()){
+            ui.announce(Core.bundle.get("schematics-table.import-tag.no-tags"), 2f);
+            return;
+        }
+
+        SchemTableData d = data();
+        if(asNewPage){
+            Page np = new Page();
+            np.name = tag;
+            np.cols = clamp(Core.settings.getInt("eui-SchematicsTableColumns", 5), 1, SchemTableData.MAX_COLS);
+            np.rows = clamp((list.size + np.cols - 1) / np.cols, 1, SchemTableData.MAX_ROWS);
+            d.pages.add(np);
+            currentPage = d.pages.size - 1;
+            lastPage = currentPage; //иначе isRebuildNeeded перестроит ещё раз на следующем кадре - безвредно, но лишнее
+            selection.clear();
+        }
+        Page p = page();
+
+        //цели: выделение (по рядам) или пустые ячейки страницы по рядам
+        Seq<Integer> targets;
+        if(!asNewPage && !selection.isEmpty()){
+            targets = orderedSelection(0);
+        }else{
+            targets = new Seq<>();
+            for(int r = 0; r < p.rows; r++){
+                for(int c = 0; c < p.cols; c++){
+                    CellData cd = p.cell(r, c);
+                    if(cd == null || cd.isEmpty()) targets.add(SchemTableData.pos(r, c));
+                }
+            }
+        }
+
+        ObjectSet<String> present = new ObjectSet<>();
+        if(skipPresent){
+            for(IntMap.Entry<CellData> e : p.cells){
+                if(e.value != null && !e.value.schematic.isEmpty()) present.add(e.value.schematic);
+            }
+        }
+
+        int placed = 0, dup = 0, noRoom = 0;
+        for(Schematic s : list){
+            String name = s.name();
+            if(present.contains(name)){
+                dup++;
+                continue;
+            }
+            if(placed >= targets.size){
+                noRoom++;
+                continue;
+            }
+            int pos = targets.get(placed++);
+            CellData nc = new CellData();
+            nc.schematic = name;
+            p.cells.put(pos, nc);
+            present.add(name);
+        }
+
+        d.save();
+        selection.clear();
+        rebuildTable();
+        ui.announce(Core.bundle.format("schematics-table.import-tag.done", placed, dup, noRoom), 3f);
     }
 
     // ---------------------------------------------------------------- диалог ячейки
