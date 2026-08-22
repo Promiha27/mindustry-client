@@ -869,25 +869,27 @@ public class SchematicsDialog extends BaseDialog{
                     if(!f.isEmpty() && !ignoreSymbols.matcher(s.name().toLowerCase()).replaceAll("").contains(f)) continue;
                     any = true;
 
-                    var card = p.button(b -> {
-                        //margin>0 - иначе превью вплотную к краю кнопки полностью закрывает фон
-                        //(Tex.pane), и подсветка тегнутой карточки просто не видна
-                        b.margin(5f);
-                        b.stack(new SchematicImage(s).setScaling(Scaling.fit), new Table(n -> {
-                            n.top();
-                            n.table(Styles.black3, c -> {
+                    //Button+Styles.flati оказался ненадёжен - фон подкраски скрывался/не менялся
+                    //по неясной причине; вместо него тот же проверенный приём, что и коробки тегов
+                    //чуть выше в этом же диалоге (new Table(Tex.whiteui, ...) + margin + per-frame
+                    //setColor в .update()) - там подсветка гарантированно видна, значит и тут будет
+                    var card = new Table(Tex.whiteui, n -> {
+                        n.margin(6f);
+                        n.stack(new SchematicImage(s).setScaling(Scaling.fit), new Table(t -> {
+                            t.top();
+                            t.table(Styles.black3, c -> {
                                 Label label = c.add(s.name()).style(Styles.outlineLabel).top().growX().maxWidth(cardSize - 8f).get();
                                 label.setEllipsis(true);
                                 label.setAlignment(Align.center);
                             }).growX().margin(1).pad(4).maxWidth(Scl.scl(cardSize - 8f)).padBottom(0);
                         })).size(cardSize);
-                    }, () -> {
+                    });
+                    card.update(() -> card.setColor(s.labels.contains(tag) ? Pal.accent : Pal.gray));
+                    card.clicked(() -> {
                         if(s.labels.contains(tag)) removeTag(s, tag); else addTag(s, tag);
                         onChange.run();
-                    }).pad(4).style(Styles.flati).get();
-
-                    card.getStyle().up = Tex.pane;
-                    card.update(() -> card.setColor(s.labels.contains(tag) ? Pal.accent : Color.white));
+                    });
+                    p.add(card).pad(4);
 
                     if(++i % cols == 0) p.row();
                 }
