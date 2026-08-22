@@ -53,6 +53,8 @@ import mindustry.graphics.Pal
 import mindustry.mod.ModListing
 import mindustry.mod.Mods
 import mindustry.ui.Styles
+import sonkaextras.packs.PackScan
+import sonkaextras.packs.PackUi
 
 /**
  * Порт helium.ui.dialogs.mods.HeModsDialog (Helium, EB-wilson): переработанный менеджер модов -
@@ -84,6 +86,8 @@ class HeModsDialog : HeAttachedDialog(Vars.ui.mods, Core.bundle["mods"], Boolp{ 
     private lateinit var enabledMods: Table
 
     private var searchStr = ""
+    /** sonka: фильтр «только текстурпаки» (ресурс-паки по составу файлов, см. sonkaextras.packs.PackScan). */
+    private var packsOnly = false
 
     init{
         HeAssets.ensure()
@@ -153,6 +157,11 @@ class HeModsDialog : HeAttachedDialog(Vars.ui.mods, Core.bundle["mods"], Boolp{ 
                         list.row()
                         list.line(Pal.darkerGray, true, 4f)
                         list.row()
+                        list.check(Core.bundle["client.sonka.packs.only"], packsOnly){
+                            packsOnly = it
+                            rebuildMods()
+                        }.left().pad(4f)
+                        list.row()
                         list.pane(Styles.smallPane){ pane ->
                             pane.table{ en ->
                                 en.add(Core.bundle["dialog.mods.enabled"]).color(Pal.accent).left().growX().labelAlign(Align.left)
@@ -198,6 +207,10 @@ class HeModsDialog : HeAttachedDialog(Vars.ui.mods, Core.bundle["mods"], Boolp{ 
                         searchStr = it.lowercase()
                         rebuildMods()
                     }.growX()
+                    search.check(Core.bundle["client.sonka.packs.only"], packsOnly){
+                        packsOnly = it
+                        rebuildMods()
+                    }.padLeft(12f)
                 }.growX().fillY().padLeft(16f).padRight(16f)
                 main.row()
 
@@ -292,6 +305,7 @@ class HeModsDialog : HeAttachedDialog(Vars.ui.mods, Core.bundle["mods"], Boolp{ 
 
     private fun refresh(){
         ModsDialogHelper.resetModListCache()
+        PackScan.clearCache()
         modTabs.clear()
         updateChecked.clear()
         rebuildMods()
@@ -307,6 +321,7 @@ class HeModsDialog : HeAttachedDialog(Vars.ui.mods, Core.bundle["mods"], Boolp{ 
                 || it.name.lowercase().contains(searchStr)
                 || it.meta.displayName.lowercase().contains(searchStr)
             }
+            .filter{ !packsOnly || PackScan.of(it).isPack() }
             .forEach{ mod ->
                 ModStat.apply{
                     val stat = checkModStat(mod)
@@ -328,6 +343,8 @@ class HeModsDialog : HeAttachedDialog(Vars.ui.mods, Core.bundle["mods"], Boolp{ 
         var updateEntry: UpdateEntry? = null
         var coll: HeCollapser? = null
         var setupContent = { _: Int -> }
+        //sonka: состав ресурс-пака (кэшируется в PackScan по файлу мода)
+        val pack = PackScan.of(mod)
 
         modTabs[mod] = res
 
@@ -360,6 +377,7 @@ class HeModsDialog : HeAttachedDialog(Vars.ui.mods, Core.bundle["mods"], Boolp{ 
                             }.get()
 
                         buildModAttrIcons(status, stat)
+                        PackUi.badges(status, pack)
 
                         checkModUpdate(mod, {
                             checkUpdate.drawable = HeAssets.networkError
@@ -467,6 +485,7 @@ class HeModsDialog : HeAttachedDialog(Vars.ui.mods, Core.bundle["mods"], Boolp{ 
                             buildModBasicStatus(status, stat)
                             buildModAttrList(status, stat)
                             buildModErrList(status, stat)
+                            status.table{ PackUi.statusLines(it, pack) }.growX().colspan(2)
                         }
                         details.row()
                         details.line(Color.gray, true, 4f).pad(6f).padLeft(-6f).padRight(-6f)
@@ -479,7 +498,9 @@ class HeModsDialog : HeAttachedDialog(Vars.ui.mods, Core.bundle["mods"], Boolp{ 
                         else listOf()
 
                         var current = -1
-                        buildDescSelector(details, { current }, { i -> setupContent(i) }, contents)
+                        val hasFiles = pack.textures() || pack.audio() || pack.other.size > 0
+                        buildDescSelector(details, { current }, { i -> setupContent(i) }, contents,
+                            if(hasFiles) Core.bundle["client.sonka.packs.files"] else null)
                         details.row()
                         details.table(HeAssets.grayUI){ desc ->
                             desc.defaults().grow()
@@ -493,6 +514,7 @@ class HeModsDialog : HeAttachedDialog(Vars.ui.mods, Core.bundle["mods"], Boolp{ 
                                     0 -> desc.add(markupTable(mod.meta.description ?: ""))
                                     1 -> desc.add(mod.meta.description ?: "").wrap()
                                     2 -> setupContentsList(desc, contents)
+                                    3 -> desc.add(Table().also{ f -> PackUi.filesTable(f, pack) })
                                 }
                             }
                         }.grow().margin(12f).padTop(0f)

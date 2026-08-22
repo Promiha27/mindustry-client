@@ -45,6 +45,8 @@ import mindustry.gen.Tex
 import mindustry.graphics.Pal
 import mindustry.mod.ModListing
 import mindustry.ui.Styles
+import sonkaextras.packs.PackScan
+import sonkaextras.packs.PackUi
 import mindustry.ui.dialogs.BaseDialog
 import kotlin.math.max
 import kotlin.math.min
@@ -74,6 +76,10 @@ class HeModsBrowser : BaseDialog(Core.bundle["mods.browser"]){
     private var orderDate = false
     private var reverse = false
     private var hideInvalid = true
+    /** sonka: вкладка «Текстурпаки» - эвристика по описанию (PackScan.guess) или проверенный состав репозитория. */
+    private var packsOnly = false
+    /** Подфильтр внутри вкладки: маска PackScan.TEXTURES/MUSIC/SOUNDS. */
+    private var packMask = PackScan.TEXTURES or PackScan.MUSIC or PackScan.SOUNDS
 
     init{
         HeAssets.ensure()
@@ -145,6 +151,21 @@ class HeModsBrowser : BaseDialog(Core.bundle["mods.browser"]){
                     hideInvalid = it
                     rebuildList()
                 }
+                top.check(Core.bundle["client.sonka.packs.tab"], packsOnly){
+                    packsOnly = it
+                    rebuildList()
+                }.padLeft(12f)
+                //подфильтр текстуры/музыка/звуки, виден только во вкладке паков
+                fun sub(icon: arc.scene.style.Drawable, bit: Int, tip: String){
+                    top.button(icon, Styles.clearTogglei, 24f){
+                        packMask = packMask xor bit
+                        rebuildList()
+                    }.size(40f).padLeft(4f).checked{ (packMask and bit) != 0 }.visible{ packsOnly }
+                        .get().addListener(Tooltip{ t -> t.background(Styles.black6).margin(6f).add(tip) })
+                }
+                sub(Icon.imageSmall, PackScan.TEXTURES, Core.bundle["client.sonka.packs.sub.textures"])
+                sub(Icon.musicSmall, PackScan.MUSIC, Core.bundle["client.sonka.packs.sub.music"])
+                sub(Icon.playSmall, PackScan.SOUNDS, Core.bundle["client.sonka.packs.sub.sounds"])
             }.growX().padLeft(40f).padRight(40f)
             main.row()
             main.line(Pal.accent, true, 4f).padTop(4f)
@@ -206,6 +227,7 @@ class HeModsBrowser : BaseDialog(Core.bundle["mods.browser"]){
                                 || it.internalName.lowercase().contains(search)
                             }
                             .filter{ !hideInvalid || ModStat.run{ it.checkStatus().isValid() } }
+                            .filter{ !packsOnly || packMatches(it) }
                             .let{ l ->
                                 if(reverse){
                                     if(orderDate) l.reversed()
@@ -311,6 +333,25 @@ class HeModsBrowser : BaseDialog(Core.bundle["mods.browser"]){
         }
     }
 
+    /**
+     * Попадает ли мод во вкладку паков: проверенный состав репозитория (кэш) имеет приоритет над
+     * догадкой по описанию; подфильтр сверяется с реальными категориями у проверенных и с маской
+     * ключевых слов у остальных.
+     */
+    private fun packMatches(mod: ModListing): Boolean{
+        val checked = PackScan.cachedRemote(mod)
+        if(checked != null){
+            if(!checked.isPack()) return false
+            var mask = 0
+            if(checked.textures()) mask = mask or PackScan.TEXTURES
+            if(checked.music.size > 0 || checked.newMusic > 0) mask = mask or PackScan.MUSIC
+            if(checked.sounds.size > 0 || checked.newSounds > 0) mask = mask or PackScan.SOUNDS
+            if(mask == 0) mask = PackScan.TEXTURES //прочие подмены (шейдеры и т.п.) - показываем вместе с текстурами
+            return (mask and packMask) != 0
+        }
+        return (PackScan.guess(mod) and packMask) != 0
+    }
+
     private fun buildModTab(mod: ModListing): Table{
         browserTabs[mod]?.also{ return it }
 
@@ -362,6 +403,7 @@ class HeModsBrowser : BaseDialog(Core.bundle["mods.browser"]){
                             }
 
                             buildModAttrIcons(status, stat)
+                            PackUi.browserBadges(status, mod)
                         }.fill().pad(4f)
 
                         over.table{ side ->
@@ -435,6 +477,17 @@ class HeModsBrowser : BaseDialog(Core.bundle["mods.browser"]){
                     }
 
                     buildModAttrList(status, stat)
+                }
+                details.row()
+                //sonka: состав репозитория (текстуры/музыка/звуки) - из кэша или по кнопке проверки;
+                //после проверки карточка пересобирается, чтобы бейджи стали «проверенными»
+                details.table{ packT ->
+                    PackUi.remoteCheck(packT, mod){
+                        Core.app.post{
+                            browserTabs.remove(mod)
+                            rebuildList()
+                        }
+                    }
                 }
                 details.row()
                 details.line(Color.gray, true, 4f).pad(6f).padLeft(-6f).padRight(-6f)

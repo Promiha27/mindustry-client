@@ -112,6 +112,8 @@ object ModsDialogHelper{
         get: () -> Int,
         set: (Int) -> Unit,
         contents: List<UnlockableContent>,
+        /** sonka: необязательная 4-я вкладка (индекс 3) - «Замены» ресурс-пака (sonkaextras.packs) */
+        extra: String? = null,
     ){
         details.table{ switch ->
             switch.left().defaults().center()
@@ -122,6 +124,10 @@ object ModsDialogHelper{
             if(contents.any()){
                 switch.button({ it.add(Core.bundle["dialog.mods.contents"], 0.85f) }, switchBut){ set(2) }
                     .margin(12f).checked{ get() == 2 }.disabled{ t -> t.isChecked }
+            }
+            if(extra != null){
+                switch.button({ it.add(extra, 0.85f) }, switchBut){ set(3) }
+                    .margin(12f).checked{ get() == 3 }.disabled{ t -> t.isChecked }
             }
         }.grow().padBottom(0f)
     }
