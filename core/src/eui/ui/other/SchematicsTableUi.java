@@ -665,7 +665,7 @@ public class SchematicsTableUi{
     static class CellIconsElement extends Element{
         Drawable main;
         float mainFrac = 0.6f;
-        /** true - иконка контентная (блок/юнит/предмет/...), не "значок" - см. {@link Icons#isGlyphIcon}. */
+        /** true - иконка БЛОКА (в спрайте block.uiIcon заложен отступ, который компенсируем бустом) - см. {@link Icons#isBlockIcon}; предметы/юниты/жидкости/значки - false. */
         boolean mainBoost;
         final Drawable[] corners = new Drawable[4];
         final float[] cornerFracs = new float[4];
@@ -680,11 +680,12 @@ public class SchematicsTableUi{
          * не доходит (0.46*1.6 упирается в потолок сразу), поэтому реального запаса, чтобы
          * "подрасти" им навстречу значкам, там нет. В одиночном режиме компенсация работает
          * НАОБОРОТ и подтверждена sonka как идеальная - контент растёт до 0.98 против 0.85 у
-         * значка. Первая попытка (0.40, расчёт по той же пропорции 0.49/1.15) всё ещё была
-         * большой по отзыву sonka - соотношение из одиночного режима сюда не переносится
-         * напрямую, режем заметно сильнее.
+         * значка. 2026-08-22: выяснилось, что попытки 0.40 и 0.28 "не действовали" не из-за
+         * значения, а потому что предметы/юниты/жидкости шли по БЛОЧНОЙ ветке (буст до 0.49) -
+         * см. {@link Icons#isBlockIcon}; после исправления классификации возвращаем пропорцию
+         * одиночного режима, подтверждённую sonka как идеальную: 0.85/0.98 * 0.49 ≈ 0.42.
          */
-        static final float GRID_FRAC_GLYPH = 0.28f;
+        static final float GRID_FRAC_GLYPH = 0.42f;
         /**
          * sonka: "иконки блоков слишком мелкие, а значки нормального размера" - у контентных
          * иконок (block/unit/item/... uiIcon) в спрайте обычно заложен заметный отступ вокруг
@@ -775,7 +776,7 @@ public class SchematicsTableUi{
                     //клетку. Раскладка и так уже не читает per-icon размер в режиме сетки (GRID_FRAC) -
                     //здесь та же логика: размер одиночной иконки решает счётчик, а не хранилище.
                     el.mainFrac = iconFrac(SchemTableData.MAIN_ICON_DEFAULT_SIZE);
-                    el.mainBoost = !Icons.isGlyphIcon(c.main.name);
+                    el.mainBoost = Icons.isBlockIcon(c.main.name);
                     any = true;
                 }
             }
@@ -785,7 +786,7 @@ public class SchematicsTableUi{
                 if(d != null){
                     el.corners[i] = d;
                     el.cornerFracs[i] = iconFrac(SchemTableData.CORNER_ICON_DEFAULT_SIZE);
-                    el.cornerBoost[i] = !Icons.isGlyphIcon(c.corners[i].name);
+                    el.cornerBoost[i] = Icons.isBlockIcon(c.corners[i].name);
                     any = true;
                 }
             }

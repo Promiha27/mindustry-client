@@ -83,6 +83,26 @@ public class Icons{
         return iconName != null && Icon.icons.containsKey(iconName);
     }
 
+    /**
+     * sonka 2026-08-22: "иконки, которые НЕ БЛОКИ, всё ещё большие" - уточнение {@link #isGlyphIcon}:
+     * заметный отступ вокруг картинки в спрайте есть ТОЛЬКО у блоков (block.uiIcon). Предметы,
+     * жидкости, юниты, статус-эффекты обрезаны так же плотно, как и значки - и с блочным бустом
+     * они выходят визуально крупнее соседей. Поэтому компенсирующий буст должен получать именно
+     * блок, а не "любой не-значок". Порядок проверки повторяет {@link #getIconDrawable}: имя из
+     * {@code Icon.icons} побеждает всегда, затем блок по имени (блоки регистрируются в
+     * {@link #setupSprites} ПОСЛЕДНИМИ и перекрывают одноимённые предметы вроде "sand" - так что
+     * если {@code content.block(name)} есть, на экране именно блочный спрайт).
+     */
+    public static boolean isBlockIcon(String iconName){
+        if(iconName == null || iconName.isEmpty()) return false;
+        if(Icon.icons.containsKey(iconName)) return false;
+        try{
+            return content.block(iconName) != null;
+        }catch(Throwable t){
+            return false;
+        }
+    }
+
     public static Drawable getIconDrawable(String iconName){
         if(iconName == null || iconName.isEmpty()) return pencil();
 
