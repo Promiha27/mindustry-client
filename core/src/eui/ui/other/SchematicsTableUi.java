@@ -583,7 +583,6 @@ public class SchematicsTableUi{
                     btn.clicked(() -> {
                         if(finalSchematic != null) useCell(finalCell, finalSchematic);
                     });
-                    attachCellDrag(btn, row, col);
                 }
 
                 cellButtons.add(new CellButton(btn, row, col));

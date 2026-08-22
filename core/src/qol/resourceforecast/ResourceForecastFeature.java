@@ -137,7 +137,7 @@ public class ResourceForecastFeature implements Feature{
             int room = core.storageCapacity - cur;
             if(room <= 0) continue;
             rows.add(item.emoji() + " [lightgray]" + mindustry.core.UI.formatAmount(cur)
-                + " [heal]" + rateText(ema[item.id]) + " [white]→ full " + etaText(room / ema[item.id]));
+                + " [green]" + rateText(ema[item.id]) + " [white]→ full " + etaText(room / ema[item.id]));
         }
     }
 

@@ -59,7 +59,19 @@ public class BeControl{
 
                     for(Fi file : self.parent().findAll(f -> !f.equals(self))) file.delete();
 
-                    self.copyTo(dest);
+                    //sonka: раньше self.copyTo(dest) truncate'ил dest прямо на месте и стримил в него -
+                    //если этот процесс-установщик убьют посреди записи, живой файл клиента остаётся
+                    //пустым/битым, что выглядит как самоудаление клиента. Копируем во временный файл
+                    //рядом с dest и подменяем одним move - оригинал цел, пока копия не завершится
+                    Fi tmp = dest.sibling(dest.name() + ".update-tmp");
+                    self.copyTo(tmp);
+                    try{
+                        java.nio.file.Files.move(tmp.file().toPath(), dest.file().toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+                    }catch(java.nio.file.AtomicMoveNotSupportedException atomicUnsupported){
+                        java.nio.file.Files.move(tmp.file().toPath(), dest.file().toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    }
                 }catch(Throwable e){
                     e.printStackTrace();
                 }

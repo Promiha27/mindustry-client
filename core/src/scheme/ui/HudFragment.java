@@ -114,8 +114,15 @@ public class HudFragment{
                 //helium: слева от блок-меню теперь может стоять колонка быстрой палитры (тот же
                 //frame, тот же масштаб) - сдвигаемся и на её визуальную ширину
                 float heQuick = ui.hudfrag.blockfrag.heQuickInv != null ? ui.hudfrag.blockfrag.heQuickInv.getWrapper().getWidth() : 0f;
-                pad.setTranslation(Scl.scl(building.fliped ? 4f : 178f) - (block.getWidth() + heQuick) * sonkaextras.PanelScale.effectiveScale(block), 0f);
+                float paletteScale = sonkaextras.PanelScale.effectiveScale(block);
+                pad.setTranslation(Scl.scl(building.fliped ? 4f : 178f) - (block.getWidth() + heQuick) * paletteScale, 0f);
                 pad.setWidth(Scl.scl(building.fliped ? 244f : 70f)); // more magic numbers to the god of magic numbers
+                //sonka: раньше панель только подъезжала следом за блок-меню, но не уменьшалась сама -
+                //теперь она ещё и визуально скейлится тем же множителем, что и блок-меню; якорь скейла -
+                //правый нижний угол (там панель стыкуется с блок-меню), чтобы стык не разъезжался
+                pad.setTransform(true);
+                pad.setOrigin(pad.getWidth(), 0f);
+                pad.setScale(paletteScale);
             });
         });
 
