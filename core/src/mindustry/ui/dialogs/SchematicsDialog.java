@@ -45,6 +45,14 @@ public class SchematicsDialog extends BaseDialog{
     private Pattern ignoreSymbols = Pattern.compile("[`~!@#$%^&*()\\-_=+{}|;:'\",<.>/?]");
     private Seq<String> tags, selectedTags = new Seq<>();
     private boolean checkedTags;
+    //sonka 2026-08-22: drag-to-reorder тегов в @schematic.edittags (взамен стрелок вверх/вниз) -
+    //dragTagSource/dragTagHover - какой тег тащат и над каким тегом сейчас курсор (для подсветки и
+    //чтобы touchUp знал, перед каким тегом вставлять); tagBoxMap - обратная карта "коробка тега на
+    //экране" -> имя тега, пересобирается на каждый rebuild диалога, используется в hitTag для
+    //попадания курсора в коробку (тот же InputListener + Core.scene.hit паттерн, что и drag-swap
+    //ячеек в SchematicsTableUi).
+    private String dragTagSource, dragTagHover;
+    private final ObjectMap<Table, String> tagBoxMap = new ObjectMap<>();
     private final ItemSeq reusableItemSeq = new ItemSeq();
     private ScrollPane pane;
 
@@ -596,6 +604,7 @@ public class SchematicsDialog extends BaseDialog{
         dialog.cont.pane(p -> {
             rebuild[0] = () -> {
                 p.clearChildren();
+                tagBoxMap.clear();
                 p.margin(12f).defaults().fillX().left();
 
                 p.table(t -> {
@@ -613,39 +622,24 @@ public class SchematicsDialog extends BaseDialog{
                 for(var tag : tags){
                     float si = 40f;
 
+                    Element[] gripHolder = {null};
+
                     var next = new Table(Tex.whiteui, n -> {
-                        n.setColor(Pal.gray);
                         n.margin(5f);
+                        //подсветка во время drag: сама перетаскиваемая коробка - полупрозрачная
+                        //("приподнята"), коробка под курсором (куда вставится тег) - акцентная рамка
+                        n.update(() -> n.setColor(
+                            tag.equals(dragTagSource) ? Tmp.c1.set(Pal.gray).mul(1f, 1f, 1f, 0.5f) :
+                            tag.equals(dragTagHover) ? Pal.accent : Pal.gray
+                        ));
 
+                        //ручка перетаскивания вместо стрелок вверх/вниз - drop поверх другого тега
+                        //вставляет перед ним, drop в пустое место переносит тег в конец списка
                         n.table(move -> {
-
-                            //move up
-                            move.button(Icon.upOpen, Styles.emptyi, () -> {
-                                int idx = tags.indexOf(tag);
-                                if(idx > 0){
-                                    if(Core.input.shift()){
-                                        tags.insert(0, tags.remove(idx));
-                                    } else {
-                                        tags.swap(idx, idx - 1);
-                                    }
-                                    tagsChanged();
-                                    rebuild[0].run();
-                                }
-                            }).size(si).tooltip("@editor.moveup").row();
-                            //move down
-                            move.button(Icon.downOpen, Styles.emptyi, () -> {
-                                int idx = tags.indexOf(tag);
-                                if(idx < tags.size - 1){
-                                    if(Core.input.shift()){
-                                        tags.insert(tags.size - 1, tags.remove(idx));
-                                    } else {
-                                        tags.swap(idx, idx + 1);
-                                    }
-                                    tagsChanged();
-                                    rebuild[0].run();
-                                }
-                            }).size(si).tooltip("@editor.movedown");
-                        }).fillY();
+                            move.center();
+                            gripHolder[0] = move.image(Icon.move).size(si).color(Color.lightGray)
+                                .tooltip("@client.schematic.dragtag").get();
+                        }).size(si).fillY();
 
                         n.table(t -> {
                             t.add(tag).left().row();
@@ -663,6 +657,9 @@ public class SchematicsDialog extends BaseDialog{
                         n.table(b -> {
                             b.margin(2);
 
+                            //массовое добавление/удаление схем этому тегу за один заход
+                            b.button(Icon.list, Styles.emptyi, () -> showTagSchematics(tag, () -> rebuild[0].run())).size(si)
+                                .tooltip("@client.schematic.tagcontents").row();
                             //rename tag
                             b.button(Icon.pencil, Styles.emptyi, () -> {
                                 ui.showTextInput("@schematic.renametag", "@name", tag, result -> {
@@ -701,6 +698,9 @@ public class SchematicsDialog extends BaseDialog{
                         }).fillY();
                     });
 
+                    tagBoxMap.put(next, tag);
+                    attachTagDrag(gripHolder[0], tag, () -> rebuild[0].run());
+
                     next.pack();
                     float w = next.getWidth() + Scl.scl(9f);
 
@@ -723,6 +723,136 @@ public class SchematicsDialog extends BaseDialog{
 
             resized(true, rebuild[0]);
         }).scrollX(false);
+        dialog.show();
+    }
+
+    /**
+     * Ручка-хендл драга коробки тега: {@code touchDown} ловится на самой ручке ({@code grip} -
+     * узкая, чтобы не конфликтовать с кликами по остальным кнопкам коробки), а хит-тест цели во
+     * время {@code touchDragged}/{@code touchUp} - по площади ВСЕЙ коробки через {@link #hitTag}
+     * (иначе поймать курсором узкую ручку соседней коробки было бы неудобно). Тот же
+     * InputListener + DRAG_SLOP паттерн, что у drag-swap ячеек в SchematicsTableUi.
+     */
+    void attachTagDrag(Element grip, String tag, Runnable onReorder){
+        boolean[] dragging = {false};
+        float[] start = {0, 0};
+        float slop = 10f;
+
+        grip.addListener(new InputListener(){
+            @Override
+            public boolean touchDown(InputEvent event, float x, float y, int pointer, KeyCode button){
+                if(button != KeyCode.mouseLeft) return false;
+                dragging[0] = false;
+                start[0] = x;
+                start[1] = y;
+                return true;
+            }
+
+            @Override
+            public void touchDragged(InputEvent event, float x, float y, int pointer){
+                try{
+                    if(!dragging[0] && (Math.abs(x - start[0]) > slop || Math.abs(y - start[1]) > slop)){
+                        dragging[0] = true;
+                        dragTagSource = tag;
+                    }
+                    if(!dragging[0]) return;
+
+                    String hover = hitTag(event.stageX, event.stageY);
+                    dragTagHover = tag.equals(hover) ? null : hover;
+                }catch(Throwable t){
+                    Log.err("[eui] schematic tag drag failed", t);
+                }
+            }
+
+            @Override
+            public void touchUp(InputEvent event, float x, float y, int pointer, KeyCode button){
+                try{
+                    if(dragging[0]){
+                        //над другой коробкой - встать перед ней; отпустили в пустом месте - в конец списка
+                        moveTag(tag, dragTagHover);
+                        onReorder.run();
+                    }
+                }catch(Throwable t){
+                    Log.err("[eui] schematic tag drop failed", t);
+                }
+                dragging[0] = false;
+                dragTagSource = null;
+                dragTagHover = null;
+            }
+        });
+    }
+
+    /** Какой коробке тега принадлежит элемент экрана под курсором ({@code null} - никакой). */
+    String hitTag(float stageX, float stageY){
+        var hit = Core.scene.hit(stageX, stageY, true);
+        if(hit == null) return null;
+        for(var e : tagBoxMap.entries()){
+            if(e.key == hit || hit.isDescendantOf(e.key)) return e.value;
+        }
+        return null;
+    }
+
+    /** Переносит {@code tag} так, чтобы он оказался прямо перед {@code beforeTag} ({@code null} - в конец списка). */
+    void moveTag(String tag, String beforeTag){
+        if(tag.equals(beforeTag)) return;
+        tags.remove(tag);
+        int idx = beforeTag == null ? -1 : tags.indexOf(beforeTag);
+        tags.insert(idx < 0 ? tags.size : idx, tag);
+        tagsChanged();
+    }
+
+    /**
+     * sonka 2026-08-22: "массовое добавление схем в 1 тег" - список всех схем с чекбоксами прямо
+     * для ОДНОГО тега, вместо того чтобы открывать тег-пикер у каждой схемы по отдельности
+     * ({@link #showNewTag}/иконку тега в описании конкретной схемы). Чекбокс переключается сразу
+     * ({@link #addTag}/{@link #removeTag}), без отдельного шага "сохранить".
+     */
+    void showTagSchematics(String tag, Runnable onChange){
+        var dialog = new BaseDialog(tag);
+        dialog.addCloseButton();
+
+        String[] filter = {""};
+        Runnable[] rebuildList = {null};
+
+        dialog.cont.table(top -> {
+            top.left();
+            top.image(Icon.zoom).padRight(4);
+            var field = top.field("", res -> {
+                filter[0] = res;
+                rebuildList[0].run();
+            }).growX().get();
+            field.setMessageText("@schematic.search");
+        }).growX().pad(4).row();
+
+        dialog.cont.pane(p -> {
+            rebuildList[0] = () -> {
+                p.clearChildren();
+                p.top();
+
+                String f = ignoreSymbols.matcher(filter[0].toLowerCase()).replaceAll("");
+                Seq<Schematic> shown = schematics.all().copy();
+                shown.sort((a, b) -> a.name().compareTo(b.name()));
+
+                boolean any = false;
+                for(Schematic s : shown){
+                    if(!f.isEmpty() && !ignoreSymbols.matcher(s.name().toLowerCase()).replaceAll("").contains(f)) continue;
+                    any = true;
+
+                    p.table(row -> {
+                        row.left();
+                        row.stack(new SchematicImage(s).setScaling(Scaling.fit)).size(32f).padRight(6f);
+                        row.check(s.name(), s.labels.contains(tag), checked -> {
+                            if(checked) addTag(s, tag); else removeTag(s, tag);
+                            onChange.run();
+                        }).left().growX();
+                    }).growX().pad(2).row();
+                }
+
+                if(!any) p.add("@none.found").color(Color.lightGray);
+            };
+            rebuildList[0].run();
+        }).grow().scrollX(false);
+
         dialog.show();
     }
 
