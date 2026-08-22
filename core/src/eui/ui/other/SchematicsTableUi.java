@@ -516,6 +516,7 @@ public class SchematicsTableUi{
             addToolButton(toolbar, Icon.rotateSmall, "rotate", this::rotateSelection, rowBreak);
             addToolButton(toolbar, Icon.tagSmall, "names", this::showNamesDialog, rowBreak);
             addToolButton(toolbar, Icon.imageSmall, "set-icon", this::setIconForSelection, rowBreak);
+            addToolButton(toolbar, Icon.refreshSmall, "auto-icons", this::autoIconsForSelection, rowBreak);
             addToolButton(toolbar, Icon.copySmall, "copy", this::copySelection, rowBreak);
             addToolButton(toolbar, Icon.pasteSmall, "paste", this::showPasteDialog, rowBreak);
             addToolButton(toolbar, Icon.trashSmall, "clear", this::clearSelectionCells, rowBreak);
@@ -822,6 +823,31 @@ public class SchematicsTableUi{
                 }
             }
             el.rotation = c.rotation;
+        }
+        if(!any && c != null && !c.schematic.isEmpty() && Core.settings.getBool("eui-SchemTableAutoIcons", true)){
+            //sonka 2026-08-22: авто-иконки по содержимому схемы (см. SchemAutoIcons) - только у
+            //ячеек БЕЗ вручную выбранных иконок, чисто на отрисовке: в сохранение ничего не пишется,
+            //ручной выбор в диалоге ячейки всегда главнее (как только пользователь выберет хоть одну
+            //иконку - этот путь не выполняется). Закрепить авто-набор в данных, чтобы потом подправить,
+            //можно кнопкой в диалоге ячейки / в тулбаре режима редактирования.
+            Seq<String> auto = SchemAutoIcons.names(findSchematic(c.schematic));
+            for(int i = 0; i < Math.min(auto.size, MAX_CELL_ICONS); i++){
+                String name = auto.get(i);
+                Drawable d = Icons.getIconDrawable(name);
+                if(d == null) continue;
+                if(i == 0){
+                    el.main = d;
+                    el.mainFrac = iconFrac(SchemTableData.MAIN_ICON_DEFAULT_SIZE);
+                    el.mainBoost = Icons.isBlockIcon(name);
+                    el.mainGlyph = Icons.isGlyphIcon(name);
+                }else{
+                    el.corners[i - 1] = d;
+                    el.cornerFracs[i - 1] = iconFrac(SchemTableData.CORNER_ICON_DEFAULT_SIZE);
+                    el.cornerBoost[i - 1] = Icons.isBlockIcon(name);
+                    el.cornerGlyph[i - 1] = Icons.isGlyphIcon(name);
+                }
+                any = true;
+            }
         }
         if(!any && el.main == null){
             //sonka: раньше был жёстко зашит 0.6f - у большинства ячеек нет вручную выбранной
@@ -1366,6 +1392,33 @@ public class SchematicsTableUi{
     }
 
     /** Задание основной иконки ячейке или всей группе/выделению ОДНИМ выбором из пикера. */
+    /**
+     * Закрепить авто-иконки (см. {@link SchemAutoIcons}) в данных всех выделенных ячеек со схемой -
+     * ПЕРЕЗАПИСЫВАЕТ ручной набор иконок (это и есть смысл кнопки: "пересчитать по схеме");
+     * ячейки без схемы или без значимых блоков пропускаются.
+     */
+    void autoIconsForSelection(){
+        if(selection.isEmpty()){
+            ui.announce(Core.bundle.get("schematics-table.edit.need-selection"), 2f);
+            return;
+        }
+        Page p = page();
+        int count = 0;
+        for(int i = 0; i < selection.size; i++){
+            CellData c = p.cells.get(selection.get(i));
+            if(c == null || c.schematic.isEmpty()) continue;
+            Seq<String> auto = SchemAutoIcons.names(findSchematic(c.schematic));
+            if(auto.isEmpty()) continue;
+            applyCellIconNames(c, auto);
+            count++;
+        }
+        if(count > 0){
+            data().save();
+            rebuildTable();
+        }
+        ui.announce(Core.bundle.format("schematics-table.edit.auto-iconed", count), 2f);
+    }
+
     void setIconForSelection(){
         if(selection.isEmpty()){
             ui.announce(Core.bundle.get("schematics-table.edit.need-selection"), 2f);
@@ -1529,6 +1582,18 @@ public class SchematicsTableUi{
                 name -> toggleCellIcon(row, col, name, rebuild),
                 name -> cellIconNames(page().cell(row, col)).contains(name)
             )).growX().padTop(4f).row();
+
+            t.button(Core.bundle.get("schematics-table.dialog.cell.auto-icons"), Icon.refresh, () -> {
+                CellData cc = page().cell(row, col);
+                Seq<String> auto = cc == null ? new Seq<>() : SchemAutoIcons.names(findSchematic(cc.schematic));
+                if(auto.isEmpty()){
+                    ui.announce(Core.bundle.get("schematics-table.dialog.cell.auto-icons-none"), 2f);
+                    return;
+                }
+                applyCellIconNames(page().cellForWrite(row, col), auto);
+                data().save();
+                rebuild.run();
+            }).width(260f).height(50f).padTop(12f).row();
 
             t.button(Core.bundle.get("schematics-table.dialog.clear-cell"), Icon.trash, () -> {
                 page().removeCell(row, col);

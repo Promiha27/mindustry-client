@@ -184,6 +184,8 @@ public class EUIMod{
             table.checkPref("eui-ShowSchematicsPreview", true);
             //порядок цифр цепочки G+две цифры (см. SchematicsTableUi.pollChord)
             table.checkPref("eui-SchemTableColFirst", false);
+            //sonka 2026-08-22: авто-иконки по содержимому схемы у ячеек без ручных иконок (SchemAutoIcons)
+            table.checkPref("eui-SchemTableAutoIcons", true);
             //размеры теперь у КАЖДОЙ страницы свои (диалог страницы по ПКМ); слайдеры - дефолт для новых страниц
             table.sliderPref("eui-SchematicsTableRows", 4, 2, 20, 1, i -> i + "");
             table.sliderPref("eui-SchematicsTableColumns", 5, 4, 16, 1, i -> i + "");
