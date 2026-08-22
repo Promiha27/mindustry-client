@@ -79,8 +79,21 @@ public class BeControl{
         checkUpdate(done, repo);
     }
 
-    /** asynchronously checks for updates. */
+    /** asynchronously checks for updates. Equivalent to checkUpdate(done, repo, true). */
     public void checkUpdate(Boolc done, String repo){
+        checkUpdate(done, repo, true);
+    }
+
+    /**
+     * asynchronously checks for updates.
+     * sonka: requireCustomChannel гейтит второй предохранитель после инцидента 2026-08-20 (апдейтер
+     * подменил кастомную сборку стоковым Foo) - по умолчанию true, т.к. большинство вызовов идут от
+     * мутируемой настройки updateurl (или удалённой команды CommandTransmission.UPDATE от чужого
+     * сертификата) и не должны иметь возможность увести клиент со своего канала custom-b*. Кнопки,
+     * которые sonka жмёт САМ намеренно (Uninstall foo's, Switch to v7), передают false - это его
+     * осознанный выбор уйти с кастомной сборки, а не тихая подмена.
+     */
+    public void checkUpdate(Boolc done, String repo, boolean requireCustomChannel){
         Http.get("https://api.github.com/repos/" + repo + "/releases/latest")
             .error(e -> Core.app.post(() -> {
                 done.get(false);
@@ -89,10 +102,7 @@ public class BeControl{
             .submit(res -> {
                 Jval val = Jval.read(res.getResultAsString());
                 String newBuild = val.getString("name");
-                //sonka: второй предохранитель после инцидента 2026-08-20 (апдейтер подменил кастомную
-                //сборку стоковым Foo). Наш канал релизов именует сборки "custom-bN" - всё остальное
-                //(включая релизы mindustry-antigrief, если их URL вбить руками) не принимается.
-                if(!newBuild.startsWith("custom-")){
+                if(requireCustomChannel && !newBuild.startsWith("custom-")){
                     Log.warn("[updater] release '@' is not from the custom channel (custom-b*), ignoring", newBuild);
                     Core.app.post(() -> done.get(false));
                     return;

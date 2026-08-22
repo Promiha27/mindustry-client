@@ -117,7 +117,7 @@ public class MenuFragment{
                                 }else{
                                     becontrol.showUpdateDialog();
                                 }
-                            }, "anuken/mindustry");
+                            }, "anuken/mindustry", false);
                         }
                     })
                 ).size(200, 60).padRight(10);
@@ -132,7 +132,7 @@ public class MenuFragment{
                         }else{
                             becontrol.showUpdateDialog();
                         }
-                    }, "mindustry-antigrief/mindustry-client-v7-builds");
+                    }, "mindustry-antigrief/mindustry-client-v7-builds", false);
                 }).size(200, 60).padRight(10);
 
                 // "Switch to (un)stable" button
