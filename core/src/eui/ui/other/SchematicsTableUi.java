@@ -667,10 +667,38 @@ public class SchematicsTableUi{
         float mainFrac = 0.6f;
         /** true - иконка БЛОКА (в спрайте block.uiIcon заложен отступ, который компенсируем бустом) - см. {@link Icons#isBlockIcon}; предметы/юниты/жидкости/значки - false. */
         boolean mainBoost;
+        /** true - значок из {@code Icon.icons} (глиф шрифта) - рисуется через {@link #drawIcon}, см. почему. */
+        boolean mainGlyph;
         final Drawable[] corners = new Drawable[4];
         final float[] cornerFracs = new float[4];
         final boolean[] cornerBoost = new boolean[4];
+        final boolean[] cornerGlyph = new boolean[4];
         int rotation;
+
+        /**
+         * sonka 2026-08-22: "эти иконки не меняют размер, если их несколько в ячейке" - после
+         * ТРЁХ правок констант/классификации без эффекта выяснилось по исходнику
+         * {@code Fonts.getGlyph}: drawable значка ({@code Icon.*}) переопределяет
+         * {@code draw(x, y, width, height)} и ИГНОРИРУЕТ переданные width/height - всегда рисует
+         * глиф его родным размером {@code g.width x g.height}, лишь центрируя в заданном
+         * прямоугольнике (в ванили это by design: размер {@code Icon.*} фиксирован, для мелких
+         * есть отдельные {@code *Small}). Поэтому ни GRID_FRAC_GLYPH, ни frac одиночного режима
+         * на значки не действовали вовсе - "идеальный" одиночный значок был просто совпадением
+         * родного размера с клеткой. Для глифов рисуем регион напрямую нужным размером, сохраняя
+         * пропорции через {@code imageSize()} (= max(g.width, g.height), по нему и вписываем в
+         * квадрат s x s); {@code TextureRegion.width/height} у перевёрнутого по v региона глифа
+         * корректны (считаются через Math.abs - проверено по байткоду Arc). Контентные иконки -
+         * обычные TextureRegionDrawable, у них честный stretch, оставлен прежний путь.
+         */
+        static void drawIcon(Drawable d, boolean glyph, float x, float y, float s){
+            if(glyph && d instanceof TextureRegionDrawable trd && trd.getRegion() != null){
+                TextureRegion r = trd.getRegion();
+                float size = Math.max(1f, trd.imageSize());
+                Draw.rect(r, x + s / 2f, y + s / 2f, s * r.width / size, s * r.height / size);
+            }else{
+                d.draw(x, y, s, s);
+            }
+        }
 
         /** Единый размер грид-иконок при 2-4 штуках сразу (старый EUI++ стиль) - безопасно помещает пару бок о бок с отступом даже с учётом буста контентных иконок ниже; это ДОБУСТовая база для контентных, не финальный размер (см. MAX_GRID_FRAC). */
         static final float GRID_FRAC = 0.46f;
@@ -717,6 +745,7 @@ public class SchematicsTableUi{
             Drawable[] slots = {main, corners[0], corners[1], corners[2], corners[3]};
             float[] fracs = {mainFrac, cornerFracs[0], cornerFracs[1], cornerFracs[2], cornerFracs[3]};
             boolean[] boosts = {mainBoost, cornerBoost[0], cornerBoost[1], cornerBoost[2], cornerBoost[3]};
+            boolean[] glyphs = {mainGlyph, cornerGlyph[0], cornerGlyph[1], cornerGlyph[2], cornerGlyph[3]};
             int count = 0;
             for(Drawable d : slots) if(d != null) count++;
 
@@ -725,7 +754,7 @@ public class SchematicsTableUi{
                     if(slots[i] == null) continue;
                     float frac = boosts[i] ? Math.min(fracs[i] * CONTENT_ICON_BOOST, MAX_SINGLE_FRAC) : fracs[i];
                     float s = Math.min(w, h) * frac;
-                    slots[i].draw(x + (w - s) / 2f, y + (h - s) / 2f, s, s);
+                    drawIcon(slots[i], glyphs[i], x + (w - s) / 2f, y + (h - s) / 2f, s);
                     break;
                 }
             }else if(count > 1){
@@ -744,7 +773,7 @@ public class SchematicsTableUi{
                     float s = minwh * frac;
                     float cx = (i % 2 == 0) ? x + pad : x + w - s - pad;
                     float cy = (i < 2) ? y + h - s - pad : y + pad;
-                    d.draw(cx, cy, s, s);
+                    drawIcon(d, glyphs[j], cx, cy, s);
                 }
             }
 
@@ -777,6 +806,7 @@ public class SchematicsTableUi{
                     //здесь та же логика: размер одиночной иконки решает счётчик, а не хранилище.
                     el.mainFrac = iconFrac(SchemTableData.MAIN_ICON_DEFAULT_SIZE);
                     el.mainBoost = Icons.isBlockIcon(c.main.name);
+                    el.mainGlyph = Icons.isGlyphIcon(c.main.name);
                     any = true;
                 }
             }
@@ -787,6 +817,7 @@ public class SchematicsTableUi{
                     el.corners[i] = d;
                     el.cornerFracs[i] = iconFrac(SchemTableData.CORNER_ICON_DEFAULT_SIZE);
                     el.cornerBoost[i] = Icons.isBlockIcon(c.corners[i].name);
+                    el.cornerGlyph[i] = Icons.isGlyphIcon(c.corners[i].name);
                     any = true;
                 }
             }
