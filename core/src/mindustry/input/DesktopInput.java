@@ -32,6 +32,7 @@ import mindustry.game.EventType.*;
 import mindustry.game.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
+import mindustry.type.*;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 import mindustry.ui.fragments.*;
@@ -1129,9 +1130,12 @@ public class DesktopInput extends InputHandler{
             if(isBuilding){
                 player.shooting = false;
             }else if(Core.settings.getBool("automineonpause") && player.unit() != null && player.unit().type.mineTier > 0){
-                //sonka: фича "копать при паузе стройки" - юзер сам выбирает приоритет руды через
-                //defaultminepathargs (тот же список, что использует ручной autoMine хоткей)
-                Navigation.follow(new MinePath());
+                //sonka: фича "копать при паузе стройки" - НЕ используем MinePath/Navigation (это
+                //отдельная фича клиента с ходьбой через полкарты и телепортами при пересчёте пути),
+                //юнит просто начинает копать ближайшую руду, если она уже в радиусе добычи, по
+                //приоритету, который игрок сам задаёт в настройках (automineonpausepriority)
+                Tile ore = pickAutoMinePauseOre(player.unit());
+                if(ore != null) player.unit().mineTile = ore;
             }
         }
 
@@ -1402,6 +1406,31 @@ public class DesktopInput extends InputHandler{
                 Call.rotateBlock(player, cursor.build, Core.input.axisTap(Binding.rotate) > 0);
             }
         }
+    }
+
+    /** Для automineonpause: по списку приоритета руды из настроек ищет ближайшую (уже
+     * находящуюся в радиусе добычи юнита) руду - специально без какой-либо ходьбы/навигации.
+     * Повторяет проверки InputHandler.canMine(), но без гварда по наведению мыши на UI -
+     * тут нет клика, триггер сугубо по клавише, так что позиция курсора ни при чём. */
+    @Nullable
+    Tile pickAutoMinePauseOre(Unit unit){
+        boolean doubleTap = Core.settings.getBool("doubletapmine");
+
+        for(String name : Core.settings.getString("automineonpausepriority").trim().split("\\s+")){
+            Item item = content.item(name.trim().toLowerCase());
+            if(item == null || !unit.canMine(item)) continue;
+
+            Tile tile = indexer.findClosestMineableOre(unit, item);
+            if(tile == null || !unit.validMine(tile)) continue;
+
+            Item result = unit.getMineResult(tile);
+            if(result == null || !unit.acceptsItem(result)) continue;
+            if(!doubleTap && tile.floor().playerUnmineable && tile.overlay().itemDrop == null) continue;
+            if(!doubleTap && tile.overlay().playerUnmineable && tile.overlay().itemDrop != null) continue;
+
+            return tile;
+        }
+        return null;
     }
 
     @Override

@@ -585,6 +585,7 @@ public class SettingsMenuDialog extends BaseDialog{
             game.checkPref("backgroundpause", true);
             game.checkPref("buildautopause", false);
             game.checkPref("automineonpause", false);
+            game.textPref("automineonpausepriority", "copper lead coal titanium thorium");
             game.checkPref("distinctcontrolgroups", true);
         }
 
