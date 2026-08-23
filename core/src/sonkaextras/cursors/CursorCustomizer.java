@@ -38,9 +38,12 @@ import mindustry.ui.Fonts;
  *     нет); наш процентный масштаб его заменяет. Единственное оставшееся использование -
  *     стартовый курсор в {@code Fonts.loadSystemCursors()}, когда настройки ещё не прочитаны.</li>
  * </ul>
- * Пересоздание курсоров происходит ТОЛЬКО на смену настроек (слайдер/диалог/импорт пака) - в
- * кадровом цикле никакой работы нет. Итоговый размер клампится в {@link #MAX_CURSOR_SIZE}:
- * Windows не принимает аппаратные курсоры больше ~256px.
+ * Пересоздание курсоров происходит на смену настроек (слайдер/диалог/импорт пака); единственное
+ * исключение - тинт-режимы {@code gradient}/{@code rainbow} ({@link TintMode}), которые throttled
+ * (раз в {@link #REGEN_INTERVAL} кадров, см. {@link #updateAnimated()}) перестраивают только свои
+ * слоты из кадрового цикла. Без анимированных слотов работы в кадровом цикле по-прежнему нет.
+ * Итоговый размер клампится в {@link #MAX_CURSOR_SIZE}: Windows не принимает аппаратные курсоры
+ * больше ~256px.
  */
 public final class CursorCustomizer{
     public static final String scaleKey = "sonka-cursor-scale";
@@ -49,6 +52,14 @@ public final class CursorCustomizer{
     /** Лимит стороны исходной PNG: защита от случайной фотографии на мегабайты (курсор всё равно ужмётся до 256). */
     public static final int MAX_SOURCE_SIZE = 1024;
     public static final int MIN_PERCENT = 20, MAX_PERCENT = 200;
+    /** Тайминги анимированного тинта - те же, что были у прежней отдельной cursor-rainbow фичи. */
+    static final float RAINBOW_SPEED = 1.2f; // градусов в тик
+    static final float GRADIENT_SWING = 40f; // масштаб sine по времени -> полный A->B->A свинг ~4с
+    static final int REGEN_INTERVAL = 6; // кадров между перестройками анимированных слотов
+
+    /** Режим тинта слота: {@code flat} - обычный статический цвет ({@link #tint}), {@code gradient} -
+     * шиммер между {@link #tint} и {@link #tint2}, {@code rainbow} - HSV-цикл (игнорирует оба цвета). */
+    public enum TintMode{flat, gradient, rainbow}
 
     /** Один курсор игры: имя (ключи настроек/файлов/бандла), встроенный спрайт и способ установки. */
     public static final class Slot{
@@ -89,6 +100,16 @@ public final class CursorCustomizer{
         return "sonka-cursor-tint-" + s.name;
     }
 
+    /** Второй цвет градиента (первый - обычный {@link #tintKey}). */
+    public static String tint2Key(Slot s){
+        return "sonka-cursor-tint2-" + s.name;
+    }
+
+    /** Режим тинта слота ({@link TintMode#ordinal()}); ключа нет = flat. */
+    public static String tintModeKey(Slot s){
+        return "sonka-cursor-tintmode-" + s.name;
+    }
+
     /** Хотспот в координатах ИСХОДНОЙ пиксмапы (Point2.pack); ключа нет = центр, как у ванили. */
     public static String hotspotKey(Slot s){
         return "sonka-cursor-hotspot-" + s.name;
@@ -113,6 +134,50 @@ public final class CursorCustomizer{
         return new Color().set(Core.settings.getInt(tintKey(s), 0xffffffff));
     }
 
+    /** Второй цвет градиента или null, если не задан. */
+    public static @Nullable Color tint2(Slot s){
+        if(!Core.settings.has(tint2Key(s))) return null;
+        return new Color().set(Core.settings.getInt(tint2Key(s), 0xffffffff));
+    }
+
+    public static TintMode tintMode(Slot s){
+        int m = Core.settings.getInt(tintModeKey(s), TintMode.flat.ordinal());
+        return m >= 0 && m < TintMode.values().length ? TintMode.values()[m] : TintMode.flat;
+    }
+
+    public static boolean isAnimated(Slot s){
+        TintMode m = tintMode(s);
+        return m == TintMode.gradient || m == TintMode.rainbow;
+    }
+
+    static boolean anyAnimated(){
+        for(Slot s : slots) if(isAnimated(s)) return true;
+        return false;
+    }
+
+    /**
+     * Тинт, фактически применяемый к пиксмапе прямо сейчас: для {@code flat} - обычный
+     * {@link #tint}, для {@code gradient}/{@code rainbow} - цвет текущего кадра анимации.
+     * В отличие от {@link #tint}, всегда не-null для gradient/rainbow (белый по умолчанию, если
+     * цвета ещё не выбраны).
+     */
+    public static Color resolvedTint(Slot s){
+        TintMode m = tintMode(s);
+        if(m == TintMode.rainbow){
+            Color out = new Color();
+            out.fromHsv((Time.time * RAINBOW_SPEED) % 360f, 1f, 1f);
+            return out;
+        }
+        if(m == TintMode.gradient){
+            Color a = tint(s), b = tint2(s);
+            Color out = a != null ? new Color(a) : new Color(Color.white);
+            out.lerp(b != null ? b : Color.white, 0.5f + 0.5f * Mathf.sin(Time.time, GRADIENT_SWING, 1f));
+            return out;
+        }
+        Color flat = tint(s);
+        return flat != null ? flat : Color.white;
+    }
+
     /**
      * Исходная пиксмапа слота: кастомный PNG, если он есть и валиден, иначе встроенный спрайт.
      * Битый/слишком большой кастомный файл не роняет игру - логируется и игнорируется.
@@ -133,11 +198,10 @@ public final class CursorCustomizer{
         return new Pixmap(Core.files.internal("cursors/" + s.sprite + ".png"));
     }
 
-    /** Исходник с уже нанесённым тинтом (без масштаба). Владение - у вызывающего. */
+    /** Исходник с уже нанесённым тинтом текущего кадра (без масштаба). Владение - у вызывающего. */
     public static Pixmap composed(Slot s){
         Pixmap p = basePixmap(s);
-        Color t = tint(s);
-        if(t != null) tintPixmap(p, t);
+        if(tintMode(s) != TintMode.flat || tint(s) != null) tintPixmap(p, resolvedTint(s));
         return p;
     }
 
@@ -205,6 +269,8 @@ public final class CursorCustomizer{
         rebuild();
     }
 
+    static int animFrame;
+
     /**
      * Пересоздать ВСЕ курсоры по текущим настройкам. Зовётся только на смену настроек (слайдер,
      * диалог, импорт пака, сохранение из редактора) - никогда в кадровом цикле. Ошибка по одному
@@ -212,8 +278,27 @@ public final class CursorCustomizer{
      */
     public static void rebuild(){
         if(Vars.headless || Vars.mobile || Vars.ui == null) return;
+        rebuildSlots(slots);
+    }
+
+    /**
+     * Throttled-перестройка ТОЛЬКО анимированных слотов (gradient/rainbow) - единственное место,
+     * которое трогает курсоры из кадрового цикла ({@link mindustry.core.UI#update()}), и то не
+     * чаще раза в {@link #REGEN_INTERVAL} кадров, и только если хоть один слот анимирован
+     * (иначе выходит немедленно - обычный, полностью статичный случай стоит одну проверку).
+     */
+    public static void updateAnimated(){
+        if(Vars.headless || Vars.mobile || Vars.ui == null || !anyAnimated()) return;
+        if(animFrame++ % REGEN_INTERVAL != 0) return;
+        Seq<Slot> animated = new Seq<>();
+        for(Slot s : slots) if(isAnimated(s)) animated.add(s);
+        rebuildSlots(animated);
+    }
+
+    /** Общее тело пересборки для {@link #rebuild()} и {@link #updateAnimated()}. */
+    static void rebuildSlots(Seq<Slot> targets){
         Cursor arrowCursor = null;
-        for(Slot s : slots){
+        for(Slot s : targets){
             Cursor cur;
             try{
                 cur = create(s);

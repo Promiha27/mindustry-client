@@ -19,11 +19,12 @@ import static mindustry.Vars.*;
 /**
  * Главный диалог кастомизации курсоров (кнопка «Курсоры...» в секции Sonka Extras): список всех
  * курсоров игры с превью и пер-курсорными действиями - своя PNG-текстура (кладётся в
- * <data>/cursors/<слот>.png; наличие файла = замена активна), тинт-цвет через ванильный
- * ColorPicker, пиксельный редактор и сброс. Превью показывает текстуру с тинтом (тинт - это
- * цвет Image, ровно тот же мультипликативный тинт, что движок применяет к пиксмапе), итоговый
- * размер после масштаба написан подписью. Все изменения применяются сразу же
- * ({@link CursorCustomizer#rebuild()}).
+ * <data>/cursors/<слот>.png; наличие файла = замена активна), тинт (статический цвет, gradient-
+ * шиммер или rainbow - {@link CursorColorDialog}), пиксельный редактор и сброс. Превью показывает
+ * текстуру с тинтом текущего кадра (тинт - это цвет Image, ровно тот же мультипликативный тинт,
+ * что движок применяет к пиксмапе; для gradient/rainbow это просто снимок момента открытия -
+ * превью само не анимируется), итоговый размер после масштаба написан подписью. Все изменения
+ * применяются сразу же ({@link CursorCustomizer#rebuild()}/{@link CursorCustomizer#updateAnimated()}).
  * <p>
  * Текстуры превью пересоздаются на каждый setup() и живут парой со своей пиксмапой до
  * закрытия/перестройки (паттерн ванильного CanvasEditDialog: Texture(Pixmap) не забирает
@@ -75,25 +76,29 @@ public class CursorsDialog extends BaseDialog{
             resources.add(tex);
             resources.add(pix);
             Image img = new Image(new TextureRegion(tex));
-            Color tint = CursorCustomizer.tint(s);
-            if(tint != null) img.setColor(tint);
+            img.setColor(CursorCustomizer.resolvedTint(s)); //снимок текущего кадра - для gradient/rainbow превью не анимировано
             row.stack(new Image(Tex.alphaBg), img).size(48f).pad(4f);
 
             boolean custom = CursorCustomizer.customFile(s).exists();
+            CursorCustomizer.TintMode mode = CursorCustomizer.tintMode(s);
+            String modeTag = mode == CursorCustomizer.TintMode.gradient ? " [accent]" + Core.bundle.get("client.sonka.cursors.colordialog.gradient") + "[]"
+                : mode == CursorCustomizer.TintMode.rainbow ? " [accent]" + Core.bundle.get("client.sonka.cursors.colordialog.rainbow") + "[]" : "";
             row.table(text -> {
                 text.left();
-                text.add(Core.bundle.get("client.sonka.cursors.slot." + s.name) + (custom ? " [accent]PNG[]" : "")).left().row();
+                text.add(Core.bundle.get("client.sonka.cursors.slot." + s.name) + (custom ? " [accent]PNG[]" : "") + modeTag).left().row();
                 text.add(pix.width + "x" + pix.height + " > " + CursorCustomizer.effectiveSize(pix.width) + "x" + CursorCustomizer.effectiveSize(pix.height) + "px")
                     .color(Color.gray).left();
             }).growX().padLeft(8f);
 
             row.defaults().size(48f).pad(2f);
             row.button(Icon.file, Styles.cleari, () -> pickFile(s)).tooltip("@client.sonka.cursors.file");
-            row.button(Icon.pick, Styles.cleari, () -> pickColor(s)).tooltip("@client.sonka.cursors.color");
+            row.button(Icon.pick, Styles.cleari, () -> new CursorColorDialog(s, this::setup).show()).tooltip("@client.sonka.cursors.color");
             row.button(Icon.pencil, Styles.cleari, () -> new CursorEditorDialog(s, this::setup).show()).tooltip("@client.sonka.cursors.editor");
             row.button(Icon.refresh, Styles.cleari, () -> reset(s)).tooltip("@client.sonka.cursors.reset")
                 .disabled(b -> !CursorCustomizer.customFile(s).exists()
                     && !Core.settings.has(CursorCustomizer.tintKey(s))
+                    && !Core.settings.has(CursorCustomizer.tint2Key(s))
+                    && CursorCustomizer.tintMode(s) == CursorCustomizer.TintMode.flat
                     && !Core.settings.has(CursorCustomizer.hotspotKey(s)));
         }).growX().pad(2f);
     }
@@ -120,20 +125,12 @@ public class CursorsDialog extends BaseDialog{
         });
     }
 
-    /** «Цвет»: тинт через ванильный ColorPicker (без альфы - прозрачность курсору задаёт сама текстура). */
-    void pickColor(Slot s){
-        Color current = CursorCustomizer.tint(s);
-        ui.picker.show(current == null ? new Color(Color.white) : current, false, c -> {
-            Core.settings.put(CursorCustomizer.tintKey(s), c.rgba());
-            CursorCustomizer.rebuild();
-            setup();
-        });
-    }
-
-    /** «Сброс»: слот к чистой ванили - удалить кастомный PNG, тинт и хотспот. */
+    /** «Сброс»: слот к чистой ванили - удалить кастомный PNG, тинт (оба цвета + режим) и хотспот. */
     void reset(Slot s){
         CursorCustomizer.customFile(s).delete();
         Core.settings.remove(CursorCustomizer.tintKey(s));
+        Core.settings.remove(CursorCustomizer.tint2Key(s));
+        Core.settings.remove(CursorCustomizer.tintModeKey(s));
         Core.settings.remove(CursorCustomizer.hotspotKey(s));
         CursorCustomizer.rebuild();
         setup();

@@ -170,6 +170,10 @@ public class UI implements ApplicationListener, Loadable{
 
         PerfCounter.ui.begin();
 
+        //sonka: throttled-перестройка gradient/rainbow слотов кастомизации курсоров (см. javadoc
+        //CursorCustomizer.updateAnimated) - без анимированных слотов это одна дешёвая проверка
+        sonkaextras.cursors.CursorCustomizer.updateAnimated();
+
         Events.fire(Trigger.uiDrawBegin);
 
         updatePopup();
