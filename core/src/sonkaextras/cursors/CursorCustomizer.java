@@ -11,6 +11,7 @@ import arc.math.geom.*;
 import arc.struct.*;
 import arc.util.*;
 import mindustry.Vars;
+import mindustry.input.DesktopInput;
 import mindustry.ui.Fonts;
 
 /**
@@ -320,8 +321,11 @@ public final class CursorCustomizer{
                 }
             }
             if(s.system != null){
-                s.system.dispose(); //освобождает предыдущий подложенный курсор (или ничего на первом заходе)
+                //сперва подставляем новый, потом освобождаем старый (наш же прошлый s.created) -
+                //обратный порядок (dispose, затем set) на миг оставляет слот без курсора вовсе
+                Cursor old = s.created;
                 s.system.set(cur);
+                if(old != null) old.dispose();
             }else{
                 Cursor old = s.uiGet.get();
                 s.uiSet.get(cur);
@@ -333,6 +337,26 @@ public final class CursorCustomizer{
         //Graphics.cursor кэширует lastCursor по identity - подмена реализации SystemCursor.arrow
         //сама по себе ОС-курсор не обновит. Прямая установка нового объекта сбивает кэш; со
         //следующего кадра DesktopInput/сцена ставят контекстный курсор как обычно.
-        if(arrowCursor != null && (forcePush || Core.scene == null || !Core.scene.hasMouse())) Core.graphics.cursor(arrowCursor);
+        //Throttled-анимации (forcePush=false) форсить нельзя вслепую: стрелка - не единственный
+        //курсор в игровом мире (наведение на руду/юнит/блок подставляет drill/target/repair/hand -
+        //DesktopInput.cursorType), форс каждые REGEN_INTERVAL кадров сбивал бы их на стрелку и
+        //создавал мигание между "обычным" видом и контекстным курсором игры. Поэтому вне явной
+        //смены настройки форсим, только если стрелка и так должна сейчас отображаться.
+        if(arrowCursor != null && (forcePush || (!hasMouseOverUi() && worldWantsArrow()))) Core.graphics.cursor(arrowCursor);
+    }
+
+    /** Мышь сейчас над сценой (диалог/меню/HUD) - там курсором распоряжается сама сцена. */
+    static boolean hasMouseOverUi(){
+        return Core.scene != null && Core.scene.hasMouse();
+    }
+
+    /**
+     * В игровом мире (не над UI) прямо сейчас должна показываться именно стрелка, а не
+     * контекстный курсор (drill/target/repair/unload/hand при наведении на руду/юнита/блок) -
+     * {@link DesktopInput#cursorType}. Пока активного {@code DesktopInput} нет (нет игры/другой
+     * обработчик ввода) считаем, что стрелка активна - это соответствует прежнему поведению.
+     */
+    static boolean worldWantsArrow(){
+        return !(Vars.control != null && Vars.control.input instanceof DesktopInput di) || di.cursorType == SystemCursor.arrow;
     }
 }
