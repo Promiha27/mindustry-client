@@ -325,7 +325,7 @@ public final class CursorCustomizer{
      */
     static void rebuildSlots(Seq<Slot> targets, boolean forcePush){
         //решаем ДО цикла - нужно и чтобы пропустить пересборку стрелки, если она в этот раз не
-        //покажется (см. ниже), и как условие финального пуша.
+        //покажется (см. ниже), и как условие бэкенд-пуша внутри цикла.
         //ВАЖНО: наведение мыши на UI сюда не входит. SystemCursor.arrow - это ОБЁРТКА
         //(arc.Graphics.cursor(): для SystemCursor дереференсит в .cursor и ставит именно его) -
         //DesktopInput при переходе мир->UI пушит именно её (см. cursorType/changedCursor), и она
@@ -335,7 +335,6 @@ public final class CursorCustomizer{
         //Гейтить ещё и по hasMouseOverUi() было ошибкой (баг b13 "цвет не меняется") - стрелка
         //визуально остаётся активной поверх UI почти всегда, а мы переставали её обновлять.
         boolean pushArrow = forcePush || worldWantsArrow();
-        Cursor arrowCursor = null;
         for(Slot s : targets){
             //throttled-тик стрелки, пока в мире прямо сейчас нужен контекстный курсор - не просто
             //бесполезен, а ОПАСЕН: Graphics.cursor кэширует lastCursor по identity, и OS может
@@ -360,9 +359,18 @@ public final class CursorCustomizer{
             }
             if(s.system != null){
                 //сперва подставляем новый, потом освобождаем старый (наш же прошлый s.created) -
-                //обратный порядок (dispose, затем set) на миг оставляет слот без курсора вовсе
+                //обратный порядок (dispose, затем set) на миг оставляет слот без курсора вовсе.
+                //НО этого недостаточно для стрелки: сам .set() лишь меняет поле обёртки, а реально
+                //активный на экране нативный хэндл - это ещё старый (см. класс-javadoc про identity-
+                //кэш lastCursor). Если после .set() сразу дать old.dispose(), мы освобождаем хэндл,
+                //который прямо сейчас показывает ОС - Windows валится на системную стрелку в тот же
+                //момент (баг "на 1 кадр меняется на курсор windows", особенно заметно на rainbow
+                //из-за резких скачков цвета между тиками). Поэтому для стрелки бэкенд-пуш нового
+                //хэндла (Core.graphics.cursor - сбивает identity-кэш и реально просит ОС его показать)
+                //должен случиться МЕЖДУ .set() и dispose(), а не после всего цикла.
                 Cursor old = s.created;
                 s.system.set(cur);
+                if(s.system == SystemCursor.arrow && pushArrow) Core.graphics.cursor(cur);
                 if(old != null) old.dispose();
             }else{
                 Cursor old = s.uiGet.get();
@@ -370,12 +378,7 @@ public final class CursorCustomizer{
                 if(old != null && !(old instanceof SystemCursor)) old.dispose();
             }
             s.created = cur;
-            if(s.system == SystemCursor.arrow) arrowCursor = cur;
         }
-        //Graphics.cursor кэширует lastCursor по identity - подмена реализации SystemCursor.arrow
-        //сама по себе ОС-курсор не обновит. Прямая установка нового объекта сбивает кэш; со
-        //следующего кадра DesktopInput/сцена ставят контекстный курсор как обычно.
-        if(arrowCursor != null && pushArrow) Core.graphics.cursor(arrowCursor);
     }
 
     /**
