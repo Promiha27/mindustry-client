@@ -17,8 +17,8 @@ public class BackgroundSettingsDialog extends BaseDialog {
         name = "backgroundSettingDialog";
 
         Table table = cont;
-        table.button("Select Background Image", Icon.file, () -> {
-            FileChooser.open("png").submit( file -> {
+        table.button("Select Background Image/GIF", Icon.file, () -> {
+            FileChooser.open("png", "gif").submit( file -> {
                 try {
                     if (file != null) {
                         Fi dest = MindustryToolMod.backgroundsDir.child(file.name());

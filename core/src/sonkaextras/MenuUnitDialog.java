@@ -27,8 +27,10 @@ import static mindustry.Vars.*;
  * летают, это осознанная фича клиента), летающие - первыми.
  * <p>
  * Взаимодействие с mindustrytool "Background" ({@link BackgroundFeature}): та фича через Reflect
- * подменяет {@code ui.menufrag.renderer} на свой {@code CustomMenuRenderer}, который рисует
- * картинку, а при opacity < 100% сперва рисует ОРИГИНАЛЬНЫЙ MenuRenderer под ней - в этом случае
+ * подменяет {@code ui.menufrag.renderer} на свою обёртку ({@code CustomMenuRenderer} для
+ * статичной картинки или {@code GifMenuRenderer} для gif - обе реализуют {@code WrapsMenuRenderer}),
+ * которая рисует картинку/гифку, а при opacity < 100% сперва рисует ОРИГИНАЛЬНЫЙ MenuRenderer под
+ * ней - в этом случае
  * выбранный юнит остаётся виден сквозь полупрозрачную картинку, и мгновенное применение здесь
  * добирается до оригинального рендера внутри обёртки. При opacity = 100% картинка полностью
  * закрывает ваниль-фон - выбор юнита просто не виден (и не мешает), пока Background не выключат.
@@ -81,7 +83,7 @@ public class MenuUnitDialog extends BaseDialog{
     public static void applyToMenu(){
         if(ui == null || ui.menufrag == null) return;
         MenuRenderer renderer = ui.menufrag.renderer;
-        if(renderer instanceof BackgroundFeature.CustomMenuRenderer custom) renderer = custom.originalRenderer;
+        if(renderer instanceof BackgroundFeature.WrapsMenuRenderer wrapped) renderer = wrapped.originalRenderer();
         if(renderer == null) return;
 
         UnitType chosen = content.unit(Core.settings.getString(settingKey, ""));
