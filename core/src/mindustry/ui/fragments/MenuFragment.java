@@ -272,16 +272,10 @@ public class MenuFragment{
                         new MenuButton("@loadgame", Icon.download, () -> checkPlay(ui.load::show))
                     ),
                     new MenuButton("@client.name", Icon.wrench,
-                        new MenuButton("Discord", Icon.discord, () -> { // Link to client discord
-                            if (!Core.app.openURI(clientDiscord)) {
-                                ui.showErrorMessage("@linkfail");
-                                Core.app.setClipboardText(clientDiscord);
-                            }
-                        }),
                         new MenuButton("Github", Icon.github, () -> { // Link to client github
-                            if (!Core.app.openURI("https://github.com/mindustry-antigrief/mindustry-client")) {
+                            if (!Core.app.openURI("https://github.com/Promiha27/mindustry-client")) {
                                 ui.showErrorMessage("@linkfail");
-                                Core.app.setClipboardText("https://github.com/mindustry-antigrief/mindustry-client");
+                                Core.app.setClipboardText("https://github.com/Promiha27/mindustry-client");
                             }
                         }),
                         new MenuButton("@client.changelog", Icon.edit, ChangelogDialog.INSTANCE::show),
