@@ -325,6 +325,11 @@ public final class CursorCustomizer{
         //Graphics.cursor кэширует lastCursor по identity - подмена реализации SystemCursor.arrow
         //сама по себе ОС-курсор не обновит. Прямая установка нового объекта сбивает кэш; со
         //следующего кадра DesktopInput/сцена ставят контекстный курсор как обычно.
-        if(arrowCursor != null) Core.graphics.cursor(arrowCursor);
+        //Но: если мышь сейчас над интерфейсом (scene.hasMouse()), курсором распоряжается сама
+        //сцена (hand над кнопкой и т.п.) - DesktopInput в этом случае намеренно НЕ трогает
+        //курсор каждый кадр (см. её update()). Форсированный сброс на стрелку здесь ломал бы это
+        //каждые REGEN_INTERVAL кадров при анимированном (rainbow/gradient) тинте - стрелка
+        //мигала поверх наведённого элемента интерфейса. Поэтому форсим только когда мышь не над UI.
+        if(arrowCursor != null && (Core.scene == null || !Core.scene.hasMouse())) Core.graphics.cursor(arrowCursor);
     }
 }
