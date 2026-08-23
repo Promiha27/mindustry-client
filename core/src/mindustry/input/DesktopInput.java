@@ -957,8 +957,9 @@ public class DesktopInput extends InputHandler{
         SchemeInput.updateInput(this);
 
         if(!Core.scene.hasMouse() && !ui.minimapfrag.shown()){
-            Core.graphics.cursor(cursorType);
-            changedCursor = cursorType != SystemCursor.arrow;
+            Cursor applied = cursorType == SystemCursor.arrow ? CursorColor.resolve(SystemCursor.arrow) : cursorType;
+            Core.graphics.cursor(applied);
+            changedCursor = applied != SystemCursor.arrow;
         }else{
             cursorType = SystemCursor.arrow;
             if(changedCursor){

@@ -473,6 +473,10 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("showtoasts", true);
         client.checkPref("unloaderview", false, i -> Unloader.drawUnloaderItems = i);
         client.checkPref("customnullunloader", false, i -> Unloader.customNullLoader = i);
+        client.checkPref("cursorrainbow", false);
+        client.checkPref("cursorgradient", false);
+        client.pref(new SettingsTable.ColorSetting("cursorcolor", CursorColor.defaultColorInt()));
+        client.pref(new SettingsTable.ColorSetting("cursorcolor2", CursorColor.defaultColor2Int()));
         int[] lastCursednessLevelI = {Core.settings.getInt("cursednesslevel", 0)};
         client.sliderPref("cursednesslevel", 1, 0, 4, s -> CursednessLevel.fromInteger(s).name(), s -> {
             if(Vars.ui.menufrag.renderer != null && Vars.state.isMenu() && s != lastCursednessLevelI[0]){
@@ -1175,6 +1179,31 @@ public class SettingsMenuDialog extends BaseDialog{
 
                 box.left();
                 addDesc(table.add(box).minWidth(Math.min(500f, Core.graphics.getWidth() / 1.2f / Scl.scl(1f))).fillX().height(45f).left().padTop(7f).get());
+                table.row();
+            }
+        }
+
+        public static class ColorSetting extends Setting{
+            int def;
+
+            public ColorSetting(String name, int def){
+                super(name);
+                this.def = def;
+            }
+
+            @Override
+            public void add(SettingsTable table){
+                Table cont = new Table();
+                cont.left();
+                cont.add(title).left().growX().wrap();
+
+                ImageButton swatch = cont.button(Tex.whiteui, Styles.squarei, 24f, () ->
+                    ui.picker.show(new Color(settings.getInt(name, def)), false, picked ->
+                        settings.put(name, Color.rgba8888(picked.r, picked.g, picked.b, picked.a)))
+                ).size(32f).padLeft(8f).get();
+                swatch.update(() -> swatch.getStyle().imageUpColor.set(settings.getInt(name, def)));
+
+                addDesc(table.add(cont).minWidth(Math.min(500f, Core.graphics.getWidth() / 1.2f / Scl.scl(1f))).fillX().height(45f).left().padTop(7f).get());
                 table.row();
             }
         }
