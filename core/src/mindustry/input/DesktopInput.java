@@ -1423,29 +1423,60 @@ public class DesktopInput extends InputHandler{
         }
     }
 
-    /** Для automineonpause: по списку приоритета руды из настроек ищет ближайшую (уже
-     * находящуюся в радиусе добычи юнита) руду - без какой-либо ходьбы/навигации, юнитом
-     * не управляем, только выбираем цель добычи. Повторяет проверки InputHandler.canMine(),
-     * но без гварда по наведению мыши на UI - тут нет клика, это фоновая проверка. */
+    /** Для automineonpause: сканирует КАЖДЫЙ тайл в радиусе добычи юнита (а не только
+     * ближайший тайл каждого предмета из индексатора - так вернее) и берёт лучший по
+     * приоритету из настроек (automineonpausepriority), при равном приоритете - ближайший.
+     * Юнитом не управляем, только выбираем цель добычи. Разрешаем руду, даже если инвентарь
+     * юнита её больше не принимает, но юнит стоит у ядра и добыча пойдёт напрямую в него
+     * (см. offloadImmediately()/mineTransferRange в MinerComp.update()). */
     @Nullable
     Tile pickAutoMinePauseOre(Unit unit){
         boolean doubleTap = Core.settings.getBool("doubletapmine");
+        String[] priority = Core.settings.getString("automineonpausepriority").trim().split("\\s+");
 
-        for(String name : Core.settings.getString("automineonpausepriority").trim().split("\\s+")){
-            Item item = content.item(name.trim().toLowerCase());
-            if(item == null || !unit.canMine(item)) continue;
+        Building core = unit.closestCore();
+        boolean nearCore = core != null && unit.within(core, mineTransferRange);
 
-            Tile tile = indexer.findClosestMineableOre(unit, item);
-            if(tile == null || !unit.validMine(tile)) continue;
+        int range = Mathf.ceil(unit.type.mineRange / tilesize);
+        int ux = World.toTile(unit.x), uy = World.toTile(unit.y);
 
-            Item result = unit.getMineResult(tile);
-            if(result == null || !unit.acceptsItem(result)) continue;
-            if(!doubleTap && tile.floor().playerUnmineable && tile.overlay().itemDrop == null) continue;
-            if(!doubleTap && tile.overlay().playerUnmineable && tile.overlay().itemDrop != null) continue;
+        Tile best = null;
+        int bestPriority = Integer.MAX_VALUE;
+        float bestDst = Float.MAX_VALUE;
 
-            return tile;
+        for(int dx = -range; dx <= range; dx++){
+            for(int dy = -range; dy <= range; dy++){
+                Tile tile = world.tile(ux + dx, uy + dy);
+                if(tile == null || !unit.within(tile.worldx(), tile.worldy(), unit.type.mineRange)) continue;
+
+                Item result = unit.getMineResult(tile);
+                if(result == null || !unit.canMine(result)) continue;
+
+                int p = -1;
+                for(int i = 0; i < priority.length; i++){
+                    if(priority[i].trim().equalsIgnoreCase(result.name)){
+                        p = i;
+                        break;
+                    }
+                }
+                if(p < 0) continue;
+
+                if(!doubleTap && tile.floor().playerUnmineable && tile.overlay().itemDrop == null) continue;
+                if(!doubleTap && tile.overlay().playerUnmineable && tile.overlay().itemDrop != null) continue;
+
+                boolean directToCore = nearCore && core.acceptStack(result, 1, unit) > 0;
+                if(!unit.acceptsItem(result) && !directToCore) continue;
+
+                float dst = tile.dst(unit.x, unit.y);
+                if(p < bestPriority || (p == bestPriority && dst < bestDst)){
+                    best = tile;
+                    bestPriority = p;
+                    bestDst = dst;
+                }
+            }
         }
-        return null;
+
+        return best;
     }
 
     @Override
