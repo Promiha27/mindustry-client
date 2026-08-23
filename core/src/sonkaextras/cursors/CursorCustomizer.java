@@ -174,8 +174,12 @@ public final class CursorCustomizer{
     public static Color resolvedTint(Slot s){
         TintMode m = tintMode(s);
         if(m == TintMode.rainbow){
+            //fromHsv() пишет только r/g/b, альфу не трогает - а new Color() по умолчанию (0,0,0,0),
+            //так что без явного a=1 весь тинт прозрачный (заливка курсора пропадает целиком,
+            //остаётся только необводимая обводка - баг "виден только контур")
             Color out = new Color();
             out.fromHsv((Time.time * RAINBOW_SPEED) % 360f, 1f, 1f);
+            out.a = 1f;
             return out;
         }
         if(m == TintMode.gradient){
