@@ -10,6 +10,7 @@ import arc.struct.IntSeq;
 import arc.struct.Seq;
 import mindustry.ai.UnitCommand;
 import mindustry.content.Blocks;
+import mindustry.content.Items;
 import mindustry.content.UnitTypes;
 import mindustry.gen.Call;
 import mindustry.gen.Icon;
@@ -91,6 +92,10 @@ public class ControlHelperWindow extends QolWindow{
             () -> Core.settings.getBool("qol-assist-share-enabled", true),
             v -> Core.settings.put("qol-assist-share-enabled", v));
         addActionButton(cont, UnitTypes.poly.uiIcon, "@control-helper-poly-split", this::dispatchPolySplit);
+        cont.row();
+        addToggleButton(cont, Items.copper.uiIcon, "@control-helper-automine",
+            () -> Core.settings.getBool("automineonpause"),
+            v -> Core.settings.put("automineonpause", v));
     }
 
     /**
