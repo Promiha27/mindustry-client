@@ -22,9 +22,10 @@ import static mindustry.Vars.*;
  * <data>/cursors/<слот>.png; наличие файла = замена активна), тинт (статический цвет, gradient-
  * шиммер или rainbow - {@link CursorColorDialog}), пиксельный редактор и сброс. Превью показывает
  * текстуру с тинтом текущего кадра (тинт - это цвет Image, ровно тот же мультипликативный тинт,
- * что движок применяет к пиксмапе; для gradient/rainbow это просто снимок момента открытия -
- * превью само не анимируется), итоговый размер после масштаба написан подписью. Все изменения
- * применяются сразу же ({@link CursorCustomizer#rebuild()}/{@link CursorCustomizer#updateAnimated()}).
+ * что движок применяет к пиксмапе; для gradient/rainbow превью само тикает каждый кадр
+ * ({@code Image.update}), синхронно с реальным курсором, а не остаётся снимком момента открытия),
+ * итоговый размер после масштаба написан подписью. Все изменения применяются сразу же
+ * ({@link CursorCustomizer#rebuild()}/{@link CursorCustomizer#updateAnimated()}).
  * <p>
  * Текстуры превью пересоздаются на каждый setup() и живут парой со своей пиксмапой до
  * закрытия/перестройки (паттерн ванильного CanvasEditDialog: Texture(Pixmap) не забирает
@@ -76,11 +77,17 @@ public class CursorsDialog extends BaseDialog{
             resources.add(tex);
             resources.add(pix);
             Image img = new Image(new TextureRegion(tex));
-            img.setColor(CursorCustomizer.resolvedTint(s)); //снимок текущего кадра - для gradient/rainbow превью не анимировано
+            img.setColor(CursorCustomizer.resolvedTint(s));
             row.stack(new Image(Tex.alphaBg), img).size(48f).pad(4f);
 
             boolean custom = CursorCustomizer.customFile(s).exists();
             CursorCustomizer.TintMode mode = CursorCustomizer.tintMode(s);
+            if(mode != CursorCustomizer.TintMode.flat){
+                //живое превью: gradient/rainbow тикают в диалоге так же, как настоящий курсор в игре,
+                //а не остаются снимком момента открытия. resolvedTint() дешёвый (одна Color-аллокация),
+                //flat-слоты сюда не попадают - им обновлять нечего, тинт не меняется во времени
+                img.update(() -> img.setColor(CursorCustomizer.resolvedTint(s)));
+            }
             String modeTag = mode == CursorCustomizer.TintMode.gradient ? " [accent]" + Core.bundle.get("client.sonka.cursors.colordialog.gradient") + "[]"
                 : mode == CursorCustomizer.TintMode.rainbow ? " [accent]" + Core.bundle.get("client.sonka.cursors.colordialog.rainbow") + "[]" : "";
             row.table(text -> {
