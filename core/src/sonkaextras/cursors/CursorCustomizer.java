@@ -306,8 +306,20 @@ public final class CursorCustomizer{
      * дрался бы с курсором, который в этот момент показывает сама сцена (hand над кнопкой и т.п.).
      */
     static void rebuildSlots(Seq<Slot> targets, boolean forcePush){
+        //решаем ДО цикла - нужно и чтобы пропустить пересборку стрелки, если она в этот раз не
+        //покажется (см. ниже), и как условие финального пуша
+        boolean pushArrow = forcePush || (!hasMouseOverUi() && worldWantsArrow());
         Cursor arrowCursor = null;
         for(Slot s : targets){
+            //throttled-тик стрелки, пока она прямо сейчас не должна отображаться (мышь над UI или
+            //в мире нужен контекстный курсор) - не просто бесполезен, а ОПАСЕН: Graphics.cursor
+            //кэширует lastCursor по identity, и OS может ПРЯМО СЕЙЧАС указывать на s.created снизу
+            //(старый курсор с прошлого успешного пуша). dispose() ниже освобождает нативный
+            //хэндл - если следом НЕ вызвать Core.graphics.cursor() с заменой (а без pushArrow мы
+            //его не вызовем), OS остаётся с висячей ссылкой на освобождённый курсор - экранный
+            //курсор гаснет насовсем, пока условие пуша не станет истинным (баг "курсор не видно").
+            //Раз стрелка всё равно не отобразится в этот тик - просто не трогаем её слот вовсе.
+            if(s.system == SystemCursor.arrow && !pushArrow) continue;
             Cursor cur;
             try{
                 cur = create(s);
@@ -337,12 +349,7 @@ public final class CursorCustomizer{
         //Graphics.cursor кэширует lastCursor по identity - подмена реализации SystemCursor.arrow
         //сама по себе ОС-курсор не обновит. Прямая установка нового объекта сбивает кэш; со
         //следующего кадра DesktopInput/сцена ставят контекстный курсор как обычно.
-        //Throttled-анимации (forcePush=false) форсить нельзя вслепую: стрелка - не единственный
-        //курсор в игровом мире (наведение на руду/юнит/блок подставляет drill/target/repair/hand -
-        //DesktopInput.cursorType), форс каждые REGEN_INTERVAL кадров сбивал бы их на стрелку и
-        //создавал мигание между "обычным" видом и контекстным курсором игры. Поэтому вне явной
-        //смены настройки форсим, только если стрелка и так должна сейчас отображаться.
-        if(arrowCursor != null && (forcePush || (!hasMouseOverUi() && worldWantsArrow()))) Core.graphics.cursor(arrowCursor);
+        if(arrowCursor != null && pushArrow) Core.graphics.cursor(arrowCursor);
     }
 
     /** Мышь сейчас над сценой (диалог/меню/HUD) - там курсором распоряжается сама сцена. */
