@@ -89,7 +89,7 @@ public class BackgroundFeature implements Feature {
                 customRenderer = null;
             }
 
-            if (file.extension().equalsIgnoreCase("gif") && GifSupport.available()) {
+            if (file.extension().equalsIgnoreCase("gif")) {
                 GifBackgroundLoader.Result gif = GifBackgroundLoader.load(file);
                 if (gif.frames.length == 0) throw new IllegalStateException("gif has no frames");
                 if (gif.truncated) {
