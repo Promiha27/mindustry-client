@@ -65,6 +65,11 @@ public final class CursorCustomizer{
     /** Режим тинта слота: {@code flat} - обычный статический цвет ({@link #tint}), {@code gradient} -
      * шиммер между {@link #tint} и {@link #tint2}, {@code rainbow} - HSV-цикл (игнорирует оба цвета). */
     public enum TintMode{flat, gradient, rainbow}
+    /** Закэшированный {@code TintMode.values()}: сам метод клонирует массив при каждом вызове, а
+     * {@link #tintMode} дёргается из {@link #anyAnimated()} на КАЖДЫЙ кадр по КАЖДОМУ слоту (даже
+     * когда анимированных слотов вообще нет - это единственный способ узнать, что их нет) - без
+     * кэша это лишняя аллокация массива по 7 раз за кадр в самом частом случае. */
+    private static final TintMode[] TINT_MODES = TintMode.values();
 
     /** Один курсор игры: имя (ключи настроек/файлов/бандла), встроенный спрайт и способ установки. */
     public static final class Slot{
@@ -147,7 +152,7 @@ public final class CursorCustomizer{
 
     public static TintMode tintMode(Slot s){
         int m = Core.settings.getInt(tintModeKey(s), TintMode.flat.ordinal());
-        return m >= 0 && m < TintMode.values().length ? TintMode.values()[m] : TintMode.flat;
+        return m >= 0 && m < TINT_MODES.length ? TINT_MODES[m] : TintMode.flat;
     }
 
     public static boolean isAnimated(Slot s){
