@@ -1129,14 +1129,23 @@ public class DesktopInput extends InputHandler{
 
             if(isBuilding){
                 player.shooting = false;
-            }else if(Core.settings.getBool("automineonpause") && player.unit() != null && player.unit().type.mineTier > 0){
-                //sonka: фича "копать при паузе стройки" - НЕ используем MinePath/Navigation (это
-                //отдельная фича клиента с ходьбой через полкарты и телепортами при пересчёте пути),
-                //юнит просто начинает копать ближайшую руду, если она уже в радиусе добычи, по
-                //приоритету, который игрок сам задаёт в настройках (automineonpausepriority)
-                Tile ore = pickAutoMinePauseOre(player.unit());
-                if(ore != null) player.unit().mineTile = ore;
             }
+        }
+
+        //sonka: фича "копать при паузе стройки" - постоянно (не только по нажатию клавиши),
+        //пока юнит вообще ничего не строит (activelyBuilding() учитывает и паузу по клавише,
+        //и пустую очередь построек). Заводим через Navigation (чтобы WASD-обработка в
+        //updateMovement() сама себя отключила, см. Navigation.isFollowing() там), но своим
+        //классом PriorityMinePath - НЕ MinePath (та ходит через Navigation.goTo/A-star и
+        //телепортирует юнита при пересчёте пути) и без скарсити-выбора: строго по приоритету
+        //из настроек (automineonpausepriority)
+        if(Core.settings.getBool("automineonpause") && player.unit() != null && player.unit().type.mineTier > 0 && !player.unit().activelyBuilding()){
+            if(!(Navigation.currentlyFollowing instanceof PriorityMinePath)){
+                Navigation.follow(new PriorityMinePath());
+            }
+        }else if(Navigation.currentlyFollowing instanceof PriorityMinePath){
+            Navigation.stopFollowing();
+            if(player.unit() != null) player.unit().mineTile = null;
         }
 
         if(isPlacing() && mode == placing && (cursorX != lastLineX || cursorY != lastLineY || Core.input.keyTap(Binding.diagonalPlacement) || Core.input.keyRelease(Binding.diagonalPlacement))){
@@ -1406,31 +1415,6 @@ public class DesktopInput extends InputHandler{
                 Call.rotateBlock(player, cursor.build, Core.input.axisTap(Binding.rotate) > 0);
             }
         }
-    }
-
-    /** Для automineonpause: по списку приоритета руды из настроек ищет ближайшую (уже
-     * находящуюся в радиусе добычи юнита) руду - специально без какой-либо ходьбы/навигации.
-     * Повторяет проверки InputHandler.canMine(), но без гварда по наведению мыши на UI -
-     * тут нет клика, триггер сугубо по клавише, так что позиция курсора ни при чём. */
-    @Nullable
-    Tile pickAutoMinePauseOre(Unit unit){
-        boolean doubleTap = Core.settings.getBool("doubletapmine");
-
-        for(String name : Core.settings.getString("automineonpausepriority").trim().split("\\s+")){
-            Item item = content.item(name.trim().toLowerCase());
-            if(item == null || !unit.canMine(item)) continue;
-
-            Tile tile = indexer.findClosestMineableOre(unit, item);
-            if(tile == null || !unit.validMine(tile)) continue;
-
-            Item result = unit.getMineResult(tile);
-            if(result == null || !unit.acceptsItem(result)) continue;
-            if(!doubleTap && tile.floor().playerUnmineable && tile.overlay().itemDrop == null) continue;
-            if(!doubleTap && tile.overlay().playerUnmineable && tile.overlay().itemDrop != null) continue;
-
-            return tile;
-        }
-        return null;
     }
 
     @Override
