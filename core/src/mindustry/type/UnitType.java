@@ -1646,8 +1646,12 @@ public class UnitType extends UnlockableContent implements Senseable{
         }
         Draw.alpha(currentAlpha);
 
-        Draw.alpha(Renderer.unitLaserOpacity);
-        Drawf.laser(mineLaserRegion, mineLaserEndRegion, px, py, ex, ey, 0.75f);
+        //sonka: настройка "спрятать луч копания" - гасим только сам рисуемый луч,
+        //подсветку клетки (квадрат ниже, для isLocal) оставляем как индикатор цели
+        if(!Renderer.hideMiningBeam){
+            Draw.alpha(Renderer.unitLaserOpacity);
+            Drawf.laser(mineLaserRegion, mineLaserEndRegion, px, py, ex, ey, 0.75f);
+        }
 
         if(unit.isLocal()){
             Lines.stroke(1f, Pal.accent);

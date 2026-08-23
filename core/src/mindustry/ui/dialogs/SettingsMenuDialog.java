@@ -584,6 +584,7 @@ public class SettingsMenuDialog extends BaseDialog{
         if(!mobile){
             game.checkPref("backgroundpause", true);
             game.checkPref("buildautopause", false);
+            game.checkPref("automineonpause", false);
             game.checkPref("distinctcontrolgroups", true);
         }
 
@@ -639,6 +640,7 @@ public class SettingsMenuDialog extends BaseDialog{
         });
 
         graphics.sliderPref("unitlaseropacity", 100, 0, 100, 5, s -> s + "%");
+        graphics.checkPref("hideminingbeam", false);
         graphics.sliderPref("bridgeopacity", 100, 0, 100, 5, s -> s + "%");
 
         graphics.sliderPref("maxmagnificationmultiplierpercent", 100, 100, 200, 25, s -> {

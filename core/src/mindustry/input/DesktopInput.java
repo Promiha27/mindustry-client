@@ -1128,6 +1128,10 @@ public class DesktopInput extends InputHandler{
 
             if(isBuilding){
                 player.shooting = false;
+            }else if(Core.settings.getBool("automineonpause") && player.unit() != null && player.unit().type.mineTier > 0){
+                //sonka: фича "копать при паузе стройки" - юзер сам выбирает приоритет руды через
+                //defaultminepathargs (тот же список, что использует ручной autoMine хоткей)
+                Navigation.follow(new MinePath());
             }
         }
 
