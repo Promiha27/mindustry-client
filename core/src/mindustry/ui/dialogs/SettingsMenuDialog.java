@@ -1286,7 +1286,13 @@ public class SettingsMenuDialog extends BaseDialog{
                                 ui.loadfrag.hide();
                                 urlChanged = false;
                                 if(!result){
-                                    ui.showInfo("@be.noupdates");
+                                    //sonka: "@be.noupdates" значило и "актуален", и "запрос упал" одинаково - показываем реальную причину, если есть
+                                    String err = becontrol.lastError();
+                                    if(err != null){
+                                        ui.showErrorMessage(Core.bundle.get("be.noupdates") + "\n\n" + err);
+                                    }else{
+                                        ui.showInfo("@be.noupdates");
+                                    }
                                 } else {
                                     becontrol.showUpdateDialog();
                                 }

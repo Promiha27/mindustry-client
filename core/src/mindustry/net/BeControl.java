@@ -30,6 +30,11 @@ public class BeControl{
     private boolean updateAvailable;
     private String updateUrl;
     private String updateBuild;
+    //sonka: "апдейтер ничего не видит" - checkUpdate(false) значило и "ты и так актуален", и
+    //"запрос к GitHub упал" (рейтлимит/сеть/битый JSON) одинаково - разница уходила только в
+    //Log.err, которого пользователь не видит. Явные ручные проверки (кнопки) теперь могут
+    //показать РЕАЛЬНУЮ причину вместо вводящего в заблуждение "нет обновлений"
+    private String lastError;
 
     /** @return whether this is a bleeding edge build. */
     public boolean active(){
@@ -108,32 +113,50 @@ public class BeControl{
     public void checkUpdate(Boolc done, String repo, boolean requireCustomChannel){
         Http.get("https://api.github.com/repos/" + repo + "/releases/latest")
             .error(e -> Core.app.post(() -> {
+                lastError = e.getMessage() != null ? e.getMessage() : e.toString();
                 done.get(false);
                 Log.err("Failed to check for updates", e);
             }))
             .submit(res -> {
                 Jval val = Jval.read(res.getResultAsString());
-                String newBuild = val.getString("name");
+                String newBuild = val.getString("name", "");
                 if(requireCustomChannel && !newBuild.startsWith("custom-")){
                     Log.warn("[updater] release '@' is not from the custom channel (custom-b*), ignoring", newBuild);
-                    Core.app.post(() -> done.get(false));
+                    Core.app.post(() -> {
+                        lastError = null;
+                        done.get(false);
+                    });
                     return;
                 }
                 if(!newBuild.trim().isEmpty() && !Version.clientVersion.equals(newBuild)){
                     Jval asset = val.get("assets").asArray().find(v -> v.getString("name", "").toLowerCase().contains("desktop"));
                     if (asset == null) asset = val.get("assets").asArray().find(v -> v.getString("name", "").toLowerCase().contains("mindustry"));
                     if (asset == null) {
-                        Core.app.post(() -> done.get(false));
+                        Core.app.post(() -> {
+                            lastError = "release '" + newBuild + "' has no desktop/mindustry asset";
+                            done.get(false);
+                        });
                         return;
                     }
                     updateUrl = asset.getString("browser_download_url", "");
                     updateAvailable = true;
                     updateBuild = newBuild;
-                    Core.app.post(() -> done.get(true));
+                    Core.app.post(() -> {
+                        lastError = null;
+                        done.get(true);
+                    });
                 }else{
-                    Core.app.post(() -> done.get(false));
+                    Core.app.post(() -> {
+                        lastError = null;
+                        done.get(false);
+                    });
                 }
             });
+    }
+
+    /** @return the reason the last {@link #checkUpdate} call failed to complete (network/rate limit/parse error), or null if it completed normally (whether or not an update was found). */
+    public String lastError(){
+        return lastError;
     }
 
     /** @return whether a new update is available */

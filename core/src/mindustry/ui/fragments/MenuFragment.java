@@ -142,7 +142,7 @@ public class MenuFragment{
                     becontrol.checkUpdate(result -> {
                         ui.loadfrag.hide();
                         if(!result){
-                            ui.showInfo("@be.noupdates");
+                            showNoUpdates();
                         }else{
                             becontrol.showUpdateDialog();
                         }
@@ -155,7 +155,7 @@ public class MenuFragment{
                     becontrol.checkUpdate(result -> {
                         ui.loadfrag.hide();
                         if(!result){
-                            ui.showInfo("@be.noupdates");
+                            showNoUpdates();
                         }else{
                             becontrol.showUpdateDialog();
                         }
@@ -317,6 +317,16 @@ public class MenuFragment{
             run.run();
         }else{
             ui.showInfo("@mod.noerrorplay");
+        }
+    }
+
+    /** "@be.noupdates" одинаково значило и "ты и так актуален", и "запрос к GitHub упал" - показываем реальную причину, если она есть. */
+    private void showNoUpdates(){
+        String err = becontrol.lastError();
+        if(err != null){
+            ui.showErrorMessage(Core.bundle.get("be.noupdates") + "\n\n" + err);
+        }else{
+            ui.showInfo("@be.noupdates");
         }
     }
 
