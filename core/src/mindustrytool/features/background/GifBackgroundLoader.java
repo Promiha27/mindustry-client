@@ -24,6 +24,8 @@ import java.util.Iterator;
  * большинство реальных gif; полный набор disposal-режимов не поддержан). MAX_FRAMES/MAX_DIMENSION -
  * страховка от gif на сотни МБ видеопамяти при разовой синхронной декодировке на GL-потоке (этот
  * метод, как и Texture(file) для статичного фона рядом, всегда вызывается синхронно из UI-колбэка).
+ * Проверка доступности (java.desktop/javax.imageio) живёт отдельно, в {@link GifSupport} - см. его
+ * javadoc за тем, почему вызывать её отсюда же нельзя.
  */
 public final class GifBackgroundLoader{
     private static final int MAX_FRAMES = 240;
@@ -31,10 +33,6 @@ public final class GifBackgroundLoader{
     private static final int DEFAULT_DELAY_MS = 100;
 
     private GifBackgroundLoader(){}
-
-    public static boolean available(){
-        return Package.getPackage("javax.imageio") != null;
-    }
 
     public static class Result{
         public final Texture[] frames;
