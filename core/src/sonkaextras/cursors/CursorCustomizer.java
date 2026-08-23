@@ -278,7 +278,7 @@ public final class CursorCustomizer{
      */
     public static void rebuild(){
         if(Vars.headless || Vars.mobile || Vars.ui == null) return;
-        rebuildSlots(slots);
+        rebuildSlots(slots, true);
     }
 
     /**
@@ -292,11 +292,19 @@ public final class CursorCustomizer{
         if(animFrame++ % REGEN_INTERVAL != 0) return;
         Seq<Slot> animated = new Seq<>();
         for(Slot s : slots) if(isAnimated(s)) animated.add(s);
-        rebuildSlots(animated);
+        rebuildSlots(animated, false);
     }
 
-    /** Общее тело пересборки для {@link #rebuild()} и {@link #updateAnimated()}. */
-    static void rebuildSlots(Seq<Slot> targets){
+    /**
+     * Общее тело пересборки для {@link #rebuild()} и {@link #updateAnimated()}.
+     * @param forcePush форсировать сброс OS-курсора на новый экземпляр стрелки, даже если мышь
+     * сейчас над интерфейсом. Нужно {@code true} на явную смену настройки ({@link #rebuild()}) -
+     * иначе смена цвета из диалога (мышь ведь над ним) никогда не пробьётся в кэш identity
+     * {@code Graphics.lastCursor} и курсор так и останется старым/дефолтным. Throttled-анимация
+     * ({@link #updateAnimated()}) передаёт {@code false} - там форс каждые REGEN_INTERVAL кадров
+     * дрался бы с курсором, который в этот момент показывает сама сцена (hand над кнопкой и т.п.).
+     */
+    static void rebuildSlots(Seq<Slot> targets, boolean forcePush){
         Cursor arrowCursor = null;
         for(Slot s : targets){
             Cursor cur;
@@ -325,11 +333,6 @@ public final class CursorCustomizer{
         //Graphics.cursor кэширует lastCursor по identity - подмена реализации SystemCursor.arrow
         //сама по себе ОС-курсор не обновит. Прямая установка нового объекта сбивает кэш; со
         //следующего кадра DesktopInput/сцена ставят контекстный курсор как обычно.
-        //Но: если мышь сейчас над интерфейсом (scene.hasMouse()), курсором распоряжается сама
-        //сцена (hand над кнопкой и т.п.) - DesktopInput в этом случае намеренно НЕ трогает
-        //курсор каждый кадр (см. её update()). Форсированный сброс на стрелку здесь ломал бы это
-        //каждые REGEN_INTERVAL кадров при анимированном (rainbow/gradient) тинте - стрелка
-        //мигала поверх наведённого элемента интерфейса. Поэтому форсим только когда мышь не над UI.
-        if(arrowCursor != null && (Core.scene == null || !Core.scene.hasMouse())) Core.graphics.cursor(arrowCursor);
+        if(arrowCursor != null && (forcePush || Core.scene == null || !Core.scene.hasMouse())) Core.graphics.cursor(arrowCursor);
     }
 }
