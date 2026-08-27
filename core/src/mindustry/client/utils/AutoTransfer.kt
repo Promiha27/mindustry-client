@@ -4,6 +4,7 @@ import arc.*
 import arc.math.*
 import arc.struct.*
 import arc.util.*
+import eui.interact.InteractTimer
 import mindustry.Vars.*
 import mindustry.client.ClientVars.*
 import mindustry.client.navigation.*
@@ -30,7 +31,6 @@ class AutoTransfer {
         var fromCores = false
         var fromContainers = false
         var minCoreItems = -1
-        @JvmField var delay = -1F
         var debug = false
         var minTransferTotal = -1
         var minTransfer = -1
@@ -66,7 +66,6 @@ class AutoTransfer {
             fromCores = Core.settings.getBool("autotransfer-fromcores", true)
             fromContainers = Core.settings.getBool("autotransfer-fromcontainers", true)
             minCoreItems = Core.settings.getInt("autotransfer-mincoreitems", 100)
-            delay = Core.settings.getInt("autotransfer-transferdelay", 60).toFloat() // stored as an Int by its sliderPref - getFloat() crashes on the boxed Integer (see crash-report-08_27_2026_20_20_58.txt)
             minTransferTotal = Core.settings.getInt("autotransfer-mintransfertotal", 10)
             minTransfer = Core.settings.getInt("autotransfer-mintransfer", 2)
             // Drain settings, undocumented for now as drain is still experimental
@@ -78,7 +77,6 @@ class AutoTransfer {
     val builds = Seq<Building>(false) // Not ordered as we sort *after* mutation is finished.
     val containers = Seq<Building>()
     var item: Item? = null
-    var timer = 0F
     val counts = IntArray(content.items().size)
     val ammoCounts = IntArray(content.items().size)
     val dpsCounts = FloatArray(content.items().size)
@@ -96,12 +94,12 @@ class AutoTransfer {
     fun update() {
         if (!enabled) return
         if (state.rules.onlyDepositCore) return
-        if (ratelimitRemaining <= 1) return // Leave one config for other stuff
+        // Gated by eui's own action cooldown ("eui-action-delay", also used by AutoUnit) instead of a
+        // homegrown ticks-based timer, mounted straight from eui.interact.AutoFill.update() (2026-08-27,
+        // at sonka's request) - see transfer()'s doc comment
+        if (!InteractTimer.canInteract()) return
         if (player.dead()) return
         player.unit()?.item() ?: return
-        timer += Time.delta
-        if (timer < delay) return
-        timer -= delay
         counts.fill(0) // reset needed item counters
         ammoCounts.fill(0)
         dpsCounts.fill(0f)
@@ -112,11 +110,15 @@ class AutoTransfer {
 
     /**
      * Transfers items from core/containers into buildings. Picks exactly ONE best target per round -
-     * ported from the old `eui.interact.AutoFill`'s greedy per-tick decision (2026-08-27, restoring it
-     * over dedupe #1's aggregate-then-single-fetch approach at sonka's request: reacts to the single
-     * best opportunity immediately instead of scanning every building in range and averaging their
-     * needs into one fetch). Depositing what the player already carries always wins over fetching at
-     * equal priority, matching the source.
+     * mounted straight from the deleted `eui.interact.AutoFill.update()` (2026-08-27, at sonka's
+     * request: the settings-slider-based ticks/delay rework wasn't actually eui's own code, still felt
+     * "off", and its "speed doesn't change" complaint traces back to gating this on a from-scratch
+     * timer/ratelimit combo instead of the real cooldown eui.AutoFill used). Both the decision algorithm
+     * (single best candidate wins the moment it's found, instead of aggregating every building's needs
+     * first - dedupe #1's approach) AND the pacing (eui.interact.InteractTimer's real per-action
+     * cooldown, "eui-action-delay", called via [InteractTimer.increase] below - not a periodic
+     * ticks-since-last-round timer) now match the source. Depositing what the player already carries
+     * always wins over fetching at equal priority, matching the source.
      */
     private fun transfer() {
         core = if (fromCores) player.closestCore() else null
@@ -169,16 +171,18 @@ class AutoTransfer {
         item = fetchItem
         if (depositTarget != null) {
             depositIntoBuilding(depositTarget, stack.amount)
+            InteractTimer.increase()
             justTransferred = true
             item = null
         } else if (fetchItem != null && fetchCore != null && player.within(fetchCore, itemTransferRange)) {
             if (stack.amount > 0) Call.transferInventory(player, fetchCore) // Holding something unwanted here - drop it off first, fetch next round
             else Call.requestItem(player, fetchCore, fetchItem, Int.MAX_VALUE)
+            InteractTimer.increase()
             justTransferred = true
             item = null
-        } else {
-            timer = delay // Nothing to do this round - retry next tick instead of waiting a full delay cycle
         }
+        // Nothing to do this round: no `timer = delay` reset needed anymore - update() is gated purely by
+        // InteractTimer, so with no action taken it's untouched and the next tick just retries immediately.
     }
 
     /**
@@ -283,13 +287,14 @@ class AutoTransfer {
             maxCount -= it.items[maxID]
         }
 
-        Time.run(delay/2F) {
+        // eui-action-delay is in ms; AutoTransfer no longer keeps its own tick-based delay field (see
+        // update()'s doc comment), so convert on the spot for this one scheduled follow-up.
+        Time.run(Core.settings.getInt("eui-action-delay", 500) / 1000f * 60f / 2f) {
             if (player.unit() == null) return@run // FINISHME: Should we reset the delay?
             if (core != null) { // Standard single target drain
                 if (ratelimitRemaining > 1 && (maxCount != player.unit().maxAccepted(item) || maxCount == 0)) { // If theres ratelimit remaining and the player has grabbed anything or if the player is holding something else
                     if (maxCount == 0) { // We're holding something else and we need to dispose of it somehow
                         justTransferred = true // Force an autotransfer next time, draining probably won't fix much
-                        timer = delay // Immediately pick up items on the next frame
                     }
                     if (core!!.getMaximumAccepted(item) > 0) Call.transferInventory(player, core) // Drain to the block
                 }

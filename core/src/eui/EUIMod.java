@@ -69,7 +69,14 @@ import static mindustry.Vars.mobile;
  * match eui AutoFill's approach (commit to the single best candidate - deposit over fetch at equal
  * priority - the moment it's found, instead of scanning everything first). AutoTransfer.transfer() now
  * runs that ported algorithm; nothing about the eui package itself changed, only AutoTransfer's own
- * code (see AutoTransfer.kt's own doc comments on transfer()/pickFetchItem()).</li>
+ * code (see AutoTransfer.kt's own doc comments on transfer()/pickFetchItem()). Same day, a follow-up:
+ * the from-scratch settings-slider delay bolted onto AutoTransfer.init() turned out to be storing the
+ * wrong boxed type for its own getFloat() read, crashing startup - and even fixed, it was still a
+ * different pacing model from eui AutoFill's, which sonka specifically wanted mounted as-is. So the
+ * slider and its "autotransfer-transferdelay" key were dropped, and AutoTransfer's update()/transfer()
+ * now gate directly on {@link eui.interact.InteractTimer} (the exact cooldown eui AutoFill used, driven
+ * by "eui-action-delay" - Settings > Mods > Extended UI++, plus its Alt+=/Alt+- binds) instead of a
+ * homegrown ticks-since-last-round timer.</li>
  * <li>RESOLVED (dedupe pass): {@code eui.other.ExtendZoom} vs. this fork's native "Min Zoom" settings
  * slider (Settings > Client, key "minzoom") - removed outright: {@code Renderer.minScale()} only reads
  * the {@code renderer.minZoom} field it wrote during logic cutscenes (and the

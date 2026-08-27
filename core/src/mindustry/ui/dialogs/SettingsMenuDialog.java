@@ -435,13 +435,9 @@ public class SettingsMenuDialog extends BaseDialog{
         client.checkPref("decreasedrift", false);
         client.checkPref("zerodrift", false);
         client.checkPref("fastrespawn", false);
-        //how often (in ticks, 60/s) AutoTransfer re-evaluates its next move; was only settable via a
-        //hidden pref key with no UI or bind to reach it (sonka reported it "didn't work" - it just had
-        //nowhere to be set from), so apply the live @JvmField the same tick the slider moves
-        client.sliderPref("autotransfer-transferdelay", 60, 6, 300, 1, i -> {
-            AutoTransfer.delay = i;
-            return Strings.fixed(i / 60f, 1) + "s";
-        });
+        //no separate AutoTransfer delay slider here: 2026-08-27 it was rewired onto eui's own
+        //InteractTimer/"eui-action-delay" (Settings > Mods > Extended UI++, plus its Alt+=/Alt+- binds) -
+        //see AutoTransfer.update()'s doc comment
         //per-block Auto Transfer service priorities - the dialog is eui's, but since the dedupe pass its
         //config drives the native AutoTransfer (see AutoTransfer.loadPriorities' doc)
         client.pref(new qol.core.ButtonSetting("autotransfer-priority", () -> {
