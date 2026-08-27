@@ -62,7 +62,14 @@ import static mindustry.Vars.mobile;
  * overlapping core item hand-off. The eui loop and its bottom-panel toggle ("eui-auto-fill", plus the
  * "eui-interact-core" gate only it read) were removed; its unique value - the per-block-type priority
  * config ({@link AutofillPriorityDialog}, key "eui.autofill.priority") - was merged into AutoTransfer as
- * a service-order modifier (-2 = exclude a block). The dialog stays, now configuring AutoTransfer.</li>
+ * a service-order modifier (-2 = exclude a block). The dialog stays, now configuring AutoTransfer.
+ * 2026-08-27: AutoTransfer's own decision algorithm (aggregate every building's needs over the whole
+ * range, then transfer one round's worth of the single most-needed item) turned out worse in practice
+ * than eui AutoFill's original greedy one - sonka asked for AutoTransfer's internals to be reworked to
+ * match eui AutoFill's approach (commit to the single best candidate - deposit over fetch at equal
+ * priority - the moment it's found, instead of scanning everything first). AutoTransfer.transfer() now
+ * runs that ported algorithm; nothing about the eui package itself changed, only AutoTransfer's own
+ * code (see AutoTransfer.kt's own doc comments on transfer()/pickFetchItem()).</li>
  * <li>RESOLVED (dedupe pass): {@code eui.other.ExtendZoom} vs. this fork's native "Min Zoom" settings
  * slider (Settings > Client, key "minzoom") - removed outright: {@code Renderer.minScale()} only reads
  * the {@code renderer.minZoom} field it wrote during logic cutscenes (and the

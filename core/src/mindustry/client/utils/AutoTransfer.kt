@@ -110,7 +110,14 @@ class AutoTransfer {
         transfer()
     }
 
-    /** Transfers items from core/containers into buildings */
+    /**
+     * Transfers items from core/containers into buildings. Picks exactly ONE best target per round -
+     * ported from the old `eui.interact.AutoFill`'s greedy per-tick decision (2026-08-27, restoring it
+     * over dedupe #1's aggregate-then-single-fetch approach at sonka's request: reacts to the single
+     * best opportunity immediately instead of scanning every building in range and averaging their
+     * needs into one fetch). Depositing what the player already carries always wins over fetching at
+     * equal priority, matching the source.
+     */
     private fun transfer() {
         core = if (fromCores) player.closestCore() else null
         if (Navigation.currentlyFollowing is MinePath) { // Only allow autotransfer + minepath when within mineTransferRange
@@ -118,54 +125,92 @@ class AutoTransfer {
         } // Ngl this looks spaghetti
 
         val buildTree = player.team().data().buildingTree ?: return
-        var held = player.unit().stack.amount
+        val stack = player.unit().stack
 
         buildTree.intersect(player.x - itemTransferRange, player.y - itemTransferRange, itemTransferRange * 2, itemTransferRange * 2, builds.clear()) // grab all buildings in range
 
         if (fromContainers && (core == null || !player.within(core, itemTransferRange))) core = containers.selectFrom(builds) { it.block is StorageBlock && (item == null || it.items.has(item)) }.min { it -> it.dst(player) }
+        val fetchCore = core
 
         val priorities = loadPriorities()
-        builds.retainAll { it.block.findConsumer<Consume?> { it is ConsumeItems || it is ConsumeItemFilter || it is ConsumeItemDynamic } != null && it !is NuclearReactorBuild && player.within(it, itemTransferRange) && priority(priorities, it) > EXCLUDE_PRIORITY }
-            .sort { b -> priority(priorities, b) * -1e5F - b.acceptStack(player.unit().item(), player.unit().stack.amount, player.unit()).toFloat() }
-            .forEach {
-                if (ratelimitRemaining <= 1) return@forEach
+        var bestPriority = -1
+        var bestBuild: Building? = null
+        var bestFetchItem: Item? = null
 
-                held = depositIntoBuilding(it, held)
+        builds.forEach {
+            if (it.block.findConsumer<Consume?> { c -> c is ConsumeItems || c is ConsumeItemFilter || c is ConsumeItemDynamic } == null
+                || it is NuclearReactorBuild || !player.within(it, itemTransferRange)) return@forEach
 
-                val minItems = if (core is CoreBlock.CoreBuild) minCoreItems else 1 // FINISHME: Is this else 1 right? It seems odd...
-                if (core != null) { // Automatically take needed item from core
-                    processTransferTarget(it, minItems)
+            val blockPriority = priority(priorities, it)
+            if (blockPriority < bestPriority) return@forEach
+            if (blockPriority == bestPriority && bestBuild != null) return@forEach // a deposit target at this priority already wins ties
+
+            if (stack.amount > 0 && canDeposit(it) && it.acceptStack(stack.item, stack.amount, player.unit()) >= minTransfer) {
+                bestBuild = it
+                bestFetchItem = null
+                bestPriority = blockPriority
+                return@forEach
+            }
+
+            if (blockPriority <= bestPriority || fetchCore == null) return@forEach
+            val minItems = if (fetchCore is CoreBlock.CoreBuild) minCoreItems else 1 // FINISHME: Is this else 1 right? It seems odd...
+            val request = pickFetchItem(it, fetchCore, minItems)
+            if (request != null) {
+                bestFetchItem = request
+                bestBuild = null
+                bestPriority = blockPriority
+            }
+        }
+
+        // Copy out of the mutable vars the forEach above closed over - Kotlin won't smart-cast a var
+        // captured by a lambda that reassigns it, even after that lambda has finished running.
+        val depositTarget = bestBuild
+        val fetchItem = bestFetchItem
+        item = fetchItem
+        if (depositTarget != null) {
+            depositIntoBuilding(depositTarget, stack.amount)
+            justTransferred = true
+            item = null
+        } else if (fetchItem != null && fetchCore != null && player.within(fetchCore, itemTransferRange)) {
+            if (stack.amount > 0) Call.transferInventory(player, fetchCore) // Holding something unwanted here - drop it off first, fetch next round
+            else Call.requestItem(player, fetchCore, fetchItem, Int.MAX_VALUE)
+            justTransferred = true
+            item = null
+        } else {
+            timer = delay // Nothing to do this round - retry next tick instead of waiting a full delay cycle
+        }
+    }
+
+    /**
+     * Picks the single best item for [build] to fetch from [core] next (highest-DPS ammo for turrets,
+     * first eligible requirement otherwise) - the fetch half of the eui-ported greedy scan in
+     * [transfer], reusing [processTransferTarget]'s consumer-type branching shape but returning one
+     * winner instead of accumulating counts.
+     */
+    private fun pickFetchItem(build: Building, core: Building, minItems: Int): Item? {
+        fun hasMinItems(item: Item, min: Int = minItems) = minItems == 0 || core.items.has(item, min)
+
+        return when (val cons = build.block.findConsumer<Consume> { (it is ConsumeItems || it is ConsumeItemFilter || it is ConsumeItemDynamic) && it !is ConsumeItemExplode } ?: build.block.findConsumer { it is ConsumeItems || it is ConsumeItemFilter || it is ConsumeItemDynamic }) {
+            is ConsumeItems -> {
+                if (cons.booster) null // Don't boost menders, projectors or overdrives
+                else cons.items.firstOrNull { i -> build.acceptStack(i.item, build.getMaximumAccepted(i.item), player.unit()) >= minTransfer && hasMinItems(i.item, max(i.amount, minItems)) }?.item
+            }
+            is ConsumeItemFilter -> {
+                var best: Item? = null
+                var bestScore = -1f
+                content.items().each { i ->
+                    if (i == Items.blastCompound || !build.block.consumesItem(i) || !hasMinItems(i) || build.acceptStack(i, Int.MAX_VALUE, player.unit()) < minTransfer) return@each
+                    if (build.block is ItemTurret) { // Turrets have varying ammo, prefer the highest-DPS one that's eligible
+                        val score = getAmmoScore((build.block as ItemTurret).ammoTypes[i])
+                        if (score > bestScore) { best = i; bestScore = score }
+                    } else if (best == null) {
+                        best = i
+                    }
                 }
+                best
             }
-        var maxID = 0 // FINISHME: Also include the items from nearby containers since otherwise we night never find those items
-        for (i in 1 until counts.size) {
-            if (counts[i] > counts[maxID]) maxID = i
-        }
-
-        var maxAmmoID = 0
-        // FINISHME: This should prob be `(ammoCount+count)/2F > counts[maxID]` or something
-        val doAmmo = ammoCounts.any { (it + 1) / 2F > counts[maxID] } // If ammo requirements are over half as much as other requirements, we prioritize ammo
-        if (doAmmo) { // FINISHME: We should also prioritize ammo when turrets are empty probably?
-            for (i in 1 until counts.size) {
-                if (dpsCounts[i] > dpsCounts[maxAmmoID]) maxAmmoID = i
-            }
-        }
-
-        item =
-            if (doAmmo && ammoCounts[maxAmmoID] >= minTransferTotal) content.item(maxAmmoID)
-            else if (counts[maxID] >= minTransferTotal) content.item(maxID)
-            else null
-
-        Time.run(delay/2F) {
-            if (player.unit() == null) return@run // FINISHME: Should we reset the delay?
-            if (item != null && core != null && player.within(core, itemTransferRange) && ratelimitRemaining > 1) {
-                if (held > 0 && item != player.unit().stack.item && (!net.server() || player.unit().stack.amount > 0)) Call.transferInventory(player, core)
-                else if (held == 0 || item != player.unit().stack.item || counts[maxID] > held) Call.requestItem(player, core, item, Int.MAX_VALUE)
-                item = null
-                justTransferred = true
-            } else {
-                timer = delay
-            }
+            is ConsumeItemDynamic -> cons.items.get(build).firstOrNull { i -> build.getMaximumAccepted(i.item) - build.items.get(i.item) >= minTransfer && hasMinItems(i.item, max(i.amount, minItems)) }?.item
+            else -> null
         }
     }
 
@@ -307,12 +352,16 @@ class AutoTransfer {
         return loadables
     }
 
+    /** Whether depositing the player's currently-held item into [build] is safe (no self-destructing explosives, no feeding boosters). */
+    private fun canDeposit(build: Building): Boolean {
+        val heldItem = player.unit().item() ?: return false
+        return !(heldItem == Items.blastCompound && build.block.findConsumer<ConsumeItems> { it is ConsumeItemExplode } != null // Don't explode things
+            || build.block.findConsumer<ConsumeItems> { it.booster && it is ConsumeItems && it.items.any { it.item == heldItem } } != null) // Don't provide boosters
+    }
+
     /** Attempts to make a deposit. Returns the remaining [held] value. */
     private fun depositIntoBuilding(build: Building, held: Int): Int {
-        if (held <= 0
-        || player.unit().item() == Items.blastCompound && build.block.findConsumer<ConsumeItems> { it is ConsumeItemExplode } != null // Don't explode things
-        || build.block.findConsumer<ConsumeItems> { it.booster && it is ConsumeItems && it.items.any { it.item == player.unit().item()} } != null // Don't provide boosters
-        ) return held
+        if (held <= 0 || !canDeposit(build)) return held
         val accepted = build.acceptStack(player.unit().item(), player.unit().stack.amount, player.unit())
 
         if (accepted <= 0) return held // FINISHME: Shouldn't we be enforcing minTransfer here too?
