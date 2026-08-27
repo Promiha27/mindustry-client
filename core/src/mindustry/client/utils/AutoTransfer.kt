@@ -30,7 +30,7 @@ class AutoTransfer {
         var fromCores = false
         var fromContainers = false
         var minCoreItems = -1
-        var delay = -1F
+        @JvmField var delay = -1F
         var debug = false
         var minTransferTotal = -1
         var minTransfer = -1
