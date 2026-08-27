@@ -66,7 +66,7 @@ class AutoTransfer {
             fromCores = Core.settings.getBool("autotransfer-fromcores", true)
             fromContainers = Core.settings.getBool("autotransfer-fromcontainers", true)
             minCoreItems = Core.settings.getInt("autotransfer-mincoreitems", 100)
-            delay = Core.settings.getFloat("autotransfer-transferdelay", 60F)
+            delay = Core.settings.getInt("autotransfer-transferdelay", 60).toFloat() // stored as an Int by its sliderPref - getFloat() crashes on the boxed Integer (see crash-report-08_27_2026_20_20_58.txt)
             minTransferTotal = Core.settings.getInt("autotransfer-mintransfertotal", 10)
             minTransfer = Core.settings.getInt("autotransfer-mintransfer", 2)
             // Drain settings, undocumented for now as drain is still experimental
