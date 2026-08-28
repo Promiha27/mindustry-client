@@ -8,6 +8,7 @@ import eui.interact.InteractTimer
 import mindustry.Vars.*
 import mindustry.client.ClientVars.*
 import mindustry.client.navigation.*
+import mindustry.client.ui.Toast
 import mindustry.content.*
 import mindustry.entities.bullet.*
 import mindustry.gen.*
@@ -60,6 +61,51 @@ class AutoTransfer {
         fun priority(priorities: ObjectMap<String, Any?>, build: Building): Int =
             (priorities.get(build.block.name) as? Number)?.toInt() ?: 0
 
+        // Reactive backoff: on top of InteractTimer's fixed "eui-action-delay" pacing (which only honors
+        // what the user configured, not what a given server actually allows), stretch the delay further
+        // whenever the server itself warns that we're interacting too fast (Administration's antispam
+        // action filter sends "[scarlet]You are interacting with blocks too quickly." at most once per
+        // ~2s while over its interactRateLimit but under the interactRateKick threshold - see
+        // NetClient.sendMessage, which forwards that specific message to [onServerRateLimitWarning]).
+        // Multiplies the *effective* delay rather than replacing it, and eases back off on its own once
+        // the warnings stop, so a server with generous limits is never slowed down for no reason.
+        private var rateLimitMultiplier = 1f
+        private var lastRateLimitWarning = -1000f
+        private var rateLimitCooldownUntil = 0f
+        private const val RATE_LIMIT_GROWTH = 1.5f
+        private const val RATE_LIMIT_MAX_MULTIPLIER = 8f
+        private const val RATE_LIMIT_DECAY_AFTER = 5f // seconds of no fresh warning before easing off
+        private const val RATE_LIMIT_DECAY = 0.7f
+
+        @JvmStatic
+        fun onServerRateLimitWarning() {
+            rateLimitMultiplier = (rateLimitMultiplier * RATE_LIMIT_GROWTH).coerceAtMost(RATE_LIMIT_MAX_MULTIPLIER)
+            lastRateLimitWarning = Time.time
+            if (debug) Log.info("AutoTransfer: server rate-limit warning, backing off to @x delay", rateLimitMultiplier)
+        }
+
+        /** Eases [rateLimitMultiplier] back towards 1 once warnings have stopped for a while. */
+        private fun decayRateLimitBackoff() {
+            if (rateLimitMultiplier <= 1f) return
+            if (Time.time - lastRateLimitWarning <= RATE_LIMIT_DECAY_AFTER) return
+            rateLimitMultiplier = (rateLimitMultiplier * RATE_LIMIT_DECAY).coerceAtLeast(1f)
+            lastRateLimitWarning = Time.time // restart the quiet window for the next decay step
+        }
+
+        /**
+         * Call after every actual transfer/fetch action instead of a bare [InteractTimer.increase] -
+         * additionally stretches [rateLimitCooldownUntil] while [rateLimitMultiplier] is backed off, so
+         * the *next* round waits roughly `eui-action-delay * rateLimitMultiplier` instead of the plain
+         * configured delay.
+         */
+        private fun markActionTaken() {
+            InteractTimer.increase()
+            if (rateLimitMultiplier > 1f) {
+                val baseDelaySeconds = Core.settings.getInt("eui-action-delay", 500) / 1000f
+                rateLimitCooldownUntil = Time.time + Time.toSeconds * baseDelaySeconds * (rateLimitMultiplier - 1f)
+            }
+        }
+
         fun init() {
             // Main settings
             enabled = Core.settings.getBool("autotransfer", false)
@@ -93,11 +139,24 @@ class AutoTransfer {
 
     fun update() {
         if (!enabled) return
-        if (state.rules.onlyDepositCore) return
+        if (state.rules.onlyDepositCore) {
+            // Only catches a rule pushed mid-game (NetClient.setRules/setRule) after the toggle was
+            // already on - the join-time computation in ClientLogic's WorldLoadEvent listener already
+            // keeps AutoTransfer off from the start on maps/sectors that start with this rule set (e.g.
+            // several campaign planets default to it, see Planets.java), so flip the toggle itself off
+            // here too (not just skip this round) and say so once, instead of leaving a checkbox that
+            // looks on but silently does nothing.
+            enabled = false
+            Core.settings.put("autotransfer", false)
+            Toast(4f).add(Core.bundle.get("client.autotransfer.disabled-onlydepositcore"))
+            return
+        }
+        decayRateLimitBackoff()
         // Gated by eui's own action cooldown ("eui-action-delay", also used by AutoUnit) instead of a
         // homegrown ticks-based timer, mounted straight from eui.interact.AutoFill.update() (2026-08-27,
         // at sonka's request) - see transfer()'s doc comment
         if (!InteractTimer.canInteract()) return
+        if (Time.time < rateLimitCooldownUntil) return // extra room while backed off from a server warning
         if (player.dead()) return
         player.unit()?.item() ?: return
         counts.fill(0) // reset needed item counters
@@ -171,13 +230,13 @@ class AutoTransfer {
         item = fetchItem
         if (depositTarget != null) {
             depositIntoBuilding(depositTarget, stack.amount)
-            InteractTimer.increase()
+            markActionTaken()
             justTransferred = true
             item = null
         } else if (fetchItem != null && fetchCore != null && player.within(fetchCore, itemTransferRange)) {
             if (stack.amount > 0) Call.transferInventory(player, fetchCore) // Holding something unwanted here - drop it off first, fetch next round
             else Call.requestItem(player, fetchCore, fetchItem, Int.MAX_VALUE)
-            InteractTimer.increase()
+            markActionTaken()
             justTransferred = true
             item = null
         }

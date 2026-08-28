@@ -60,7 +60,7 @@ class ClientLogic {
             app.post { syncing = false } // Run this next frame so that it can be used elsewhere safely
             lastJoinTime = Time.millis()
             if (!syncing) {
-                AutoTransfer.enabled = settings.getBool("autotransfer") && !(state.rules.pvp && Server.io())
+                AutoTransfer.enabled = settings.getBool("autotransfer") && !(state.rules.pvp && Server.io()) && !state.rules.onlyDepositCore
                 frozenPlans.clear()
                 app.post {
                 when (val vote = settings.getInt("automapvote")) {

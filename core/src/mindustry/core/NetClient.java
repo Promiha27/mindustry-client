@@ -319,6 +319,14 @@ public class NetClient implements ApplicationListener{
         // playersender is exactly what you think it is, null for server messages
         if(Server.current.blockMessage(message, unformatted, playersender)) return;
 
+        // Server's own antispam (Administration's action filter) warns like this at most once per ~2s
+        // once we're over its configured interactRateLimit but still under the interactRateKick
+        // threshold - feed that back into AutoTransfer so it backs its own pacing off instead of
+        // eventually tripping the kick. playersender == null narrows this to actual server messages.
+        if(playersender == null && message != null && Strings.stripColors(message).contains("interacting with blocks too quickly")){
+            AutoTransfer.onServerRateLimitWarning();
+        }
+
         Events.fire(new PlayerChatEvent(playersender, unformatted != null ? unformatted : message != null ? message : "")); // Foo addition, why is this not a vanilla thing?
 
         Color background = null;
