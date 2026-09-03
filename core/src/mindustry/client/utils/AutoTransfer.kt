@@ -30,7 +30,7 @@ class AutoTransfer {
         // All of these settings (aside from debug) are overwritten on init()
         @JvmField var enabled = false
         var fromCores = false
-        var fromContainers = false
+        @JvmField var fromContainers = false
         var minCoreItems = -1
         var debug = false
         var minTransferTotal = -1
@@ -190,15 +190,7 @@ class AutoTransfer {
 
         buildTree.intersect(player.x - itemTransferRange, player.y - itemTransferRange, itemTransferRange * 2, itemTransferRange * 2, builds.clear()) // grab all buildings in range
 
-        if (fromContainers && (core == null || !player.within(core, itemTransferRange))) {
-            // Only containers actually parked next to the core (its own overflow-storage cluster)
-            // are eligible - a container the player merely happens to be standing near, but that has
-            // nothing to do with the core, must never substitute for it. When there's no core to be
-            // "near" (fromCores off), any in-range container is fair game, nearest to the player wins.
-            val nearCore = core
-            core = containers.selectFrom(builds) { it.block is StorageBlock && (item == null || it.items.has(item)) && (nearCore == null || it.within(nearCore, itemTransferRange)) }
-                .min { it -> if (nearCore != null) it.dst(nearCore) else it.dst(player) }
-        }
+        if (fromContainers && (core == null || !player.within(core, itemTransferRange))) core = containers.selectFrom(builds) { it.block is StorageBlock && (item == null || it.items.has(item)) }.min { it -> it.dst(player) }
         val fetchCore = core
 
         val priorities = loadPriorities()

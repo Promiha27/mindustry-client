@@ -443,6 +443,10 @@ public class SettingsMenuDialog extends BaseDialog{
         client.pref(new qol.core.ButtonSetting("autotransfer-priority", () -> {
             if(eui.interact.AutofillPriorityDialog.instance != null) eui.interact.AutofillPriorityDialog.instance.show();
         }));
+        //fromContainers used to be silently hardcoded on (transfer() falls back to whichever storage
+        //block is nearest whenever it can't reach the core) with a "prefer the one near the core" guess
+        //bolted on top; sonka asked to drop the guessing entirely and just let the player decide instead
+        client.checkPref("autotransfer-fromcontainers", true, b -> mindustry.client.utils.AutoTransfer.fromContainers = b);
 
         client.category("graphics");
         client.sliderPref("minzoom", 0, 0, 100, s -> Strings.fixed(Mathf.pow(10, 0.0217f * s) / 100f, 2) + "x");
