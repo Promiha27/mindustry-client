@@ -190,7 +190,15 @@ class AutoTransfer {
 
         buildTree.intersect(player.x - itemTransferRange, player.y - itemTransferRange, itemTransferRange * 2, itemTransferRange * 2, builds.clear()) // grab all buildings in range
 
-        if (fromContainers && (core == null || !player.within(core, itemTransferRange))) core = containers.selectFrom(builds) { it.block is StorageBlock && (item == null || it.items.has(item)) }.min { it -> it.dst(player) }
+        if (fromContainers && (core == null || !player.within(core, itemTransferRange))) {
+            // Prefer the container closest to the core (an overflow-storage cluster built next to it),
+            // not the one closest to the player - a distant, unrelated container the player merely
+            // happens to be standing near shouldn't outrank one actually parked next to the core.
+            // Falls back to player distance only when there's no core at all to measure against.
+            val nearCore = core
+            core = containers.selectFrom(builds) { it.block is StorageBlock && (item == null || it.items.has(item)) }
+                .min { it -> if (nearCore != null) it.dst(nearCore) else it.dst(player) }
+        }
         val fetchCore = core
 
         val priorities = loadPriorities()
